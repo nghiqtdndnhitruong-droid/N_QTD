@@ -60,6 +60,8 @@ function invalidateLoanEverything(qc: ReturnType<typeof useQueryClient>, loanId:
   void qc.invalidateQueries({ queryKey: queryKeys.loans.detail(loanId) });
   void qc.invalidateQueries({ queryKey: queryKeys.loans.summary(loanId) });
   void qc.invalidateQueries({ queryKey: queryKeys.loans.lists() });
+  void qc.invalidateQueries({ queryKey: ['loans', loanId, 'related-persons'] });
+  void qc.invalidateQueries({ queryKey: ['loans', loanId, 'collaterals'] });
   void qc.invalidateQueries({ queryKey: queryKeys.dashboard.all });
   void qc.invalidateQueries({ queryKey: queryKeys.reports.all });
 }

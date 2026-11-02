@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Calculator, LandPlot, MapPin, Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import {
   CollateralAssetType,
+  CollateralCertificateType,
   CollateralOwnerType,
   Gender,
   IdDocumentType,
@@ -13,6 +14,9 @@ import {
 import {
   BUSINESS_LIMITS,
   COLLATERAL_ASSET_TYPE_LABELS,
+  COLLATERAL_ASSET_TYPE_OPTIONS,
+  COLLATERAL_CERTIFICATE_TYPE_LABELS,
+  COLLATERAL_CERTIFICATE_TYPE_OPTIONS,
   COLLATERAL_OWNER_TYPE_LABELS,
   GENDER_LABELS,
   ID_DOCUMENT_TYPE_LABELS,
@@ -130,7 +134,8 @@ export function CollateralsSection({
     (sum, item) => sum + (Number(item.valuationAmount) || 0),
     0,
   );
-  const maxAllowedLoan = Math.floor(totalValuation * BUSINESS_LIMITS.MAX_LTV_RATIO);
+  const rawMaxAllowed = totalValuation * BUSINESS_LIMITS.MAX_LTV_RATIO;
+  const maxAllowedLoan = Math.floor(rawMaxAllowed / 1_000_000) * 1_000_000;
   const minRequiredValuation = Math.ceil(loanAmount / BUSINESS_LIMITS.MAX_LTV_RATIO);
   const isLtvSatisfied = totalValuation >= minRequiredValuation;
 
@@ -157,7 +162,7 @@ export function CollateralsSection({
       origin: 'Nhà nước công nhận quyền sử dụng đất',
       usagePurpose: 'Đất chuyên trồng lúa nước',
       usageDuration: 'Lâu dài',
-      useRestrictions: 'Không',
+      useRestrictions: '',
       issuePlace: 'Sở Tài nguyên và Môi trường',
       issueDate: '',
       provinceId: areaTree[0]?.id ?? '',
@@ -488,7 +493,7 @@ export function CollateralsSection({
                         {item.assetCode || '—'}
                       </div>
                       <div className="text-xs text-slate-500 font-mono">
-                        Số GCN: {item.certificateNumber}
+                        {COLLATERAL_CERTIFICATE_TYPE_LABELS[item.certificateType || CollateralCertificateType.GCN]}: {item.certificateNumber}
                       </div>
                     </td>
                     <td className="px-3.5 py-3">
@@ -615,11 +620,17 @@ export function CollateralsSection({
                   name="assetType"
                   label="Loại tài sản thế chấp"
                   required
-                  options={Object.entries(COLLATERAL_ASSET_TYPE_LABELS).map(([value, label]) => ({
-                    value,
-                    label,
-                  }))}
+                  options={COLLATERAL_ASSET_TYPE_OPTIONS}
                   wrapperClassName="sm:col-span-2"
+                />
+                <FormSelectField
+                  control={control}
+                  name="certificateType"
+                  label="Loại giấy chứng nhận"
+                  required
+                  options={COLLATERAL_CERTIFICATE_TYPE_OPTIONS}
+                  wrapperClassName="sm:col-span-2"
+                  hint="Chọn đúng loại giấy tờ pháp lý để biểu mẫu Word sinh chính xác cụm câu pháp lý"
                 />
                 <FormTextField
                   control={control}
@@ -700,7 +711,6 @@ export function CollateralsSection({
                 provinceField="provinceId"
                 communeField="communeId"
                 hamletField="hamletId"
-                addressDetailField="addressDetail"
                 fullAddressField="address"
                 sectionTitle="Địa bàn nơi có tài sản thế chấp (Tỉnh → Xã → Ấp)"
                 sectionHint="Độc lập với địa chỉ người vay. Cấp Ấp có thể bỏ trống nếu không rõ."

@@ -104,11 +104,11 @@ export function requireValidCitizenIdInfo(
 export function getCanonicalIdIssuePlace(idType: IdDocumentType): string {
   switch (idType) {
     case IdDocumentType.CAN_CUOC_CONG_DAN:
-      return 'Cục Cảnh Sát QLHC về TTXH';
+      return 'Cục CSQLHC về TTXH';
     case IdDocumentType.CAN_CUOC:
       return 'Bộ Công An';
     default:
-      return 'Cục Cảnh Sát QLHC về TTXH';
+      return 'Cục CSQLHC về TTXH';
   }
 }
 
@@ -170,6 +170,11 @@ export function resolveEffectiveCollateralArea(
  * Tính giá trị định giá tài sản = Diện tích tính định giá × Đơn giá 1 m²
  * Luôn làm tròn xuống số nguyên đồng (Math.floor) và xử lý chống sai số dấu phẩy động IEEE-754.
  */
+/**
+ * Tính tổng giá trị định giá tài sản:
+ * Tổng giá trị định giá = FLOOR(diện tích * đơn giá / 1.000.000) * 1.000.000
+ * Luôn làm tròn xuống theo bội số 1.000.000 đồng theo Task B, trong khi đơn giá giữ nguyên.
+ */
 export function calculateFlooredValuationAmount(
   effectiveArea: number,
   pricePerSqMeter: number
@@ -177,7 +182,7 @@ export function calculateFlooredValuationAmount(
   if (effectiveArea <= 0 || pricePerSqMeter < 0) {
     return 0;
   }
-  const exactProduct = Number((effectiveArea * pricePerSqMeter).toFixed(6));
-  return Math.floor(exactProduct);
+  const rawTotal = effectiveArea * pricePerSqMeter;
+  return Math.floor(rawTotal / 1_000_000) * 1_000_000;
 }
 

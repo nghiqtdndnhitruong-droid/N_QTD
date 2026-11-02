@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Copy, Pencil, Plus, Trash2, Users } from 'lucide-react';
@@ -49,6 +49,28 @@ import {
 } from '../schemas/loan.schema';
 import type { RelatedPerson } from '../types/loan.types';
 
+// Danh sách lựa chọn cố định theo Task A: Quan hệ người vay (5 lựa chọn)
+export const BORROWER_RELATIONSHIP_OPTIONS = [
+  { value: 'Chồng', label: 'Chồng' },
+  { value: 'Vợ', label: 'Vợ' },
+  { value: 'Con', label: 'Con' },
+  { value: 'Mẹ', label: 'Mẹ' },
+  { value: 'Cha', label: 'Cha' },
+];
+
+// Danh sách lựa chọn cố định theo Task B: Quan hệ người liên quan (9 lựa chọn)
+export const RELATED_PERSON_RELATIONSHIP_OPTIONS = [
+  { value: 'Cha', label: 'Cha' },
+  { value: 'Mẹ', label: 'Mẹ' },
+  { value: 'Con', label: 'Con' },
+  { value: 'Anh', label: 'Anh' },
+  { value: 'Chị', label: 'Chị' },
+  { value: 'Em', label: 'Em' },
+  { value: 'Cô', label: 'Cô' },
+  { value: 'Cậu', label: 'Cậu' },
+  { value: 'Dì', label: 'Dì' },
+];
+
 export interface RelatedPersonsSectionProps {
   loanId: string;
   loanType: LoanType;
@@ -88,13 +110,15 @@ export function RelatedPersonsSection({
     defaultValues: {
       fullName: '',
       relationship: '',
+      borrowerRelationship: '',
+      relatedPersonRelationship: '',
       phoneNumber: '',
       yearOfBirth: 1990,
       gender: Gender.NAM,
       idType: IdDocumentType.CAN_CUOC_CONG_DAN,
       idNumber: '',
       idIssueDate: '',
-      idIssuePlace: 'Cục Cảnh Sát QLHC về TTXH',
+      idIssuePlace: 'Cục CSQLHC về TTXH',
       idExpiry: '',
       provinceId: '',
       communeId: '',
@@ -126,6 +150,23 @@ export function RelatedPersonsSection({
     }
   }, [watchedIdType, setValue]);
 
+  // Options tương thích ngược nếu bản ghi cũ có giá trị quan hệ chưa có trong danh sách
+  const borrowerOptions = useMemo(() => {
+    const currentVal = editingItem?.borrowerRelationship || editingItem?.relationship;
+    if (currentVal && !BORROWER_RELATIONSHIP_OPTIONS.some((o) => o.value === currentVal)) {
+      return [{ value: currentVal, label: `${currentVal} (Cũ)` }, ...BORROWER_RELATIONSHIP_OPTIONS];
+    }
+    return BORROWER_RELATIONSHIP_OPTIONS;
+  }, [editingItem]);
+
+  const relatedPersonOptions = useMemo(() => {
+    const currentVal = editingItem?.relatedPersonRelationship;
+    if (currentVal && !RELATED_PERSON_RELATIONSHIP_OPTIONS.some((o) => o.value === currentVal)) {
+      return [{ value: currentVal, label: `${currentVal} (Cũ)` }, ...RELATED_PERSON_RELATIONSHIP_OPTIONS];
+    }
+    return RELATED_PERSON_RELATIONSHIP_OPTIONS;
+  }, [editingItem]);
+
   if (!isEligible) {
     return null;
   }
@@ -147,6 +188,8 @@ export function RelatedPersonsSection({
     reset({
       fullName: '',
       relationship: '',
+      borrowerRelationship: '',
+      relatedPersonRelationship: '',
       phoneNumber: '',
       yearOfBirth: 1990,
       gender: Gender.NAM,
@@ -166,9 +209,14 @@ export function RelatedPersonsSection({
 
   const openEdit = (item: RelatedPerson) => {
     setEditingItem(item);
+    const existingBorrowerRel = item.borrowerRelationship ?? item.relationship ?? '';
+    const existingRelatedRel = item.relatedPersonRelationship ?? '';
+
     reset({
       fullName: item.fullName,
-      relationship: item.relationship ?? '',
+      relationship: existingBorrowerRel,
+      borrowerRelationship: existingBorrowerRel,
+      relatedPersonRelationship: existingRelatedRel,
       phoneNumber: item.phoneNumber ?? '',
       yearOfBirth: item.yearOfBirth,
       gender: item.gender,
@@ -188,14 +236,21 @@ export function RelatedPersonsSection({
 
   const onSubmit = async (values: RelatedPersonFormValues) => {
     try {
+      const payload = {
+        ...values,
+        relationship: values.borrowerRelationship || values.relationship || undefined,
+        borrowerRelationship: values.borrowerRelationship || values.relationship || undefined,
+        relatedPersonRelationship: values.relatedPersonRelationship || undefined,
+      };
+
       if (editingItem) {
         await updateMutation.mutateAsync({
           id: editingItem.id,
-          payload: values,
+          payload,
         });
         notifySuccess(`Đã cập nhật thông tin người liên quan: ${values.fullName}`);
       } else {
-        await addMutation.mutateAsync(values);
+        await addMutation.mutateAsync(payload);
         notifySuccess(`Đã thêm người liên quan: ${values.fullName}`);
       }
       setDrawerOpen(false);
@@ -260,7 +315,9 @@ export function RelatedPersonsSection({
             <table className="w-full text-left text-xs text-slate-700">
               <thead className="border-b border-slate-200 bg-slate-50 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
                 <tr>
-                  <th className="px-3.5 py-2.5">Họ và tên / Quan hệ</th>
+                  <th className="px-3.5 py-2.5">Họ và tên</th>
+                  <th className="px-3.5 py-2.5">Quan hệ người vay</th>
+                  <th className="px-3.5 py-2.5">Quan hệ người liên quan</th>
                   <th className="px-3.5 py-2.5">Năm sinh / Giới tính</th>
                   <th className="px-3.5 py-2.5">Số CCCD / Nơi cấp</th>
                   <th className="px-3.5 py-2.5">Số điện thoại</th>
@@ -269,73 +326,90 @@ export function RelatedPersonsSection({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 bg-white">
-                {relatedPersons.map((person) => (
-                  <tr key={person.id} className="hover:bg-slate-50/70">
-                    <td className="px-3.5 py-3">
-                      <div className="font-medium text-slate-900">{person.fullName}</div>
-                      {person.relationship && (
-                        <div className="text-[11px] text-slate-500">
-                          Quan hệ: <span className="font-medium">{person.relationship}</span>
+                {relatedPersons.map((person) => {
+                  const borrowerRel = person.borrowerRelationship || person.relationship;
+                  const relatedRel = person.relatedPersonRelationship;
+                  return (
+                    <tr key={person.id} className="hover:bg-slate-50/70">
+                      <td className="px-3.5 py-3 font-medium text-slate-900">
+                        {person.fullName}
+                      </td>
+                      <td className="px-3.5 py-3">
+                        {borrowerRel ? (
+                          <span className="inline-flex items-center rounded-md bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-800 border border-amber-200">
+                            {borrowerRel}
+                          </span>
+                        ) : (
+                          <span className="text-slate-400">—</span>
+                        )}
+                      </td>
+                      <td className="px-3.5 py-3">
+                        {relatedRel ? (
+                          <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-800 border border-blue-200">
+                            {relatedRel}
+                          </span>
+                        ) : (
+                          <span className="text-slate-400">—</span>
+                        )}
+                      </td>
+                      <td className="px-3.5 py-3">
+                        <div className="tabular-nums font-medium text-slate-800">
+                          {person.yearOfBirth}
                         </div>
-                      )}
-                    </td>
-                    <td className="px-3.5 py-3">
-                      <div className="tabular-nums font-medium text-slate-800">
-                        {person.yearOfBirth}
-                      </div>
-                      <Badge tone={person.gender === Gender.NAM ? 'primary' : 'info'} className="mt-0.5">
-                        {GENDER_LABELS[person.gender]}
-                      </Badge>
-                    </td>
-                    <td className="px-3.5 py-3">
-                      <div className="font-mono font-medium text-slate-900">
-                        {person.idNumber}
-                      </div>
-                      <div className="text-[11px] text-slate-500">
-                        {ID_DOCUMENT_TYPE_LABELS[person.idType]} · {person.idIssuePlace}
-                      </div>
-                    </td>
-                    <td className="px-3.5 py-3">
-                      {person.phoneNumber ? (
-                        <span className="font-mono text-slate-800">{person.phoneNumber}</span>
-                      ) : (
-                        <span className="text-slate-400">—</span>
-                      )}
-                    </td>
-                    <td className="px-3.5 py-3">
-                      <div className="max-w-xs line-clamp-2 text-slate-600">
-                        {person.address}
-                      </div>
-                    </td>
-                    {!readOnly && (
-                      <td className="px-3.5 py-3 text-right">
-                        <div className="inline-flex items-center gap-1">
-                          <Can perm="loan:update">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              leftIcon={<Pencil className="h-3.5 w-3.5" />}
-                              onClick={() => openEdit(person)}
-                            >
-                              Sửa
-                            </Button>
-                          </Can>
-                          <Can perm="loan:update">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-danger-600 hover:bg-danger-50"
-                              leftIcon={<Trash2 className="h-3.5 w-3.5" />}
-                              onClick={() => setDeletingItem(person)}
-                            >
-                              Xóa
-                            </Button>
-                          </Can>
+                        <Badge tone={person.gender === Gender.NAM ? 'primary' : 'info'} className="mt-0.5">
+                          {GENDER_LABELS[person.gender]}
+                        </Badge>
+                      </td>
+                      <td className="px-3.5 py-3">
+                        <div className="font-mono font-medium text-slate-900">
+                          {person.idNumber}
+                        </div>
+                        <div className="text-[11px] text-slate-500">
+                          {ID_DOCUMENT_TYPE_LABELS[person.idType]} · {person.idIssuePlace}
                         </div>
                       </td>
-                    )}
-                  </tr>
-                ))}
+                      <td className="px-3.5 py-3">
+                        {person.phoneNumber ? (
+                          <span className="font-mono text-slate-800">{person.phoneNumber}</span>
+                        ) : (
+                          <span className="text-slate-400">—</span>
+                        )}
+                      </td>
+                      <td className="px-3.5 py-3">
+                        <div className="max-w-xs line-clamp-2 text-slate-600">
+                          {person.address}
+                        </div>
+                      </td>
+                      {!readOnly && (
+                        <td className="px-3.5 py-3 text-right">
+                          <div className="inline-flex items-center gap-1">
+                            <Can perm="loan:update">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                leftIcon={<Pencil className="h-3.5 w-3.5" />}
+                                onClick={() => openEdit(person)}
+                              >
+                                Sửa
+                              </Button>
+                            </Can>
+                            <Can perm="loan:update">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-danger-600 hover:bg-danger-50"
+                                leftIcon={<Trash2 className="h-3.5 w-3.5" />}
+                                onClick={() => setDeletingItem(person)}
+                              >
+                                Xóa
+                              </Button>
+                            </Can>
+                          </div>
+                        </td>
+                      )}
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -370,17 +444,25 @@ export function RelatedPersonsSection({
                 />
                 <FormTextField
                   control={control}
-                  name="relationship"
-                  label="Quan hệ với người vay"
-                  placeholder="VD: Vợ, Chồng, Con, Đồng sở hữu..."
-                />
-                <FormTextField
-                  control={control}
                   name="phoneNumber"
                   label="Số điện thoại"
                   placeholder="VD: 0912345678 (tùy chọn)"
                 />
-                <div className="grid grid-cols-2 gap-2">
+                <FormSelectField
+                  control={control}
+                  name="borrowerRelationship"
+                  label="Quan hệ người vay"
+                  options={borrowerOptions}
+                  placeholder="-- Chọn quan hệ người vay --"
+                />
+                <FormSelectField
+                  control={control}
+                  name="relatedPersonRelationship"
+                  label="Quan hệ người liên quan"
+                  options={relatedPersonOptions}
+                  placeholder="-- Chọn quan hệ người liên quan --"
+                />
+                <div className="grid grid-cols-2 gap-2 sm:col-span-2">
                   <FormNumberField
                     control={control}
                     name="yearOfBirth"

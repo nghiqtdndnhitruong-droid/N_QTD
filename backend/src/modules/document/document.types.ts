@@ -1,18 +1,6 @@
 import { LoanType } from '@prisma/client';
 
-export type DocumentTemplateKey =
-  | 'TC1'
-  | 'TC2'
-  | 'TC3'
-  | 'TC4'
-  | 'TC7'
-  | 'TC8'
-  | 'TIN1'
-  | 'TIN2'
-  | 'TIN3'
-  | 'TIN4'
-  | 'BC_THU_NHAP'
-  | 'PA';
+export type DocumentTemplateKey = string;
 
 export interface DocumentTemplateDefinition {
   key: DocumentTemplateKey;
@@ -20,9 +8,10 @@ export interface DocumentTemplateDefinition {
   title: string;
   description: string;
   loanType: LoanType | 'ALL';
-  groupFolder: 'thế chấp' | 'tín chấp' | 'chung';
+  groupFolder?: string;
   fileName: string;
   outputSuffix: string;
+  filePath?: string;
 }
 
 export interface DocumentValidationWarning {
@@ -55,3 +44,6 @@ export interface GeneratedDocumentResult {
   mimeType: string;
 }
 
+export interface ExportDocumentsDto {
+  templateKeys: DocumentTemplateKey[];
+}

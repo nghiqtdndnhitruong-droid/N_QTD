@@ -213,7 +213,7 @@ export function LoanCreatePage() {
       idType: IdDocumentType.CAN_CUOC_CONG_DAN,
       idNumber: '',
       idIssueDate: '',
-      idIssuePlace: 'Cục Cảnh Sát QLHC về TTXH',
+      idIssuePlace: 'Cục CSQLHC về TTXH',
       idExpiry: '',
       address: '',
       relationship: 'Con ruột',
@@ -274,7 +274,7 @@ export function LoanCreatePage() {
       contractNumber: `HĐTC-${new Date().getFullYear()}-${String(Date.now()).slice(-4)}`,
       contractDuration: '',
       contractExpiryDate: '',
-      committeeAuthDate: toApiDate(new Date()),
+      committeeAuthDate: '',
     },
   });
 

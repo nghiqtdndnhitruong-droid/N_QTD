@@ -1,5 +1,6 @@
 import type {
   CollateralAssetType,
+  CollateralCertificateType,
   CollateralOwnerType,
   Gender,
   IdDocumentType,
@@ -38,6 +39,8 @@ export interface RelatedPerson {
   idExpiry?: string | null;
   phoneNumber?: string | null;
   relationship?: string | null;
+  borrowerRelationship?: string | null;
+  relatedPersonRelationship?: string | null;
   provinceId?: string | null;
   provinceName?: string | null;
   communeId?: string | null;
@@ -62,6 +65,8 @@ export interface CreateRelatedPersonPayload {
   idExpiry?: string | null;
   phoneNumber?: string | null;
   relationship?: string | null;
+  borrowerRelationship?: string | null;
+  relatedPersonRelationship?: string | null;
   provinceId?: string | null;
   communeId?: string | null;
   hamletId?: string | null;
@@ -109,6 +114,7 @@ export interface Collateral {
   id: string;
   loanId: string;
   assetType: CollateralAssetType;
+  certificateType?: CollateralCertificateType | null;
   assetCode: string;
   certificateNumber: string;
   sheetNumber: string;
@@ -309,6 +315,7 @@ export type UpdateLoanPayload = Partial<Omit<CreateLoanPayload, 'memberId'>>;
 
 export interface CreateCollateralPayload {
   assetType: CollateralAssetType;
+  certificateType?: CollateralCertificateType | null;
   assetCode: string;
   certificateNumber: string;
   sheetNumber: string;

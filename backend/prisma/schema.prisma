@@ -43,8 +43,17 @@ enum LoanStatus {
 }
 
 enum CollateralAssetType {
-  QUYEN_SU_DUNG_DAT                       // Quyền sử dụng đất
-  QUYEN_SU_DUNG_DAT_VA_TAI_SAN_GAN_LIEN   // Quyền sử dụng đất và sở hữu tài sản gắn liền với đất
+  QUYEN_SU_DUNG_DAT                                                      // Quyền sử dụng đất
+  QUYEN_SU_DUNG_DAT_QUYEN_SO_HUU_NHA_O_VA_TAI_SAN_KHAC_GAN_LIEN_VOI_DAT   // Quyền sử dụng đất quyền sở hữu nhà ở và tài sản khác gắn liền với đất
+  QUYEN_SU_DUNG_DAT_QUYEN_SO_HUU_TAI_SAN_GAN_LIEN_VOI_DAT                // Quyền sử dụng đất, quyền sở hữu tài sản gắn liền với đất
+  QUYEN_SU_DUNG_DAT_VA_TAI_SAN_GAN_LIEN                                  // Cũ (tương thích ngược)
+}
+
+enum CollateralCertificateType {
+  GCN                                            // GCN
+  GIAY_CHUNG_NHAN                                // Giấy chứng nhận
+  VAO_SO_CAP_GIAY_CHUNG_NHAN_QUYEN_SU_DUNG_DAT   // Vào sổ cấp giấy chứng nhận quyền sử dụng đất
+  GIAY_CHUNG_NHAN_QUYEN_SU_DUNG_DAT              // Giấy chứng nhận quyền sử dụng đất
 }
 
 enum CollateralOwnerType {
@@ -294,6 +303,7 @@ model RelatedPerson {
   idExpiry      DateTime?
   phoneNumber   String?
   relationship  String?        // Quan hệ với người vay (tùy chọn)
+  relatedPersonRelationship String? // Quan hệ người liên quan (Cha, Mẹ, Con, Anh, Chị, Em, Cô, Cậu, Dì)
 
   // Địa bàn người liên quan (Tỉnh -> Xã -> Ấp + Snapshot)
   provinceId    String?        @db.ObjectId
@@ -341,6 +351,7 @@ model Collateral {
 
   // Loại tài sản
   assetType           CollateralAssetType
+  certificateType     CollateralCertificateType? @default(GCN) // Loại giấy chứng nhận
 
   // Thông tin sổ đỏ
   assetCode           String              @unique // Mã số tài sản duy nhất toàn hệ thống

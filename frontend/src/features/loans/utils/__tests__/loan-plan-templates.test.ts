@@ -30,7 +30,7 @@ describe('calculateLoanPlanTemplate', () => {
       { name: 'Tiền mua vật liệu xây dựng', amount: 160_000_000 }, // 80% of 200tr
       { name: 'Tiền công thợ', amount: 40_000_000 }, // 20% of 200tr
       {
-        name: 'Chi phí trả lãi tiền vay (150.000.000 × 10.2% × 1 năm) = 15.300.000 đồng.',
+        name: 'Chi phí trả lãi tiền vay (150.000.000 × 10.2% × 1 năm)',
         amount: 15_300_000,
       }, // 150tr * 10.2% * 1
       { name: 'Chi tiêu gia đình', amount: 70_000_000 },
@@ -61,7 +61,7 @@ describe('calculateLoanPlanTemplate', () => {
       { name: 'Tiền xây dựng chuồng trại', amount: 45_000_000 }, // 15% of 300tr
       { name: 'Tiền thức ăn', amount: 15_000_000 }, // 5% of 300tr
       {
-        name: 'Chi phí trả lãi tiền vay (200.000.000 × 10.8% × 2 năm) = 43.200.000 đồng.',
+        name: 'Chi phí trả lãi tiền vay (200.000.000 × 10.8% × 2 năm)',
         amount: 43_200_000,
       }, // 200tr * 10.8% * 2
       { name: 'Chi tiêu gia đình', amount: 140_000_000 },

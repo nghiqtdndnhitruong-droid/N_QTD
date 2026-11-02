@@ -1,0 +1,21 @@
+{
+  "name": "n-qtd-workspace",
+  "version": "1.0.0",
+  "description": "Quỹ tín dụng nhân dân - N_QTD Fullstack Workspace",
+  "private": true,
+  "scripts": {
+    "dev": "node dev.js",
+    "dev:backend": "npm --prefix backend run dev",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "build": "npm --prefix backend run build && npm --prefix frontend run build",
+    "typecheck": "npm --prefix backend run typecheck && npm --prefix frontend run typecheck"
+  },
+  "keywords": [
+    "qtd",
+    "credit-fund",
+    "loan-management"
+  ],
+  "author": "",
+  "license": "ISC"
+}
+

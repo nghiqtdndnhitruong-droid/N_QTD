@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import {
   CollateralAssetType,
+  CollateralCertificateType,
   CollateralOwnerType,
   ValuationMethod,
   Gender,
@@ -35,6 +36,12 @@ export const baseCollateralSchema = z.object({
   assetType: z.nativeEnum(CollateralAssetType, {
     errorMap: () => ({ message: 'Loại tài sản không hợp lệ' }),
   }),
+  certificateType: z
+    .nativeEnum(CollateralCertificateType, {
+      errorMap: () => ({ message: 'Loại giấy chứng nhận không hợp lệ' }),
+    })
+    .nullable()
+    .optional(),
   assetCode: z
     .string({ required_error: 'Mã số tài sản là bắt buộc' })
     .trim()

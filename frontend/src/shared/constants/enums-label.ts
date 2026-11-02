@@ -1,5 +1,6 @@
 import {
   CollateralAssetType,
+  CollateralCertificateType,
   CollateralOwnerType,
   Gender,
   IdDocumentType,
@@ -70,10 +71,60 @@ export const LOAN_STATUS_META: Record<LoanStatus, LoanStatusMeta> = {
   },
 };
 
+/** Nhãn hiển thị Loại tài sản theo đúng 3 lựa chọn của Task F */
 export const COLLATERAL_ASSET_TYPE_LABELS: Record<CollateralAssetType, string> = {
   QUYEN_SU_DUNG_DAT: 'Quyền sử dụng đất',
-  QUYEN_SU_DUNG_DAT_VA_TAI_SAN_GAN_LIEN: 'Quyền sử dụng đất và tài sản gắn liền với đất',
+  QUYEN_SU_DUNG_DAT_QUYEN_SO_HUU_NHA_O_VA_TAI_SAN_KHAC_GAN_LIEN_VOI_DAT:
+    'Quyền sử dụng đất quyền sở hữu nhà ở và tài sản khác gắn liền với đất',
+  QUYEN_SU_DUNG_DAT_QUYEN_SO_HUU_TAI_SAN_GAN_LIEN_VOI_DAT:
+    'Quyền sử dụng đất, quyền sở hữu tài sản gắn liền với đất',
+  QUYEN_SU_DUNG_DAT_VA_TAI_SAN_GAN_LIEN:
+    'Quyền sử dụng đất quyền sở hữu nhà ở và tài sản khác gắn liền với đất',
 };
+
+/** Đúng 3 lựa chọn cho Loại tài sản theo Task F */
+export const COLLATERAL_ASSET_TYPE_OPTIONS = [
+  {
+    value: CollateralAssetType.QUYEN_SU_DUNG_DAT,
+    label: 'Quyền sử dụng đất',
+  },
+  {
+    value: CollateralAssetType.QUYEN_SU_DUNG_DAT_QUYEN_SO_HUU_NHA_O_VA_TAI_SAN_KHAC_GAN_LIEN_VOI_DAT,
+    label: 'Quyền sử dụng đất quyền sở hữu nhà ở và tài sản khác gắn liền với đất',
+  },
+  {
+    value: CollateralAssetType.QUYEN_SU_DUNG_DAT_QUYEN_SO_HUU_TAI_SAN_GAN_LIEN_VOI_DAT,
+    label: 'Quyền sử dụng đất, quyền sở hữu tài sản gắn liền với đất',
+  },
+];
+
+/** Nhãn hiển thị Loại giấy chứng nhận theo đúng 4 lựa chọn của Task C */
+export const COLLATERAL_CERTIFICATE_TYPE_LABELS: Record<CollateralCertificateType, string> = {
+  GCN: 'GCN',
+  GIAY_CHUNG_NHAN: 'Giấy chứng nhận',
+  VAO_SO_CAP_GIAY_CHUNG_NHAN_QUYEN_SU_DUNG_DAT: 'Vào sổ cấp giấy chứng nhận quyền sử dụng đất',
+  GIAY_CHUNG_NHAN_QUYEN_SU_DUNG_DAT: 'Giấy chứng nhận quyền sử dụng đất',
+};
+
+/** Đúng 4 lựa chọn cho Loại giấy chứng nhận theo Task C */
+export const COLLATERAL_CERTIFICATE_TYPE_OPTIONS = [
+  {
+    value: CollateralCertificateType.GCN,
+    label: 'GCN',
+  },
+  {
+    value: CollateralCertificateType.GIAY_CHUNG_NHAN,
+    label: 'Giấy chứng nhận',
+  },
+  {
+    value: CollateralCertificateType.VAO_SO_CAP_GIAY_CHUNG_NHAN_QUYEN_SU_DUNG_DAT,
+    label: 'Vào sổ cấp giấy chứng nhận quyền sử dụng đất',
+  },
+  {
+    value: CollateralCertificateType.GIAY_CHUNG_NHAN_QUYEN_SU_DUNG_DAT,
+    label: 'Giấy chứng nhận quyền sử dụng đất',
+  },
+];
 
 export const COLLATERAL_OWNER_TYPE_LABELS: Record<CollateralOwnerType, string> = {
   NGUOI_VAY_CA_NHAN: 'Người vay đứng tên cá nhân',
@@ -97,4 +148,3 @@ export const BUSINESS_LIMITS = {
   /** Số ngày ân hạn sau ngày đáo hạn trước khi chuyển sang Quá hạn */
   OVERDUE_GRACE_DAYS: 9,
 } as const;
-

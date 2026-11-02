@@ -27,6 +27,7 @@ export class RelatedPersonRepository {
     data: CreateRelatedPersonDto,
     location?: ResolvedLocationSnapshot
   ): Promise<RelatedPerson> {
+    const borrowerRel = data.borrowerRelationship ?? data.relationship;
     return prisma.relatedPerson.create({
       data: {
         loanId,
@@ -39,7 +40,8 @@ export class RelatedPersonRepository {
         idIssuePlace: data.idIssuePlace!,
         idExpiry: data.idExpiry ? new Date(data.idExpiry) : null,
         phoneNumber: data.phoneNumber ?? null,
-        relationship: data.relationship?.trim() || null,
+        relationship: borrowerRel?.trim() || null,
+        relatedPersonRelationship: data.relatedPersonRelationship?.trim() || null,
         provinceId: location?.provinceId ?? data.provinceId ?? null,
         provinceName: location?.provinceName ?? null,
         communeId: location?.communeId ?? data.communeId ?? null,
@@ -71,8 +73,16 @@ export class RelatedPersonRepository {
       updateData.idExpiry = data.idExpiry ? new Date(data.idExpiry) : null;
     }
     if (data.phoneNumber !== undefined) updateData.phoneNumber = data.phoneNumber;
-    if (data.relationship !== undefined) {
-      updateData.relationship = data.relationship ? data.relationship.trim() : null;
+
+    if (data.borrowerRelationship !== undefined || data.relationship !== undefined) {
+      const relVal = data.borrowerRelationship !== undefined ? data.borrowerRelationship : data.relationship;
+      updateData.relationship = relVal ? relVal.trim() : null;
+    }
+
+    if (data.relatedPersonRelationship !== undefined) {
+      updateData.relatedPersonRelationship = data.relatedPersonRelationship
+        ? data.relatedPersonRelationship.trim()
+        : null;
     }
 
     if (location) {
@@ -100,7 +110,7 @@ export class RelatedPersonRepository {
       data: {
         isDeleted: true,
         deletedAt: new Date(),
-        deletedReason: reason || 'Xóa người liên quan khỏi hồ sơ vay',
+        deletedReason: reason || null,
       },
     });
   }

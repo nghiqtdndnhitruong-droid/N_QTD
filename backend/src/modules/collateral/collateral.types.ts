@@ -1,6 +1,7 @@
 import {
   Collateral,
   CollateralAssetType,
+  CollateralCertificateType,
   CollateralOwnerType,
   ValuationMethod,
   Gender,
@@ -21,6 +22,7 @@ export interface ThirdPartyInfoDto {
 export interface CreateCollateralDto {
   loanId: string;
   assetType: CollateralAssetType;
+  certificateType?: CollateralCertificateType | null;
   assetCode: string; // Mã số tài sản (bắt buộc, duy nhất toàn hệ thống)
   certificateNumber: string; // Số cấp giấy chứng nhận (cho phép trùng)
   sheetNumber: string; // Số tờ

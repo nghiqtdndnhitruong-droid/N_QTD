@@ -37,9 +37,23 @@ export type LoanStatus = (typeof LoanStatus)[keyof typeof LoanStatus];
 
 export const CollateralAssetType = {
   QUYEN_SU_DUNG_DAT: 'QUYEN_SU_DUNG_DAT',
+  QUYEN_SU_DUNG_DAT_QUYEN_SO_HUU_NHA_O_VA_TAI_SAN_KHAC_GAN_LIEN_VOI_DAT:
+    'QUYEN_SU_DUNG_DAT_QUYEN_SO_HUU_NHA_O_VA_TAI_SAN_KHAC_GAN_LIEN_VOI_DAT',
+  QUYEN_SU_DUNG_DAT_QUYEN_SO_HUU_TAI_SAN_GAN_LIEN_VOI_DAT:
+    'QUYEN_SU_DUNG_DAT_QUYEN_SO_HUU_TAI_SAN_GAN_LIEN_VOI_DAT',
+  // Tương thích ngược với dữ liệu cũ
   QUYEN_SU_DUNG_DAT_VA_TAI_SAN_GAN_LIEN: 'QUYEN_SU_DUNG_DAT_VA_TAI_SAN_GAN_LIEN',
 } as const;
 export type CollateralAssetType = (typeof CollateralAssetType)[keyof typeof CollateralAssetType];
+
+export const CollateralCertificateType = {
+  GCN: 'GCN',
+  GIAY_CHUNG_NHAN: 'GIAY_CHUNG_NHAN',
+  VAO_SO_CAP_GIAY_CHUNG_NHAN_QUYEN_SU_DUNG_DAT: 'VAO_SO_CAP_GIAY_CHUNG_NHAN_QUYEN_SU_DUNG_DAT',
+  GIAY_CHUNG_NHAN_QUYEN_SU_DUNG_DAT: 'GIAY_CHUNG_NHAN_QUYEN_SU_DUNG_DAT',
+} as const;
+export type CollateralCertificateType =
+  (typeof CollateralCertificateType)[keyof typeof CollateralCertificateType];
 
 export const CollateralOwnerType = {
   NGUOI_VAY_CA_NHAN: 'NGUOI_VAY_CA_NHAN',
@@ -55,4 +69,3 @@ export const ValuationMethod = {
   THI_TRUONG: 'THI_TRUONG',
 } as const;
 export type ValuationMethod = (typeof ValuationMethod)[keyof typeof ValuationMethod];
-

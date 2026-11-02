@@ -247,9 +247,8 @@ export class LoanService {
           (sum, c) => sum + (c.valuationAmount ?? 0),
           0
         );
-        const maxAllowedLoan = Math.round(
-          totalCollateralValuation * LOAN_CONSTANTS.MAX_MORTGAGE_LOAN_RATIO
-        );
+        const rawMaxAllowed = totalCollateralValuation * LOAN_CONSTANTS.MAX_MORTGAGE_LOAN_RATIO;
+        const maxAllowedLoan = Math.floor(rawMaxAllowed / 1_000_000) * 1_000_000;
 
         if (dto.loanAmount > maxAllowedLoan) {
           throw AppError.badRequest(

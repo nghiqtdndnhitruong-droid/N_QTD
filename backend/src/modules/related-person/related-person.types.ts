@@ -12,6 +12,8 @@ export interface CreateRelatedPersonDto {
   idExpiry?: string | Date | null;
   phoneNumber?: string | null;
   relationship?: string | null;
+  borrowerRelationship?: string | null;
+  relatedPersonRelationship?: string | null;
   provinceId?: string | null;
   communeId?: string | null;
   hamletId?: string | null;
@@ -27,4 +29,3 @@ export interface RelatedPersonFilterQuery extends PaginationQuery {
 }
 
 export type RelatedPersonEntity = RelatedPerson;
-

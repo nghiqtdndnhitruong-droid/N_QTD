@@ -6,6 +6,19 @@ import {
   parseCitizenIdInfo,
 } from '../../shared/utils/identity-document.util';
 
+export const VALID_BORROWER_RELATIONSHIPS = ['Chồng', 'Vợ', 'Con', 'Mẹ', 'Cha'] as const;
+export const VALID_RELATED_PERSON_RELATIONSHIPS = [
+  'Cha',
+  'Mẹ',
+  'Con',
+  'Anh',
+  'Chị',
+  'Em',
+  'Cô',
+  'Cậu',
+  'Dì',
+] as const;
+
 const dateStringSchema = z
   .string()
   .datetime({ offset: true })
@@ -36,6 +49,24 @@ const cccdIdNumberSchema = z
       'Số CCCD không đúng quy tắc mã hóa giới tính & năm sinh (ký tự thứ 4 phải là 0, 1, 2 hoặc 3)',
   });
 
+// Schema cho Quan hệ người vay (5 lựa chọn, hoặc chuỗi cũ nếu là dữ liệu lịch sử)
+const borrowerRelationshipSchema = z
+  .string()
+  .trim()
+  .max(100)
+  .nullable()
+  .optional()
+  .transform((val) => (val && val.length > 0 ? val : null));
+
+// Schema cho Quan hệ người liên quan (9 lựa chọn, hoặc chuỗi cũ nếu là dữ liệu lịch sử)
+const relatedPersonRelationshipSchema = z
+  .string()
+  .trim()
+  .max(100)
+  .nullable()
+  .optional()
+  .transform((val) => (val && val.length > 0 ? val : null));
+
 export const baseRelatedPersonFields = {
   fullName: z
     .string({ required_error: 'Họ tên người liên quan là bắt buộc' })
@@ -64,7 +95,9 @@ export const baseRelatedPersonFields = {
     .optional()
     .transform((v) => (v === '' ? null : v)),
   phoneNumber: optionalPhoneField,
-  relationship: z.string().trim().max(100).nullable().optional(),
+  relationship: borrowerRelationshipSchema,
+  borrowerRelationship: borrowerRelationshipSchema,
+  relatedPersonRelationship: relatedPersonRelationshipSchema,
   provinceId: optionalObjectIdField,
   communeId: optionalObjectIdField,
   hamletId: optionalObjectIdField,
@@ -81,4 +114,3 @@ export const deleteRelatedPersonBodySchema = z
     reason: z.string().trim().max(500).optional(),
   })
   .optional();
-

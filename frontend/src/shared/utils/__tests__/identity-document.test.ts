@@ -60,9 +60,9 @@ describe('identity-document utilities', () => {
   });
 
   describe('getCanonicalIdIssuePlace', () => {
-    it('gán đúng Cục Cảnh Sát QLHC về TTXH cho Căn cước công dân', () => {
+    it('gán đúng Cục CSQLHC về TTXH cho Căn cước công dân', () => {
       expect(getCanonicalIdIssuePlace(IdDocumentType.CAN_CUOC_CONG_DAN)).toBe(
-        'Cục Cảnh Sát QLHC về TTXH',
+        'Cục CSQLHC về TTXH',
       );
     });
 
@@ -115,15 +115,15 @@ describe('identity-document utilities', () => {
       });
     });
 
-    it('tính giá trị định giá làm tròn xuống (floor) chính xác', () => {
-      // 1200 m2 * 100.000 đ/m2 = 120.000.000 đ
+    it('tính giá trị định giá làm tròn xuống (floor) theo đơn vị 1.000.000đ chính xác theo Task B', () => {
+      // 4488 m2 * 150.000 đ/m2 = 673.200.000 đ -> làm tròn xuống 673.000.000 đ
+      expect(calculateFlooredValuationAmount(4488, 150_000)).toBe(673_000_000);
+
+      // 1200 m2 * 100.000 đ/m2 = 120.000.000 đ -> 120.000.000 đ
       expect(calculateFlooredValuationAmount(1200, 100_000)).toBe(120_000_000);
 
-      // 123.456 m2 * 100.000 đ/m2 = 12.345.600 đ
-      expect(calculateFlooredValuationAmount(123.456, 100_000)).toBe(12_345_600);
-
-      // Floor rounding: 10.3 * 3 = 30.9 -> 30
-      expect(calculateFlooredValuationAmount(10.3, 3)).toBe(30);
+      // 123.456 m2 * 100.000 đ/m2 = 12.345.600 đ -> 12.000.000 đ
+      expect(calculateFlooredValuationAmount(123.456, 100_000)).toBe(12_000_000);
     });
   });
 

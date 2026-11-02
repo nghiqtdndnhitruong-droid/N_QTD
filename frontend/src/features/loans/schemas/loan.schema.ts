@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import {
   CollateralAssetType,
+  CollateralCertificateType,
   CollateralOwnerType,
   Gender,
   IdDocumentType,
@@ -82,6 +83,8 @@ export const relatedPersonFormSchema = z.object({
   idIssuePlace: z.string().trim().optional(),
   idExpiry: optionalApiDateStringSchema('Ngày hết hạn'),
   relationship: z.string().trim().optional(),
+  borrowerRelationship: z.string().trim().optional(),
+  relatedPersonRelationship: z.string().trim().optional(),
   provinceId: z.string().trim().optional(),
   communeId: z.string().trim().optional(),
   hamletId: z.string().trim().optional(),
@@ -133,7 +136,15 @@ export const thirdPartyInfoFormSchema = z.object({
 });
 
 const baseCollateralObjectSchema = z.object({
-  assetType: z.nativeEnum(CollateralAssetType),
+  assetType: z.nativeEnum(CollateralAssetType, {
+    errorMap: () => ({ message: 'Vui lòng chọn loại tài sản hợp lệ' }),
+  }),
+  certificateType: z
+    .nativeEnum(CollateralCertificateType, {
+      errorMap: () => ({ message: 'Vui lòng chọn loại giấy chứng nhận' }),
+    })
+    .optional()
+    .nullable(),
   assetCode: z
     .string({ required_error: 'Mã số tài sản là bắt buộc' })
     .trim()

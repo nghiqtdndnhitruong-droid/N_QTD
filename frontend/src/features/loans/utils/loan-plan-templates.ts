@@ -56,20 +56,15 @@ export function buildInterestExpenseItemName(
   loanAmount: number,
   interestRate: number,
   termFactor: number,
-  interestExpense?: number,
+  _interestExpense?: number,
 ): string {
   const safeAmount = Math.max(0, Math.round(loanAmount || 0));
   const safeRate = Math.max(0, Number(interestRate) || 0);
   const safeTerm = Math.max(1, Math.round(termFactor || 1));
-  const safeExpense =
-    interestExpense !== undefined
-      ? Math.max(0, Math.round(interestExpense))
-      : Math.round(safeAmount * (safeRate / 100) * safeTerm);
 
   const fmtAmount = new Intl.NumberFormat('vi-VN').format(safeAmount);
-  const fmtExpense = new Intl.NumberFormat('vi-VN').format(safeExpense);
 
-  return `Chi phí trả lãi tiền vay (${fmtAmount} × ${safeRate}% × ${safeTerm} năm) = ${fmtExpense} đồng.`;
+  return `Chi phí trả lãi tiền vay (${fmtAmount} × ${safeRate}% × ${safeTerm} năm)`;
 }
 
 export function calculateLoanPlanTemplate(
