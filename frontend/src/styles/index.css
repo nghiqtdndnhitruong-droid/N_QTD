@@ -1,0 +1,69 @@
+@import '@fontsource-variable/inter';
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Inter Variable', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    Roboto, sans-serif;
+
+  /* Hệ màu chủ đạo Navy – Tài chính / Ngân hàng */
+  --color-primary-50: #eef3fa;
+  --color-primary-100: #d9e5f4;
+  --color-primary-200: #b6cdeb;
+  --color-primary-300: #86addd;
+  --color-primary-400: #5286cb;
+  --color-primary-500: #2e67b2;
+  --color-primary-600: #1d4e89;
+  --color-primary-700: #163a6b;
+  --color-primary-800: #112c52;
+  --color-primary-900: #0b1f3a;
+  --color-primary-950: #071426;
+
+  /* Màu trạng thái */
+  --color-success-50: #f0fdf4;
+  --color-success-100: #dcfce7;
+  --color-success-600: #15803d;
+  --color-success-700: #166534;
+
+  --color-warning-50: #fffbeb;
+  --color-warning-100: #fef3c7;
+  --color-warning-600: #b45309;
+  --color-warning-700: #92400e;
+
+  --color-danger-50: #fef2f2;
+  --color-danger-100: #fee2e2;
+  --color-danger-600: #b91c1c;
+  --color-danger-700: #991b1b;
+
+  --color-info-50: #f0f9ff;
+  --color-info-100: #e0f2fe;
+  --color-info-600: #0369a1;
+  --color-info-700: #075985;
+}
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.5;
+    color: #0f172a;
+    background-color: #f6f8fb;
+  }
+
+  /* Hiển thị số tiền và mã số thẳng cột trong bảng */
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Tôn trọng tuỳ chọn giảm chuyển động của hệ điều hành */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+

@@ -1,0 +1,493 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// ENUM TYPES
+// ============================================================
+
+enum IdDocumentType {
+  CAN_CUOC        // Căn cước
+  CAN_CUOC_CONG_DAN // Căn cước công dân
+}
+
+enum Gender {
+  NAM   // Nam
+  NU    // Nữ
+}
+
+enum LoanType {
+  TIN_CHAP  // Tín chấp
+  THE_CHAP  // Thế chấp
+}
+
+enum LoanTermType {
+  NGAN_HAN   // Ngắn hạn (12 tháng)
+  TRUNG_HAN  // Trung hạn (24 tháng)
+}
+
+enum LoanStatus {
+  DANG_TAO              // Đang tạo
+  DA_HOAN_THANH_HO_SO   // Đã hoàn thành hồ sơ
+  DA_GIAI_NGAN          // Đã giải ngân
+  QUA_HAN               // Quá hạn
+  DA_TAT_TOAN           // Đã tất toán
+}
+
+enum CollateralAssetType {
+  QUYEN_SU_DUNG_DAT                       // Quyền sử dụng đất
+  QUYEN_SU_DUNG_DAT_VA_TAI_SAN_GAN_LIEN   // Quyền sử dụng đất và sở hữu tài sản gắn liền với đất
+}
+
+enum CollateralOwnerType {
+  NGUOI_VAY_CA_NHAN      // Người vay đứng tên cá nhân
+  NGUOI_VAY_HO           // Người vay đứng tên hộ
+  NGUOI_THUA_KE_CA_NHAN  // Người thừa kế đứng tên cá nhân
+  NGUOI_THUA_KE_HO       // Người thừa kế đứng tên hộ
+  BAO_LANH               // Bảo lãnh (bên thứ 3)
+}
+
+enum ValuationMethod {
+  BANG_GIA_QUY  // Theo bảng giá quỹ
+  THI_TRUONG    // Theo giá thị trường
+}
+
+// ============================================================
+// ADMINISTRATIVE AREA (Địa bàn: Tỉnh -> Xã -> Ấp)
+// ============================================================
+
+model Province {
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  code      String    @unique
+  name      String
+  isActive  Boolean   @default(true)
+
+  communes  Commune[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([name])
+  @@map("provinces")
+}
+
+model Commune {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  code       String
+  name       String
+  provinceId String   @db.ObjectId
+  province   Province @relation(fields: [provinceId], references: [id])
+  isActive   Boolean  @default(true)
+
+  hamlets    Hamlet[]
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([provinceId, code])
+  @@index([provinceId])
+  @@index([name])
+  @@map("communes")
+}
+
+model Hamlet {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  code      String
+  name      String
+  communeId String   @db.ObjectId
+  commune   Commune  @relation(fields: [communeId], references: [id])
+  isActive  Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([communeId, name])
+  @@index([communeId])
+  @@index([name])
+  @@map("hamlets")
+}
+
+// ============================================================
+// AUDIT LOG (Nhật ký thao tác nghiệp vụ)
+// ============================================================
+
+model AuditLog {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  entityType String   // "MEMBER" | "LOAN" | "COLLATERAL" | "AREA"
+  entityId   String
+  action     String   // "SOFT_DELETE" | "HARD_DELETE" | "CREATE" | "UPDATE"
+  actor      String   @default("SYSTEM")
+  reason     String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+// ============================================================
+// MEMBER (Thành viên)
+// ============================================================
+
+model Member {
+  id            String         @id @default(auto()) @map("_id") @db.ObjectId
+  memberCode    String         @unique
+  fullName      String
+  yearOfBirth   Int
+  idType        IdDocumentType
+  idNumber      String         @unique
+  idIssueDate   DateTime
+  idIssuePlace  String
+  idExpiry      DateTime?
+  gender        Gender
+  phoneNumber   String?
+  address       String
+
+  // Địa bàn người vay (Tỉnh -> Xã -> Ấp + Snapshot)
+  provinceId    String?        @db.ObjectId
+  provinceName  String?
+  communeId     String?        @db.ObjectId
+  communeName   String?
+  hamletId      String?        @db.ObjectId
+  hamletName    String?
+  addressDetail String?
+
+  // Xóa mềm (Soft Delete)
+  isDeleted     Boolean?       @default(false)
+  deletedAt     DateTime?
+  deletedReason String?
+
+  loans         Loan[]
+
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@index([fullName])
+  @@index([communeId, hamletId])
+  @@index([isDeleted])
+  @@map("members")
+}
+
+// ============================================================
+// LOAN (Khoản vay)
+// ============================================================
+
+// Embedded: Người thừa kế
+type Heir {
+  fullName      String
+  yearOfBirth   Int
+  idType        IdDocumentType
+  idNumber      String
+  idIssueDate   DateTime
+  idIssuePlace  String
+  idExpiry      DateTime?
+  gender        Gender
+  phoneNumber   String?
+  address       String
+  relationship  String         // Quan hệ với người vay: Cha/Mẹ, Vợ/Chồng, Con...
+}
+
+// Embedded: Chi phí / Nguồn thu
+type FinancialItem {
+  name    String
+  amount  Float
+}
+
+// Embedded: Phương án vay
+type LoanPlan {
+  purpose         String          // Mục đích vay
+  loanAmount      Float           // Số tiền vay
+  ownCapital      Float           // Vốn tự có
+  borrowedCapital Float           // Vốn vay
+  expenses        FinancialItem[] // Danh sách chi phí
+  revenues        FinancialItem[] // Danh sách nguồn thu
+  totalExpenses   Float           // Tổng chi phí
+  totalRevenues   Float           // Tổng nguồn thu
+  profit          Float           // Lợi nhuận = totalRevenues - totalExpenses
+}
+
+// Embedded: Hợp đồng thế chấp (chỉ khi LoanType = THE_CHAP)
+type MortgageContract {
+  contractNumber     String     // Số hợp đồng thế chấp
+  contractDuration   String?    // (Tương thích dữ liệu cũ - không còn yêu cầu nhập mới)
+  contractExpiryDate DateTime?  // Ngày hết hạn hợp đồng thế chấp (dạng ngày/tháng/năm)
+  committeeAuthDate  DateTime?  // Ngày chứng thực UBND (có thể bỏ trống nhập sau)
+}
+
+model Loan {
+  id               String           @id @default(auto()) @map("_id") @db.ObjectId
+
+  // Liên kết thành viên
+  memberId         String           @db.ObjectId
+  member           Member           @relation(fields: [memberId], references: [id])
+
+  // Thông tin khoản vay
+  loanType         LoanType         // Tín chấp / Thế chấp
+  termType         LoanTermType     // Ngắn hạn / Trung hạn
+  termMonths       Int              // 12 / 24
+  loanAmount       Float            // Số tiền vay
+  interestRate     Float            // Lãi suất năm (%) - khóa tại thời điểm tạo
+  loanStartDate    DateTime?        @default(now()) // Ngày khởi tạo khoản vay
+
+  // Khế ước
+  contractNumber   String?          @unique // Số khế ước duy nhất toàn hệ thống
+  contractDate     DateTime?        // Ngày cấp khế ước
+
+  // Trạng thái
+  status               LoanStatus       @default(DANG_TAO)
+  expectedMaturityDate DateTime?        // Ngày đáo hạn dự kiến theo thời hạn vay (12 hoặc 24 tháng)
+  maturityDate         DateTime?        // Ngày đáo hạn thực tế (rút ngắn theo HĐ thế chấp nếu có)
+  halfTermPaymentDate  DateTime?        // Ngày phải trả phân nửa (cho vay trung hạn)
+  settlementDate       DateTime?        // Ngày tất toán
+
+  // Xóa mềm (Soft Delete)
+  isDeleted        Boolean?         @default(false)
+  deletedAt        DateTime?
+  deletedReason    String?
+
+  // Embedded objects
+  heir             Heir?            // Người thừa kế (tùy chọn)
+  loanPlan         LoanPlan?        // Phương án vay
+  mortgageContract MortgageContract? // HĐ thế chấp (chỉ khi THE_CHAP)
+
+  // Relations
+  relatedPersons   RelatedPerson[]  // Người liên quan (chỉ áp dụng khi THE_CHAP và loanAmount >= 140.000.000)
+  collaterals      Collateral[]
+  disbursements    Disbursement[]
+  repayments       Repayment[]
+
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@index([memberId])
+  @@index([status])
+  @@index([loanType])
+  @@index([maturityDate])
+  @@map("loans")
+}
+
+// ============================================================
+// RELATED PERSON (Người liên quan - chỉ áp dụng vay thế chấp >= 140.000.000)
+// ============================================================
+
+model RelatedPerson {
+  id            String         @id @default(auto()) @map("_id") @db.ObjectId
+  loanId        String         @db.ObjectId
+  loan          Loan           @relation(fields: [loanId], references: [id])
+
+  fullName      String
+  yearOfBirth   Int
+  gender        Gender
+  idType        IdDocumentType
+  idNumber      String
+  idIssueDate   DateTime
+  idIssuePlace  String
+  idExpiry      DateTime?
+  phoneNumber   String?
+  relationship  String?        // Quan hệ với người vay (tùy chọn)
+
+  // Địa bàn người liên quan (Tỉnh -> Xã -> Ấp + Snapshot)
+  provinceId    String?        @db.ObjectId
+  provinceName  String?
+  communeId     String?        @db.ObjectId
+  communeName   String?
+  hamletId      String?        @db.ObjectId
+  hamletName    String?
+  addressDetail String?
+  address       String
+
+  // Xóa mềm (Soft Delete)
+  isDeleted     Boolean?       @default(false)
+  deletedAt     DateTime?
+  deletedReason String?
+
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@index([loanId])
+  @@index([idNumber])
+  @@index([isDeleted])
+  @@map("related_persons")
+}
+
+// ============================================================
+// COLLATERAL (Tài sản thế chấp)
+// ============================================================
+
+// Embedded: Thông tin bên thứ 3 bảo lãnh
+type ThirdPartyInfo {
+  fullName      String
+  yearOfBirth   Int
+  idType        IdDocumentType
+  idNumber      String
+  idIssuePlace  String
+  gender        Gender
+  address       String
+}
+
+model Collateral {
+  id                  String              @id @default(auto()) @map("_id") @db.ObjectId
+  loanId              String              @db.ObjectId
+  loan                Loan                @relation(fields: [loanId], references: [id])
+
+  // Loại tài sản
+  assetType           CollateralAssetType
+
+  // Thông tin sổ đỏ
+  assetCode           String              @unique // Mã số tài sản duy nhất toàn hệ thống
+  certificateNumber   String              // Số cấp giấy chứng nhận (cho phép trùng)
+  sheetNumber         String              // Số tờ
+  plotNumber          String              // Số thửa
+  area                Float               // Diện tích ghi trên giấy chứng nhận (m²)
+  actualArea          Float?              // Diện tích thực tế thẩm định (m² - tùy chọn)
+  pricePerSqMeter     Float?              // Đơn giá định giá trên mỗi m² (VNĐ)
+  origin              String?             // Nguồn gốc
+  usagePurpose        String?             // Mục đích sử dụng
+  usageDuration       String?             // Thời hạn sử dụng
+  useRestrictions     String?             // Hạn chế sử dụng
+  issuePlace          String?             // Nơi cấp
+  issueDate           DateTime?           // Ngày cấp
+
+  // Địa bàn tài sản độc lập (Tỉnh -> Xã -> Ấp + Snapshot)
+  provinceId          String?             @db.ObjectId
+  provinceName        String?
+  communeId           String?             @db.ObjectId
+  communeName         String?
+  hamletId            String?             @db.ObjectId
+  hamletName          String?
+  addressDetail       String?
+  address             String?             // Chuỗi địa chỉ tài sản đầy đủ
+
+  // Định giá (Bắt buộc với THE_CHAP, không bắt buộc với TIN_CHAP)
+  valuationAmount     Float?              @default(0) // Giá trị định giá (VNĐ)
+  valuationMethod     ValuationMethod?    // Phương pháp định giá
+
+  // Chủ sở hữu
+  ownerType           CollateralOwnerType
+  thirdPartyInfo      ThirdPartyInfo?     // Thông tin bên thứ 3 (nếu BAO_LANH)
+
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  @@index([loanId])
+  @@index([certificateNumber])
+  @@index([communeId, hamletId])
+  @@map("collaterals")
+}
+
+// ============================================================
+// DISBURSEMENT (Giải ngân)
+// ============================================================
+
+model Disbursement {
+  id               String    @id @default(auto()) @map("_id") @db.ObjectId
+  loanId           String    @db.ObjectId
+  loan             Loan      @relation(fields: [loanId], references: [id])
+
+  disbursementDate DateTime  // Ngày giải ngân
+  amount           Float     // Số tiền giải ngân
+  note             String?   // Ghi chú
+
+  // Trạng thái hiệu lực / Hủy giao dịch (Soft Delete để giữ dấu vết kiểm toán)
+  isDeleted        Boolean?  @default(false)
+  deletedAt        DateTime?
+  deletedReason    String?
+  updatedReason    String?
+
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([loanId])
+  @@index([disbursementDate])
+  @@index([isDeleted])
+  @@map("disbursements")
+}
+
+// ============================================================
+// REPAYMENT (Trả nợ)
+// ============================================================
+
+model Repayment {
+  id              String    @id @default(auto()) @map("_id") @db.ObjectId
+  loanId          String    @db.ObjectId
+  loan            Loan      @relation(fields: [loanId], references: [id])
+
+  repaymentDate     DateTime  // Ngày trả
+  principalAmount   Float     @default(0) // Số tiền gốc trả
+  interestAmount    Float     @default(0) // Số tiền lãi trả
+  interestDays      Int       @default(0) // Số ngày tính lãi (để đối soát)
+  interestStartDate DateTime? // Ngày bắt đầu kỳ tính lãi
+  interestEndDate   DateTime? // Ngày kết thúc kỳ tính lãi (Ngày thu lãi đến)
+  note              String?   // Ghi chú
+
+  // Trạng thái hiệu lực / Hủy giao dịch (Soft Delete để giữ dấu vết kiểm toán)
+  isDeleted       Boolean?  @default(false)
+  deletedAt       DateTime?
+  deletedReason   String?
+  updatedReason   String?
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([loanId])
+  @@index([repaymentDate])
+  @@index([isDeleted])
+  @@map("repayments")
+}
+
+// ============================================================
+// INTEREST RATE CONFIG (Bảng lãi suất)
+// ============================================================
+
+// Embedded: Bậc lãi suất theo mức tiền vay
+type InterestRateTier {
+  minAmount   Float   // Số tiền vay tối thiểu (VNĐ)
+  maxAmount   Float   // Số tiền vay tối đa (VNĐ)
+  annualRate  Float   // Lãi suất năm (%)
+}
+
+model InterestRateConfig {
+  id            String             @id @default(auto()) @map("_id") @db.ObjectId
+  effectiveDate DateTime           // Ngày áp dụng
+  termType      LoanTermType       // Áp dụng cho Ngắn hạn / Trung hạn
+  tiers         InterestRateTier[] // Các bậc lãi suất
+  isActive      Boolean            @default(true)
+  note          String?            // Ghi chú
+
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  @@index([effectiveDate])
+  @@index([termType, isActive])
+  @@map("interest_rate_configs")
+}
+
+// ============================================================
+// ASSET PRICING RULE (Bảng giá tài sản)
+// ============================================================
+
+model AssetPricingRule {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  landCategory    String   // Loại đất: "Đất ruộng", "Cập kênh", "Cập đường lộ"...
+  pricePerSqMeter Float    // Giá trên m² (VNĐ)
+  effectiveDate   DateTime // Ngày áp dụng
+  isActive        Boolean  @default(true)
+  note            String?  // Ghi chú
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([landCategory, isActive])
+  @@index([effectiveDate])
+  @@map("asset_pricing_rules")
+}
+
