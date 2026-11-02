@@ -25,6 +25,7 @@ export interface CreateCollateralDto {
   certificateType?: CollateralCertificateType | null;
   assetCode: string; // Mã số tài sản (bắt buộc, duy nhất toàn hệ thống)
   certificateNumber: string; // Số cấp giấy chứng nhận (cho phép trùng)
+  issueBookNumber?: string | null; // Số vào sổ cấp giấy chứng nhận
   sheetNumber: string; // Số tờ
   plotNumber: string; // Số thửa
   area: number; // Diện tích ghi trên giấy chứng nhận (m²)

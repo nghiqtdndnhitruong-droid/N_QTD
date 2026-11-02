@@ -84,6 +84,7 @@ import {
   useUpdateLoanStatus,
 } from '../hooks/use-loans';
 import {
+  HEIR_RELATIONSHIP_OPTIONS,
   heirFormSchema,
   loanPlanFormSchema,
   loanTermsStepSchema,
@@ -831,12 +832,24 @@ export function LoanCreatePage() {
                 label="Họ và tên người thừa kế"
                 required
               />
-              <FormTextField
+              <FormSelectField
                 control={heirForm.control}
                 name="relationship"
                 label="Quan hệ với người vay"
                 required
-                placeholder="VD: Vợ, Chồng, Con trai..."
+                options={
+                  draftLoan?.heir?.relationship &&
+                  !HEIR_RELATIONSHIP_OPTIONS.some((o) => o.value === draftLoan.heir?.relationship)
+                    ? [
+                        ...HEIR_RELATIONSHIP_OPTIONS,
+                        {
+                          value: draftLoan.heir.relationship,
+                          label: draftLoan.heir.relationship,
+                        },
+                      ]
+                    : (HEIR_RELATIONSHIP_OPTIONS as any)
+                }
+                placeholder="Chọn quan hệ (Vợ, Con, Cha, Mẹ)"
               />
               <FormTextField
                 control={heirForm.control}

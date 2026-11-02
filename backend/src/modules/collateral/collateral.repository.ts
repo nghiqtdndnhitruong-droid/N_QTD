@@ -143,6 +143,7 @@ export class CollateralRepository {
         assetType: data.assetType,
         assetCode: data.assetCode.trim(),
         certificateNumber: data.certificateNumber.trim(),
+        issueBookNumber: data.issueBookNumber ? data.issueBookNumber.trim() : null,
         sheetNumber: data.sheetNumber.trim(),
         plotNumber: data.plotNumber.trim(),
         area: data.area,
@@ -189,6 +190,9 @@ export class CollateralRepository {
     if (data.assetCode !== undefined) updateData.assetCode = data.assetCode.trim();
     if (data.certificateNumber !== undefined) {
       updateData.certificateNumber = data.certificateNumber.trim();
+    }
+    if (data.issueBookNumber !== undefined) {
+      updateData.issueBookNumber = data.issueBookNumber ? data.issueBookNumber.trim() : null;
     }
     if (data.sheetNumber !== undefined) updateData.sheetNumber = data.sheetNumber.trim();
     if (data.plotNumber !== undefined) updateData.plotNumber = data.plotNumber.trim();

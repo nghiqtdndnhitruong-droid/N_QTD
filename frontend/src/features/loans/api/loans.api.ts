@@ -5,7 +5,6 @@ import {
   apiPatch,
   apiPost,
   apiPut,
-  httpClient,
 } from '@/lib/http';
 import type { LoanStatus, Paginated } from '@/shared/types';
 import type {
@@ -17,7 +16,6 @@ import type {
   CreateRepaymentPayload,
   DeleteLoanResult,
   Disbursement,
-  GetLoanTemplatesResponse,
   InterestEstimate,
   Loan,
   LoanListQuery,
@@ -201,88 +199,5 @@ export const loansApi = {
     return apiDelete(`/repayments/${repaymentId}`, {
       data: reason ? { reason } : undefined,
     });
-  },
-
-  // Hồ sơ / Biểu mẫu Word
-  getLoanTemplates(loanId: string): Promise<GetLoanTemplatesResponse> {
-    return apiGet<GetLoanTemplatesResponse>(`/loans/${loanId}/documents/templates`);
-  },
-
-  async downloadLoanDocument(
-    loanId: string,
-    templateKey: string,
-    fallbackFileName?: string,
-  ): Promise<void> {
-    const response = await httpClient.get(`/loans/${loanId}/documents/generate`, {
-      params: { templateKey },
-      responseType: 'blob',
-    });
-
-    let fileName = fallbackFileName || `ho_so_vay_${loanId}_${templateKey}.docx`;
-    const disposition = response.headers['content-disposition'];
-    if (disposition) {
-      const match = disposition.match(/filename\*=UTF-8''([^;]+)|filename="?([^";]+)"?/i);
-      const extracted = match?.[1] || match?.[2];
-      if (extracted) {
-        fileName = decodeURIComponent(extracted);
-      }
-    }
-
-    const blobUrl = window.URL.createObjectURL(new Blob([response.data]));
-    const link = document.createElement('a');
-    link.href = blobUrl;
-    link.setAttribute('download', fileName);
-    document.body.appendChild(link);
-    link.click();
-    link.parentNode?.removeChild(link);
-    window.URL.revokeObjectURL(blobUrl);
-  },
-  async exportLoanDocuments(
-    loanId: string,
-    templateKeys: string[],
-    fallbackFileName?: string
-  ): Promise<{ fileName: string; isZip: boolean }> {
-    try {
-      const response = await httpClient.post(
-        `/loans/${loanId}/documents/export`,
-        { templateKeys },
-        { responseType: 'blob' }
-      );
-
-      let fileName =
-        fallbackFileName ||
-        (templateKeys.length === 1 ? `ho_so_vay_${loanId}.docx` : `ho_so_vay_${loanId}.zip`);
-
-      const disposition = response.headers['content-disposition'];
-      if (disposition) {
-        const match = disposition.match(/filename\*=UTF-8''([^;]+)|filename="?([^";]+)"?/i);
-        const extracted = match?.[1] || match?.[2];
-        if (extracted) {
-          fileName = decodeURIComponent(extracted);
-        }
-      }
-
-      const isZip = fileName.endsWith('.zip') || response.data.type === 'application/zip';
-      const blobUrl = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = blobUrl;
-      link.setAttribute('download', fileName);
-      document.body.appendChild(link);
-      link.click();
-      link.parentNode?.removeChild(link);
-      window.URL.revokeObjectURL(blobUrl);
-
-      return { fileName, isZip };
-    } catch (err: any) {
-      if (err.response?.data instanceof Blob) {
-        try {
-          const text = await err.response.data.text();
-          const json = JSON.parse(text);
-          err.response.data = json;
-          if (json.message) err.message = json.message;
-        } catch (_) {}
-      }
-      throw err;
-    }
   },
 };

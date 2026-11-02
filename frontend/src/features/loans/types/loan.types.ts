@@ -117,6 +117,7 @@ export interface Collateral {
   certificateType?: CollateralCertificateType | null;
   assetCode: string;
   certificateNumber: string;
+  issueBookNumber?: string | null;
   sheetNumber: string;
   plotNumber: string;
   area: number;
@@ -272,30 +273,6 @@ export interface InterestEstimate {
   formula: string;
 }
 
-export interface LoanDocumentTemplateItem {
-  key: string;
-  code: string;
-  title: string;
-  description: string;
-  loanType: LoanType | 'ALL';
-  fileName: string;
-  suggestedFileName: string;
-}
-
-export interface DocumentValidationWarning {
-  field: string;
-  message: string;
-  isBlocking?: boolean;
-}
-
-export interface GetLoanTemplatesResponse {
-  loanId: string;
-  loanType: LoanType;
-  contractNumber: string | null;
-  templates: LoanDocumentTemplateItem[];
-  warnings: DocumentValidationWarning[];
-}
-
 export interface CreateLoanPayload {
   memberId: string;
   loanType: LoanType;
@@ -318,6 +295,7 @@ export interface CreateCollateralPayload {
   certificateType?: CollateralCertificateType | null;
   assetCode: string;
   certificateNumber: string;
+  issueBookNumber?: string | null;
   sheetNumber: string;
   plotNumber: string;
   area: number;

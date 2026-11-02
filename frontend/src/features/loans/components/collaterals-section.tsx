@@ -154,6 +154,7 @@ export function CollateralsSection({
       assetType: CollateralAssetType.QUYEN_SU_DUNG_DAT,
       assetCode: '',
       certificateNumber: '',
+      issueBookNumber: '',
       sheetNumber: '',
       plotNumber: '',
       area: 1000,
@@ -211,6 +212,7 @@ export function CollateralsSection({
       assetType: CollateralAssetType.QUYEN_SU_DUNG_DAT,
       assetCode: `TS-${Date.now().toString().slice(-5)}`,
       certificateNumber: '',
+      issueBookNumber: '',
       sheetNumber: '',
       plotNumber: '',
       area: 1000,
@@ -240,6 +242,7 @@ export function CollateralsSection({
       assetType: item.assetType,
       assetCode: item.assetCode ?? '',
       certificateNumber: item.certificateNumber,
+      issueBookNumber: item.issueBookNumber ?? '',
       sheetNumber: item.sheetNumber,
       plotNumber: item.plotNumber,
       area: item.area,
@@ -300,6 +303,7 @@ export function CollateralsSection({
       ...values,
       assetCode: values.assetCode.trim(),
       certificateNumber: values.certificateNumber.trim(),
+      issueBookNumber: values.issueBookNumber?.trim() || undefined,
       issueDate: values.issueDate || undefined,
       valuationMethod: isUnsecured ? null : values.valuationMethod,
       valuationAmount: isUnsecured ? 0 : (values.valuationAmount ?? 0),
@@ -630,23 +634,23 @@ export function CollateralsSection({
                   required
                   options={COLLATERAL_CERTIFICATE_TYPE_OPTIONS}
                   wrapperClassName="sm:col-span-2"
-                  hint="Chọn đúng loại giấy tờ pháp lý để biểu mẫu Word sinh chính xác cụm câu pháp lý"
+                  hint="Dùng để ghép cụm 'Số vào sổ cấp [Loại GCN]' trong biểu mẫu Word"
                 />
                 <FormTextField
                   control={control}
                   name="assetCode"
-                  label="Mã số tài sản (Duy nhất)"
+                  label="Mã số tài sản (Mã số đất - Duy nhất)"
                   required
-                  placeholder="VD: TS-2026-001"
-                  hint="Bắt buộc duy nhất trên toàn hệ thống, không được trùng với tài sản khác"
+                  placeholder="VD: TS000001"
+                  hint="Mã định danh tài sản trong hệ thống (tương ứng vị trí Mã số đất)"
                 />
                 <FormTextField
                   control={control}
                   name="certificateNumber"
-                  label="Số phát hành GCN (Sổ đỏ)"
+                  label="Số phát hành GCN"
                   required
-                  placeholder="VD: CS 012345"
-                  hint="Cho phép nhiều tài sản có cùng Số GCN"
+                  placeholder="VD: 6841 QSDĐ/129-UBH hoặc BM 654321"
+                  hint="Số phát hành ghi trên GCN (tương ứng 'Giấy chứng nhận Quyền sử dụng đất số:' trong biểu mẫu Word)"
                 />
                 <FormTextField
                   control={control}

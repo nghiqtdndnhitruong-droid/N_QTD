@@ -46,6 +46,13 @@ export const loanTermsStepSchema = z
 
 export type LoanTermsStepValues = z.infer<typeof loanTermsStepSchema>;
 
+export const HEIR_RELATIONSHIP_OPTIONS = [
+  { value: 'Vợ', label: 'Vợ' },
+  { value: 'Con', label: 'Con' },
+  { value: 'Cha', label: 'Cha' },
+  { value: 'Mẹ', label: 'Mẹ' },
+] as const;
+
 export const heirFormSchema = z.object({
   fullName: z.string().trim().min(2, 'Họ tên người thừa kế tối thiểu 2 ký tự'),
   yearOfBirth: z
@@ -154,6 +161,7 @@ const baseCollateralObjectSchema = z.object({
     .string({ required_error: 'Số cấp giấy chứng nhận là bắt buộc' })
     .trim()
     .min(1, 'Số cấp giấy chứng nhận là bắt buộc'),
+  issueBookNumber: z.string().trim().optional(),
   sheetNumber: z.string().trim().min(1, 'Số tờ bản đồ là bắt buộc'),
   plotNumber: z.string().trim().min(1, 'Số thửa đất là bắt buộc'),
   area: z

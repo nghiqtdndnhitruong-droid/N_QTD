@@ -54,7 +54,6 @@ import { DisbursementsSection } from '../components/disbursements-section';
 import { LoanSummaryStrip } from '../components/loan-summary-strip';
 import { RelatedPersonsSection } from '../components/related-persons-section';
 import { RepaymentsSection } from '../components/repayments-section';
-import { LoanDocumentModal } from '../components/loan-document-modal';
 import {
   useDeleteLoan,
   useLoanDetail,
@@ -67,7 +66,6 @@ export function LoanDetailPage() {
   const navigate = useNavigate();
   const [statusTarget, setStatusTarget] = useState<LoanStatus | null>(null);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
-  const [documentModalOpen, setDocumentModalOpen] = useState(false);
 
   const { data: loan, isLoading, error, refetch } = useLoanDetail(id);
   const { data: summary, isLoading: isSummaryLoading } = useLoanSummary(id);
@@ -159,16 +157,6 @@ export function LoanDetailPage() {
                 Xóa hồ sơ vay
               </Button>
             </Can>
-
-            <Button
-              variant="outline"
-              size="sm"
-              className="border-primary-300 bg-primary-50/70 text-primary-700 hover:bg-primary-100"
-              leftIcon={<FileText className="h-4 w-4" />}
-              onClick={() => setDocumentModalOpen(true)}
-            >
-              Xuất hồ sơ Word
-            </Button>
 
             <Can perm="document:print">
               <DropdownMenu>
@@ -613,14 +601,6 @@ export function LoanDetailPage() {
         tone="danger"
         isLoading={deleteLoanMutation.isPending}
         onConfirm={handleDeleteLoan}
-      />
-
-      <LoanDocumentModal
-        open={documentModalOpen}
-        onOpenChange={setDocumentModalOpen}
-        loanId={loan.id}
-        loanType={loan.loanType}
-        contractNumber={loan.contractNumber}
       />
     </div>
   );

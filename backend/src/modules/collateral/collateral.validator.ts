@@ -48,6 +48,7 @@ export const baseCollateralSchema = z.object({
     .min(1, 'Mã số tài sản là bắt buộc')
     .max(60, 'Mã số tài sản tối đa 60 ký tự'),
   certificateNumber: z.string({ required_error: 'Số cấp GCN là bắt buộc' }).trim().min(1),
+  issueBookNumber: z.string().trim().nullable().optional(),
   sheetNumber: z.string({ required_error: 'Số tờ là bắt buộc' }).trim().min(1),
   plotNumber: z.string({ required_error: 'Số thửa là bắt buộc' }).trim().min(1),
   area: z

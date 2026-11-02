@@ -247,8 +247,10 @@ export class LoanRepository {
           data: {
             loanId: createdLoan.id,
             assetType: c.assetType,
+            certificateType: (c as any).certificateType || null,
             assetCode: c.assetCode.trim(),
             certificateNumber: c.certificateNumber.trim(),
+            issueBookNumber: (c as any).issueBookNumber ? (c as any).issueBookNumber.trim() : null,
             sheetNumber: c.sheetNumber.trim(),
             plotNumber: c.plotNumber.trim(),
             area: c.area,

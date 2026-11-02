@@ -220,11 +220,3 @@ export function useDeleteRelatedPerson(loanId: string) {
     onSuccess: () => invalidateLoanEverything(qc, loanId),
   });
 }
-
-export function useLoanTemplates(loanId: string | undefined, enabled = true) {
-  return useQuery({
-    queryKey: ['loans', loanId, 'templates'],
-    queryFn: () => loansApi.getLoanTemplates(loanId!),
-    enabled: Boolean(loanId) && enabled,
-  });
-}

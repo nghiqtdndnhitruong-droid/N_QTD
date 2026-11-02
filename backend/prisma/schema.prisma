@@ -356,6 +356,7 @@ model Collateral {
   // Thông tin sổ đỏ
   assetCode           String              @unique // Mã số tài sản duy nhất toàn hệ thống
   certificateNumber   String              // Số cấp giấy chứng nhận (cho phép trùng)
+  issueBookNumber     String?             // Số vào sổ cấp giấy chứng nhận
   sheetNumber         String              // Số tờ
   plotNumber          String              // Số thửa
   area                Float               // Diện tích ghi trên giấy chứng nhận (m²)

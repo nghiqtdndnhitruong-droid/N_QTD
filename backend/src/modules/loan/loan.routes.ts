@@ -13,7 +13,6 @@ import { collateralRoutes } from '../collateral/collateral.routes';
 import { disbursementRoutes } from '../disbursement/disbursement.routes';
 import { repaymentRoutes } from '../repayment/repayment.routes';
 import { relatedPersonRoutes } from '../related-person/related-person.routes';
-import { documentRoutes } from '../document/document.routes';
 
 const router = Router();
 
@@ -22,7 +21,6 @@ router.use('/:loanId/collaterals', collateralRoutes);
 router.use('/:loanId/disbursements', disbursementRoutes);
 router.use('/:loanId/repayments', repaymentRoutes);
 router.use('/:loanId/related-persons', relatedPersonRoutes);
-router.use('/:loanId/documents', documentRoutes);
 
 router.post(
   '/',
