@@ -543,6 +543,7 @@ export function LoanDetailPage() {
             loanAmount={loan.loanAmount}
             collaterals={loan.collaterals ?? []}
             readOnly={!isEditable}
+            hasHeir={Boolean(loan.heir?.fullName?.trim())}
           />
         </TabsContent>
 

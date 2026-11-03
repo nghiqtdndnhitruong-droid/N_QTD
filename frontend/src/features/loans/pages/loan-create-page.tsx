@@ -1225,6 +1225,7 @@ export function LoanCreatePage() {
             loanType={draftLoan.loanType}
             loanAmount={draftLoan.loanAmount}
             collaterals={draftLoan.collaterals ?? []}
+            hasHeir={Boolean(draftLoan.heir?.fullName?.trim())}
           />
 
           {isLoanEligibleForRelatedPerson(draftLoan.loanType, draftLoan.loanAmount) && (

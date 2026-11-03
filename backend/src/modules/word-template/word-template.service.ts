@@ -349,7 +349,43 @@ export class WordTemplateService {
     if (isLoop) {
       if (k.includes('TAI_SAN') || k.includes('COLLATERAL')) return { path: 'collaterals', dataType: 'LIST' };
       if (k.includes('LIEN_QUAN') || k.includes('RELATED')) return { path: 'relatedPersons', dataType: 'LIST' };
+      if (k.includes('CHI_PHI') || k.includes('EXPENSE')) return { path: 'DANH_SACH_CHI_PHI', dataType: 'LIST' };
+      if (k.includes('NGUON_THU') || k.includes('REVENUE')) return { path: 'DANH_SACH_NGUON_THU', dataType: 'LIST' };
       return null;
+    }
+
+    // Phương án vay vốn
+    if (k.startsWith('PHUONG_AN.') || k.startsWith('PHUONG_AN_')) {
+      if (k.includes('MUC_DICH')) return { path: 'PHUONG_AN.MUC_DICH', dataType: 'TEXT' };
+      if (k.includes('THOI_HAN_VAY') || k.includes('THOI_HAN')) return { path: 'PHUONG_AN.THOI_HAN_VAY', dataType: 'TEXT' };
+      if (k.includes('TONG_NHU_CAU_VON') || k.includes('NHU_CAU_VON')) {
+        if (k.includes('CHU')) return { path: 'PHUONG_AN.TONG_NHU_CAU_VON_CHU', dataType: 'CURRENCY_WORDS' };
+        return { path: 'PHUONG_AN.TONG_NHU_CAU_VON', dataType: 'CURRENCY' };
+      }
+      if (k.includes('VON_TU_CO')) {
+        if (k.includes('CHU')) return { path: 'PHUONG_AN.VON_TU_CO_CHU', dataType: 'CURRENCY_WORDS' };
+        return { path: 'PHUONG_AN.VON_TU_CO', dataType: 'CURRENCY' };
+      }
+      if (k.includes('VON_VAY_QTD') || k.includes('VON_VAY')) {
+        if (k.includes('CHU')) return { path: 'PHUONG_AN.VON_VAY_QTD_CHU', dataType: 'CURRENCY_WORDS' };
+        return { path: 'PHUONG_AN.VON_VAY_QTD', dataType: 'CURRENCY' };
+      }
+      if (k.includes('CHI_PHI')) {
+        if (k.includes('GOP')) return { path: 'PHUONG_AN.CHI_PHI_GOP', dataType: 'TEXT' };
+        if (k.includes('DANH_SACH')) return { path: 'DANH_SACH_CHI_PHI', dataType: 'LIST' };
+        if (k.includes('CHU')) return { path: 'PHUONG_AN.TONG_CHI_PHI_CHU', dataType: 'CURRENCY_WORDS' };
+        return { path: 'PHUONG_AN.TONG_CHI_PHI', dataType: 'CURRENCY' };
+      }
+      if (k.includes('THU_NHAP') || k.includes('NGUON_THU')) {
+        if (k.includes('GOP')) return { path: 'PHUONG_AN.NGUON_THU_GOP', dataType: 'TEXT' };
+        if (k.includes('DANH_SACH')) return { path: 'DANH_SACH_NGUON_THU', dataType: 'LIST' };
+        if (k.includes('CHU')) return { path: 'PHUONG_AN.TONG_THU_NHAP_CHU', dataType: 'CURRENCY_WORDS' };
+        return { path: 'PHUONG_AN.TONG_THU_NHAP', dataType: 'CURRENCY' };
+      }
+      if (k.includes('LOI_NHUAN')) {
+        if (k.includes('CHU')) return { path: 'PHUONG_AN.LOI_NHUAN_CHU', dataType: 'CURRENCY_WORDS' };
+        return { path: 'PHUONG_AN.LOI_NHUAN', dataType: 'CURRENCY' };
+      }
     }
 
     // Người thừa kế
@@ -390,6 +426,8 @@ export class WordTemplateService {
         return { path: 'TAI_SAN.MA_TAI_SAN_GOP', dataType: 'TEXT' };
       if (k.includes('SO_GCN') || k.includes('SO_PHAT_HANH_GCN') || k.includes('CERTIFICATE_NUMBER'))
         return { path: 'TAI_SAN.SO_GCN_GOP', dataType: 'TEXT' };
+      if (k.includes('SO_VAO_SO_CAP') || k.includes('CAU_SO_VAO_SO') || k.includes('LOAI_VA_SO_GCN'))
+        return { path: 'TAI_SAN.SO_VAO_SO_CAP_GCN_GOP', dataType: 'TEXT' };
       if (k.includes('SO_VAO_SO') || k.includes('ISSUE_BOOK'))
         return { path: 'TAI_SAN.SO_VAO_SO_GOP', dataType: 'TEXT' };
       if (k.includes('SO_THUA') || k.includes('PLOT'))
@@ -406,6 +444,12 @@ export class WordTemplateService {
         return { path: 'TAI_SAN.NGAY_CAP_GOP', dataType: 'TEXT' };
       if (k.includes('NOI_CAP') || k.includes('ISSUE_PLACE'))
         return { path: 'TAI_SAN.NOI_CAP_GOP', dataType: 'TEXT' };
+      if (k.includes('LOAI_GIAY_CHUNG_NHAN') || k.includes('CERTIFICATE_TYPE'))
+        return { path: 'TAI_SAN.LOAI_GIAY_CHUNG_NHAN_GOP', dataType: 'TEXT' };
+      if (k.includes('HINH_THUC') || k.includes('USAGE_FORM'))
+        return { path: 'TAI_SAN.HINH_THUC_SU_DUNG_GOP', dataType: 'TEXT' };
+      if (k.includes('HAN_CHE') || k.includes('USE_RESTRICTIONS'))
+        return { path: 'TAI_SAN.HAN_CHE_SU_DUNG_GOP', dataType: 'TEXT' };
       if (k.includes('MUC_DICH') || k.includes('PURPOSE'))
         return { path: 'TAI_SAN.MUC_DICH_SU_DUNG_GOP', dataType: 'TEXT' };
       if (k.includes('THOI_HAN') || k.includes('DURATION'))
@@ -421,6 +465,8 @@ export class WordTemplateService {
     }
 
     // Thành viên
+    if (k.includes('LOAI_GIAY_TO') || k.includes('ID_TYPE'))
+      return { path: 'member.idType', dataType: 'TEXT' };
     if (k.includes('HO_TEN_NGUOI_VAY') || k.includes('TEN_THANH_VIEN') || k === 'FULL_NAME')
       return { path: 'member.fullName', dataType: 'TEXT' };
     if (k.includes('MA_THANH_VIEN') || k === 'MEMBER_CODE')
@@ -473,9 +519,9 @@ export class WordTemplateService {
       return { path: 'collaterals_summary.totalArea', dataType: 'NUMBER' };
 
     // Ngày tháng
-    if (k === 'NGAY_HIEN_TAI' || k === 'DAY') return { path: 'fund.currentDay', dataType: 'TEXT' };
-    if (k === 'THANG_HIEN_TAI' || k === 'MONTH') return { path: 'fund.currentMonth', dataType: 'TEXT' };
-    if (k === 'NAM_HIEN_TAI' || k === 'YEAR') return { path: 'fund.currentYear', dataType: 'TEXT' };
+    if (k === 'NGAY' || k === 'NGAY_HIEN_TAI' || k === 'DAY') return { path: 'fund.currentDay', dataType: 'TEXT' };
+    if (k === 'THANG' || k === 'THANG_HIEN_TAI' || k === 'MONTH') return { path: 'fund.currentMonth', dataType: 'TEXT' };
+    if (k === 'NAM' || k === 'NAM_HIEN_TAI' || k === 'YEAR') return { path: 'fund.currentYear', dataType: 'TEXT' };
 
     return null;
   }

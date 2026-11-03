@@ -3,7 +3,7 @@ import { prisma } from '../src/config/database';
 
 async function main() {
   console.log('Seeding Global Word Keyword Catalog...');
-  await globalWordKeywordService.seedDefaultCatalog();
+  await globalWordKeywordService.seedDefaultCatalog(true);
   const count = await prisma.globalWordKeyword.count();
   console.log(`✅ Done! Total keywords in catalog: ${count}`);
 }

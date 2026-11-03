@@ -67,6 +67,7 @@ export const baseCollateralSchema = z.object({
   origin: z.string().trim().optional(),
   usagePurpose: z.string().trim().optional(),
   usageDuration: z.string().trim().optional(),
+  usageForm: z.string().trim().optional(),
   useRestrictions: z.string().trim().optional(),
   issuePlace: z.string().trim().optional(),
   issueDate: z

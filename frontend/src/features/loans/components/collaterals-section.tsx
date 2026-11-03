@@ -81,6 +81,7 @@ export interface CollateralsSectionProps {
   loanAmount: number;
   collaterals: Collateral[];
   readOnly?: boolean;
+  hasHeir?: boolean;
 }
 
 export function CollateralsSection({
@@ -89,6 +90,7 @@ export function CollateralsSection({
   loanAmount,
   collaterals,
   readOnly = false,
+  hasHeir = false,
 }: CollateralsSectionProps) {
   const isUnsecured = loanType === LoanType.TIN_CHAP;
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -113,6 +115,25 @@ export function CollateralsSection({
     () => communes.find((c) => c.id === filterCommuneId)?.hamlets ?? [],
     [communes, filterCommuneId],
   );
+
+  // Nếu hồ sơ vay không có người thừa kế thì chỉ cho chọn người vay hoặc bên bảo lãnh
+  const ownerTypeOptions = useMemo(() => {
+    return Object.entries(COLLATERAL_OWNER_TYPE_LABELS)
+      .filter(([value]) => {
+        if (!hasHeir) {
+          return (
+            value === CollateralOwnerType.NGUOI_VAY_CA_NHAN ||
+            value === CollateralOwnerType.NGUOI_VAY_HO ||
+            value === CollateralOwnerType.BAO_LANH
+          );
+        }
+        return true;
+      })
+      .map(([value, label]) => ({
+        value,
+        label,
+      }));
+  }, [hasHeir]);
 
   const filteredCollaterals = useMemo(() => {
     return collaterals.filter((item) => {
@@ -152,6 +173,7 @@ export function CollateralsSection({
     mode: 'onTouched',
     defaultValues: {
       assetType: CollateralAssetType.QUYEN_SU_DUNG_DAT,
+      certificateType: CollateralCertificateType.GCN,
       assetCode: '',
       certificateNumber: '',
       issueBookNumber: '',
@@ -163,6 +185,7 @@ export function CollateralsSection({
       origin: 'Nhà nước công nhận quyền sử dụng đất',
       usagePurpose: 'Đất chuyên trồng lúa nước',
       usageDuration: 'Lâu dài',
+      usageForm: 'Sử dụng riêng',
       useRestrictions: '',
       issuePlace: 'Sở Tài nguyên và Môi trường',
       issueDate: '',
@@ -210,6 +233,7 @@ export function CollateralsSection({
     // Địa bàn tài sản hoàn toàn độc lập với địa bàn người vay: người dùng tự chọn Tỉnh -> Xã -> Ấp riêng
     reset({
       assetType: CollateralAssetType.QUYEN_SU_DUNG_DAT,
+      certificateType: CollateralCertificateType.GCN,
       assetCode: `TS-${Date.now().toString().slice(-5)}`,
       certificateNumber: '',
       issueBookNumber: '',
@@ -221,6 +245,7 @@ export function CollateralsSection({
       origin: 'Nhà nước công nhận quyền sử dụng đất',
       usagePurpose: 'Đất trồng cây lâu năm',
       usageDuration: 'Lâu dài',
+      usageForm: 'Sử dụng riêng',
       useRestrictions: 'Không',
       issuePlace: 'Sở Tài nguyên và Môi trường',
       issueDate: '',
@@ -240,6 +265,7 @@ export function CollateralsSection({
     setEditingItem(item);
     reset({
       assetType: item.assetType,
+      certificateType: item.certificateType ?? CollateralCertificateType.GCN,
       assetCode: item.assetCode ?? '',
       certificateNumber: item.certificateNumber,
       issueBookNumber: item.issueBookNumber ?? '',
@@ -251,6 +277,7 @@ export function CollateralsSection({
       origin: item.origin ?? '',
       usagePurpose: item.usagePurpose ?? '',
       usageDuration: item.usageDuration ?? '',
+      usageForm: item.usageForm ?? '',
       useRestrictions: item.useRestrictions ?? '',
       issuePlace: item.issuePlace ?? '',
       issueDate: item.issueDate ? item.issueDate.slice(0, 10) : '',
@@ -482,6 +509,7 @@ export function CollateralsSection({
                 <tr>
                   <th className="px-3.5 py-2.5">Mã TS (Duy nhất) / Số GCN</th>
                   <th className="px-3.5 py-2.5">Loại tài sản & Thửa đất</th>
+                  <th className="px-3.5 py-2.5">Hình thức & Hạn chế SD</th>
                   <th className="px-3.5 py-2.5">Địa bàn tài sản (Ấp → Xã → Tỉnh)</th>
                   <th className="px-3.5 py-2.5 text-right">Diện tích</th>
                   <th className="px-3.5 py-2.5">Chủ sở hữu</th>
@@ -508,6 +536,14 @@ export function CollateralsSection({
                         Tờ: <strong>{item.sheetNumber}</strong> · Thửa:{' '}
                         <strong>{item.plotNumber}</strong>
                         {item.usagePurpose ? ` · ${item.usagePurpose}` : ''}
+                      </div>
+                    </td>
+                    <td className="px-3.5 py-3">
+                      <div className="text-xs font-medium text-slate-800">
+                        {item.usageForm || '—'}
+                      </div>
+                      <div className="text-[11px] text-slate-500">
+                        HC: {item.useRestrictions || 'Không'}
                       </div>
                     </td>
                     <td className="px-3.5 py-3">
@@ -706,6 +742,18 @@ export function CollateralsSection({
                   label="Thời hạn sử dụng"
                   placeholder="VD: Lâu dài / Đến năm 2070"
                 />
+                <FormTextField
+                  control={control}
+                  name="usageForm"
+                  label="Hình thức sử dụng"
+                  placeholder="VD: Sử dụng riêng / Sử dụng chung"
+                />
+                <FormTextField
+                  control={control}
+                  name="useRestrictions"
+                  label="Hạn chế sử dụng"
+                  placeholder="VD: Không / Không có"
+                />
               </div>
 
               {/* Địa bàn riêng của tài sản thế chấp */}
@@ -782,10 +830,7 @@ export function CollateralsSection({
                   name="ownerType"
                   label="Tư cách chủ sở hữu đứng tên trên GCN"
                   required
-                  options={Object.entries(COLLATERAL_OWNER_TYPE_LABELS).map(([value, label]) => ({
-                    value,
-                    label,
-                  }))}
+                  options={ownerTypeOptions}
                 />
 
                 {isThirdParty && (

@@ -1,5 +1,5 @@
 import { prisma } from '../../config/database';
-import { Loan, LoanStatus, LoanType, Prisma } from '@prisma/client';
+import { CollateralCertificateType, Loan, LoanStatus, LoanType, Prisma } from '@prisma/client';
 import { CreateLoanDto, LoanFilterQuery, UpdateLoanDto } from './loan.types';
 import { ResolvedLocationSnapshot } from '../area/area.types';
 import { parsePagination } from '../../shared/utils/pagination.util';
@@ -247,7 +247,7 @@ export class LoanRepository {
           data: {
             loanId: createdLoan.id,
             assetType: c.assetType,
-            certificateType: (c as any).certificateType || null,
+            certificateType: (c as any).certificateType || CollateralCertificateType.GCN,
             assetCode: c.assetCode.trim(),
             certificateNumber: c.certificateNumber.trim(),
             issueBookNumber: (c as any).issueBookNumber ? (c as any).issueBookNumber.trim() : null,
@@ -257,6 +257,7 @@ export class LoanRepository {
             origin: c.origin,
             usagePurpose: c.usagePurpose,
             usageDuration: c.usageDuration,
+            usageForm: c.usageForm,
             useRestrictions: c.useRestrictions,
             issuePlace: c.issuePlace,
             issueDate: c.issueDate ? new Date(c.issueDate) : null,

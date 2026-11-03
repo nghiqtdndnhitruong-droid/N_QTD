@@ -126,6 +126,7 @@ export interface Collateral {
   origin?: string | null;
   usagePurpose?: string | null;
   usageDuration?: string | null;
+  usageForm?: string | null;
   useRestrictions?: string | null;
   issuePlace?: string | null;
   issueDate?: string | null;
@@ -304,6 +305,7 @@ export interface CreateCollateralPayload {
   origin?: string;
   usagePurpose?: string;
   usageDuration?: string;
+  usageForm?: string;
   useRestrictions?: string;
   issuePlace?: string;
   issueDate?: string;

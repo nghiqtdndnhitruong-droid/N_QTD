@@ -102,7 +102,7 @@ export const COLLATERAL_ASSET_TYPE_OPTIONS = [
 export const COLLATERAL_CERTIFICATE_TYPE_LABELS: Record<CollateralCertificateType, string> = {
   GCN: 'GCN',
   GIAY_CHUNG_NHAN: 'Giấy chứng nhận',
-  VAO_SO_CAP_GIAY_CHUNG_NHAN_QUYEN_SU_DUNG_DAT: 'Vào sổ cấp giấy chứng nhận quyền sử dụng đất',
+  VAO_SO_CAP_GIAY_CHUNG_NHAN_QUYEN_SU_DUNG_DAT: 'Vào sổ cấp giấy chứng nhận quyền sử dụng đất Số',
   GIAY_CHUNG_NHAN_QUYEN_SU_DUNG_DAT: 'Giấy chứng nhận quyền sử dụng đất',
 };
 
@@ -118,7 +118,7 @@ export const COLLATERAL_CERTIFICATE_TYPE_OPTIONS = [
   },
   {
     value: CollateralCertificateType.VAO_SO_CAP_GIAY_CHUNG_NHAN_QUYEN_SU_DUNG_DAT,
-    label: 'Vào sổ cấp giấy chứng nhận quyền sử dụng đất',
+    label: 'Vào sổ cấp giấy chứng nhận quyền sử dụng đất Số',
   },
   {
     value: CollateralCertificateType.GIAY_CHUNG_NHAN_QUYEN_SU_DUNG_DAT,
@@ -131,6 +131,7 @@ export const COLLATERAL_OWNER_TYPE_LABELS: Record<CollateralOwnerType, string> =
   NGUOI_VAY_HO: 'Người vay đứng tên hộ gia đình',
   NGUOI_THUA_KE_CA_NHAN: 'Người thừa kế đứng tên cá nhân',
   NGUOI_THUA_KE_HO: 'Người thừa kế đứng tên hộ gia đình',
+  NGUOI_VAY_VA_NGUOI_THUA_KE: 'Người vay và người thừa kế cùng đứng tên',
   BAO_LANH: 'Bên thứ ba bảo lãnh',
 };
 

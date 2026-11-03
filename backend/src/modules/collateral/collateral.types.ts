@@ -34,6 +34,7 @@ export interface CreateCollateralDto {
   origin?: string; // Nguồn gốc
   usagePurpose?: string; // Mục đích sử dụng
   usageDuration?: string; // Thời hạn sử dụng
+  usageForm?: string; // Hình thức sử dụng
   useRestrictions?: string; // Hạn chế sử dụng
   issuePlace?: string; // Nơi cấp
   issueDate?: string | Date; // Ngày cấp

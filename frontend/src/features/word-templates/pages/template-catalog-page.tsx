@@ -35,6 +35,7 @@ const CATEGORIES = [
   { value: 'ALL', label: 'Tất cả nhóm' },
   { value: 'NGUOI_VAY', label: 'Người vay / Thành viên' },
   { value: 'KHOAN_VAY', label: 'Khoản vay & Khế ước' },
+  { value: 'PHUONG_AN', label: 'Phương án vay vốn' },
   { value: 'TAI_SAN', label: 'Tài sản bảo đảm' },
   { value: 'NGUOI_LIEN_QUAN', label: 'Người liên quan' },
   { value: 'NGUOI_THUA_KE', label: 'Người thừa kế' },
@@ -309,7 +310,24 @@ export function TemplateCatalogPage() {
                           </div>
                         </td>
                         <td className="px-4 py-3 font-medium text-slate-800">
-                          {kw.displayName}
+                          <div>{kw.displayName}</div>
+                          {kw.isList && kw.itemProperties && typeof kw.itemProperties === 'object' && (
+                            <div className="mt-1 flex flex-wrap gap-1">
+                              <span className="text-[11px] text-slate-500 font-medium">Trường con:</span>
+                              {Object.keys(kw.itemProperties).slice(0, 10).map((prop) => (
+                                <button
+                                  key={prop}
+                                  type="button"
+                                  onClick={() => handleCopy(`{{${prop}}}`)}
+                                  className="inline-flex items-center gap-1 rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[11px] text-slate-700 hover:bg-primary-50 hover:text-primary-700 border border-slate-200 transition-colors"
+                                  title={`Sao chép {{${prop}}}`}
+                                >
+                                  <span>{`{{${prop}}}`}</span>
+                                  <Copy className="h-2.5 w-2.5 text-slate-400" />
+                                </button>
+                              ))}
+                            </div>
+                          )}
                         </td>
                         <td className="px-4 py-3">
                           <Badge tone="info">
@@ -429,12 +447,12 @@ Cho vay tín chấp
               <span>2. Vòng lặp danh sách (FOR Loop)</span>
             </div>
             <p className="text-xs text-slate-600 leading-relaxed">
-              Dùng để lặp danh sách bản ghi thực tế (Tài sản thế chấp, Người liên quan, Người thừa kế). Khi đặt trong bảng Word, hệ thống sẽ tự động nhân bản dòng bảng tương ứng.
+              Dùng để lặp danh sách bản ghi thực tế (Tài sản thế chấp, Người liên quan, Người thừa kế, Chi phí phương án, Nguồn thu phương án). Khi đặt trong bảng Word, hệ thống sẽ tự động nhân bản dòng bảng tương ứng.
             </p>
 
             <div className="space-y-3">
               <div>
-                <span className="text-xs font-semibold text-slate-700">Cú pháp lặp đoạn văn hoặc bảng:</span>
+                <span className="text-xs font-semibold text-slate-700">Cú pháp lặp Tài sản thế chấp:</span>
                 <div className="relative mt-1 rounded bg-slate-900 p-3 font-mono text-xs text-emerald-400">
                   {`{{#FOR ts IN DANH_SACH_TAI_SAN}}
   Mã: {{ts.MA_TAI_SAN}} - Chủ: {{ts.CHU_SO_HUU}}
@@ -443,6 +461,44 @@ Cho vay tín chấp
                     type="button"
                     onClick={() =>
                       handleCopy(`{{#FOR ts IN DANH_SACH_TAI_SAN}}\n  {{ts.MA_TAI_SAN}}\n{{/FOR}}`)
+                    }
+                    className="absolute right-2 top-2 rounded bg-slate-800 p-1 text-slate-400 hover:text-white"
+                    title="Sao chép"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <span className="text-xs font-semibold text-slate-700">Cú pháp lặp Chi phí phương án vay:</span>
+                <div className="relative mt-1 rounded bg-slate-900 p-3 font-mono text-xs text-emerald-400">
+                  {`{{#FOR cp IN DANH_SACH_CHI_PHI}}
+  {{@number}}. {{cp.TEN}}: {{cp.SO_TIEN}}
+{{/FOR}}`}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleCopy(`{{#FOR cp IN DANH_SACH_CHI_PHI}}\n  {{@number}}. {{cp.TEN}}: {{cp.SO_TIEN}}\n{{/FOR}}`)
+                    }
+                    className="absolute right-2 top-2 rounded bg-slate-800 p-1 text-slate-400 hover:text-white"
+                    title="Sao chép"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <span className="text-xs font-semibold text-slate-700">Cú pháp lặp Nguồn thu phương án vay:</span>
+                <div className="relative mt-1 rounded bg-slate-900 p-3 font-mono text-xs text-emerald-400">
+                  {`{{#FOR nt IN DANH_SACH_NGUON_THU}}
+  {{@number}}. {{nt.TEN}}: {{nt.SO_TIEN}}
+{{/FOR}}`}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleCopy(`{{#FOR nt IN DANH_SACH_NGUON_THU}}\n  {{@number}}. {{nt.TEN}}: {{nt.SO_TIEN}}\n{{/FOR}}`)
                     }
                     className="absolute right-2 top-2 rounded bg-slate-800 p-1 text-slate-400 hover:text-white"
                     title="Sao chép"

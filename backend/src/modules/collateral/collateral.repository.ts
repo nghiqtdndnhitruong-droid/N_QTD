@@ -1,5 +1,5 @@
 import { prisma } from '../../config/database';
-import { Collateral, LoanStatus, Prisma } from '@prisma/client';
+import { Collateral, CollateralCertificateType, LoanStatus, Prisma } from '@prisma/client';
 import {
   CollateralFilterQuery,
   CreateCollateralDto,
@@ -141,6 +141,7 @@ export class CollateralRepository {
       data: {
         loanId: data.loanId,
         assetType: data.assetType,
+        certificateType: data.certificateType ?? CollateralCertificateType.GCN,
         assetCode: data.assetCode.trim(),
         certificateNumber: data.certificateNumber.trim(),
         issueBookNumber: data.issueBookNumber ? data.issueBookNumber.trim() : null,
@@ -152,6 +153,7 @@ export class CollateralRepository {
         origin: data.origin,
         usagePurpose: data.usagePurpose,
         usageDuration: data.usageDuration,
+        usageForm: data.usageForm,
         useRestrictions: data.useRestrictions,
         issuePlace: data.issuePlace,
         issueDate: data.issueDate ? new Date(data.issueDate) : null,
@@ -187,6 +189,9 @@ export class CollateralRepository {
     const updateData: Prisma.CollateralUpdateInput = {};
 
     if (data.assetType !== undefined) updateData.assetType = data.assetType;
+    if (data.certificateType !== undefined) {
+      updateData.certificateType = data.certificateType ?? CollateralCertificateType.GCN;
+    }
     if (data.assetCode !== undefined) updateData.assetCode = data.assetCode.trim();
     if (data.certificateNumber !== undefined) {
       updateData.certificateNumber = data.certificateNumber.trim();
@@ -202,6 +207,7 @@ export class CollateralRepository {
     if (data.origin !== undefined) updateData.origin = data.origin;
     if (data.usagePurpose !== undefined) updateData.usagePurpose = data.usagePurpose;
     if (data.usageDuration !== undefined) updateData.usageDuration = data.usageDuration;
+    if (data.usageForm !== undefined) updateData.usageForm = data.usageForm;
     if (data.useRestrictions !== undefined) updateData.useRestrictions = data.useRestrictions;
     if (data.issuePlace !== undefined) updateData.issuePlace = data.issuePlace;
     if (data.issueDate !== undefined) {

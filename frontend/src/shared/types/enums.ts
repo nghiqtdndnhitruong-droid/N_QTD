@@ -60,6 +60,7 @@ export const CollateralOwnerType = {
   NGUOI_VAY_HO: 'NGUOI_VAY_HO',
   NGUOI_THUA_KE_CA_NHAN: 'NGUOI_THUA_KE_CA_NHAN',
   NGUOI_THUA_KE_HO: 'NGUOI_THUA_KE_HO',
+  NGUOI_VAY_VA_NGUOI_THUA_KE: 'NGUOI_VAY_VA_NGUOI_THUA_KE',
   BAO_LANH: 'BAO_LANH',
 } as const;
 export type CollateralOwnerType = (typeof CollateralOwnerType)[keyof typeof CollateralOwnerType];

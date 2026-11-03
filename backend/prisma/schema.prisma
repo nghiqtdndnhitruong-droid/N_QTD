@@ -61,6 +61,7 @@ enum CollateralOwnerType {
   NGUOI_VAY_HO           // Người vay đứng tên hộ
   NGUOI_THUA_KE_CA_NHAN  // Người thừa kế đứng tên cá nhân
   NGUOI_THUA_KE_HO       // Người thừa kế đứng tên hộ
+  NGUOI_VAY_VA_NGUOI_THUA_KE // Người vay và người thừa kế cùng đứng tên
   BAO_LANH               // Bảo lãnh (bên thứ 3)
 }
 
@@ -367,6 +368,7 @@ model Collateral {
   origin              String?             // Nguồn gốc
   usagePurpose        String?             // Mục đích sử dụng
   usageDuration       String?             // Thời hạn sử dụng
+  usageForm           String?             // Hình thức sử dụng (Sử dụng riêng / Sử dụng chung...)
   useRestrictions     String?             // Hạn chế sử dụng
   issuePlace          String?             // Nơi cấp
   issueDate           DateTime?           // Ngày cấp
