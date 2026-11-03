@@ -74,7 +74,13 @@ export function MemberListPage() {
             onClick={(e) => e.stopPropagation()}
             className="font-mono font-semibold text-primary-700 hover:underline"
           >
-            {row.original.memberCode}
+            {row.original.memberCode ? (
+              row.original.memberCode
+            ) : (
+              <Badge tone="warning" className="text-[10px] font-normal">
+                Chưa cấp mã
+              </Badge>
+            )}
           </Link>
         ),
       },
@@ -195,10 +201,11 @@ export function MemberListPage() {
         id: deletingMember.id,
         reason: 'Xóa hồ sơ thành viên theo yêu cầu cán bộ quản lý',
       });
+      const memberCodeDisplay = res.memberCode ? ` (${res.memberCode})` : ' (Chưa cấp mã)';
       notifySuccess(
         res.deleteMode === 'SOFT_DELETE'
-          ? `Đã xóa mềm thành viên ${res.fullName} (${res.memberCode})`
-          : `Đã xóa vĩnh viễn thành viên ${res.fullName} (${res.memberCode})`,
+          ? `Đã xóa mềm thành viên ${res.fullName}${memberCodeDisplay}`
+          : `Đã xóa vĩnh viễn thành viên ${res.fullName}${memberCodeDisplay}`,
         res.deleteMode === 'SOFT_DELETE'
           ? 'Thành viên đã từng có hồ sơ vay đã tất toán nên được ẩn an toàn để bảo toàn lịch sử kiểm toán.'
           : 'Thành viên chưa phát sinh giao dịch nào nên đã được xóa khỏi danh sách.',
@@ -356,9 +363,15 @@ export function MemberListPage() {
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <span className="font-semibold text-slate-900">{row.fullName}</span>
-              <Badge tone="primary" className="font-mono">
-                {row.memberCode}
-              </Badge>
+              {row.memberCode ? (
+                <Badge tone="primary" className="font-mono">
+                  {row.memberCode}
+                </Badge>
+              ) : (
+                <Badge tone="warning" className="text-[10px] font-normal">
+                  Chưa cấp mã
+                </Badge>
+              )}
             </div>
             <div className="text-xs text-slate-600">
               CCCD: <span className="font-mono">{row.idNumber}</span> · Năm sinh: {row.yearOfBirth}
@@ -374,7 +387,7 @@ export function MemberListPage() {
         title={`Xác nhận xóa thành viên ${deletingMember?.fullName ?? ''}?`}
         description={
           deletingMember
-            ? `Mã thành viên: ${deletingMember.memberCode} · CCCD: ${deletingMember.idNumber}. Nếu thành viên đang có khoản vay chưa tất toán, hệ thống sẽ từ chối xóa để bảo vệ an toàn tín dụng. Nếu đã từng có khoản vay đã tất toán, hệ thống sẽ áp dụng Xóa mềm (Soft Delete).`
+            ? `Mã thành viên: ${deletingMember.memberCode || 'Chưa cấp mã'} · CCCD: ${deletingMember.idNumber}. Nếu thành viên đang có khoản vay chưa tất toán, hệ thống sẽ từ chối xóa để bảo vệ an toàn tín dụng. Nếu đã từng có khoản vay đã tất toán, hệ thống sẽ áp dụng Xóa mềm (Soft Delete).`
             : undefined
         }
         confirmText="Xác nhận xóa thành viên"

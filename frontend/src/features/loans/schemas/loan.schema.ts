@@ -47,6 +47,7 @@ export const loanTermsStepSchema = z
 export type LoanTermsStepValues = z.infer<typeof loanTermsStepSchema>;
 
 export const HEIR_RELATIONSHIP_OPTIONS = [
+  { value: 'Chồng', label: 'Chồng' },
   { value: 'Vợ', label: 'Vợ' },
   { value: 'Con', label: 'Con' },
   { value: 'Cha', label: 'Cha' },

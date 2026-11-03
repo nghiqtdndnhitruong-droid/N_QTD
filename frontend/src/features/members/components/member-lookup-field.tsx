@@ -114,9 +114,15 @@ export function MemberLookupField({ value, onChange, error }: MemberLookupFieldP
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="font-semibold text-slate-900">{m.fullName}</span>
-                        <Badge tone="primary" className="font-mono">
-                          {m.memberCode}
-                        </Badge>
+                        {m.memberCode ? (
+                          <Badge tone="primary" className="font-mono">
+                            {m.memberCode}
+                          </Badge>
+                        ) : (
+                          <Badge tone="warning" className="text-[10px]">
+                            Chưa cấp mã
+                          </Badge>
+                        )}
                       </div>
                       <div className="mt-0.5 text-xs text-slate-500">
                         CCCD: <span className="font-mono font-medium text-slate-700">{m.idNumber}</span> · Năm sinh:{' '}
@@ -146,7 +152,7 @@ export function MemberLookupField({ value, onChange, error }: MemberLookupFieldP
               <Badge tone="primary">Thành viên đã chọn</Badge>
               <span className="text-sm font-bold text-slate-900">{selectedMember.fullName}</span>
               <span className="text-xs font-mono text-slate-500">
-                ({selectedMember.memberCode})
+                {selectedMember.memberCode ? `(${selectedMember.memberCode})` : '(Chưa cấp mã)'}
               </span>
             </div>
           </div>

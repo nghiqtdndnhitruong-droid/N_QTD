@@ -21,16 +21,19 @@ export class MemberService {
   constructor(private readonly repo: MemberRepository = memberRepository) {}
 
   async create(dto: CreateMemberDto) {
+    const cleanMemberCode =
+      dto.memberCode && dto.memberCode.trim().length > 0 ? dto.memberCode.trim() : null;
+
     const [existingCode, existingIdNumber] = await Promise.all([
-      this.repo.findByMemberCode(dto.memberCode),
+      cleanMemberCode ? this.repo.findByMemberCode(cleanMemberCode) : Promise.resolve(null),
       this.repo.findByIdNumber(dto.idNumber),
     ]);
 
     if (existingCode) {
       throw AppError.conflict(
-        `Mã thành viên "${dto.memberCode}" đã tồn tại trên hệ thống`,
+        `Mã thành viên "${cleanMemberCode}" đã tồn tại trên hệ thống`,
         ErrorCode.MEMBER_CODE_EXISTS,
-        [{ field: 'memberCode', message: `Mã thành viên "${dto.memberCode}" đã tồn tại` }]
+        [{ field: 'memberCode', message: `Mã thành viên "${cleanMemberCode}" đã tồn tại` }]
       );
     }
 
@@ -68,6 +71,7 @@ export class MemberService {
     return this.repo.create(
       {
         ...dto,
+        memberCode: cleanMemberCode,
         gender: cccdInfo.gender,
         yearOfBirth: cccdInfo.yearOfBirth,
         idIssuePlace: canonicalIssuePlace,
@@ -113,14 +117,23 @@ export class MemberService {
   async update(id: string, dto: UpdateMemberDto) {
     const member = await this.getById(id);
 
-    if (dto.memberCode && dto.memberCode !== member.memberCode) {
-      const existing = await this.repo.findByMemberCode(dto.memberCode);
-      if (existing && existing.id !== id) {
-        throw AppError.conflict(
-          `Mã thành viên "${dto.memberCode}" đã tồn tại`,
-          ErrorCode.MEMBER_CODE_EXISTS,
-          [{ field: 'memberCode', message: `Mã thành viên "${dto.memberCode}" đã tồn tại` }]
-        );
+    const cleanMemberCode =
+      dto.memberCode !== undefined
+        ? dto.memberCode && dto.memberCode.trim().length > 0
+          ? dto.memberCode.trim()
+          : null
+        : undefined;
+
+    if (cleanMemberCode !== undefined && cleanMemberCode !== member.memberCode) {
+      if (cleanMemberCode !== null) {
+        const existing = await this.repo.findByMemberCode(cleanMemberCode);
+        if (existing && existing.id !== id) {
+          throw AppError.conflict(
+            `Mã thành viên "${cleanMemberCode}" đã tồn tại`,
+            ErrorCode.MEMBER_CODE_EXISTS,
+            [{ field: 'memberCode', message: `Mã thành viên "${cleanMemberCode}" đã tồn tại` }]
+          );
+        }
       }
     }
 
@@ -145,6 +158,7 @@ export class MemberService {
 
     const normalizedDto: UpdateMemberDto = {
       ...dto,
+      ...(cleanMemberCode !== undefined ? { memberCode: cleanMemberCode } : {}),
       idIssuePlace: canonicalIssuePlace,
       ...(cccdInfo
         ? {
@@ -182,9 +196,11 @@ export class MemberService {
     const member = await this.getById(id);
     const obligations = await this.repo.countMemberLoanObligations(id);
 
+    const memberDisplay = member.memberCode ? ` (${member.memberCode})` : '';
+
     if (obligations.activeLoanCount > 0) {
       throw AppError.conflict(
-        `Không thể xóa thành viên "${member.fullName}" (${member.memberCode}) vì đang có ${obligations.activeLoanCount} khoản vay chưa tất toán (${obligations.activeContractNumbers.join(', ')}). Vui lòng tất toán hoặc hủy hồ sơ vay nháp trước khi xóa thành viên.`,
+        `Không thể xóa thành viên "${member.fullName}"${memberDisplay} vì đang có ${obligations.activeLoanCount} khoản vay chưa tất toán (${obligations.activeContractNumbers.join(', ')}). Vui lòng tất toán hoặc hủy hồ sơ vay nháp trước khi xóa thành viên.`,
         ErrorCode.MEMBER_HAS_ACTIVE_LOANS
       );
     }

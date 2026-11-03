@@ -54,6 +54,7 @@ import { DisbursementsSection } from '../components/disbursements-section';
 import { LoanSummaryStrip } from '../components/loan-summary-strip';
 import { RelatedPersonsSection } from '../components/related-persons-section';
 import { RepaymentsSection } from '../components/repayments-section';
+import { TemplateExportDialog } from '@/features/word-templates/components/template-export-dialog';
 import {
   useDeleteLoan,
   useLoanDetail,
@@ -66,6 +67,7 @@ export function LoanDetailPage() {
   const navigate = useNavigate();
   const [statusTarget, setStatusTarget] = useState<LoanStatus | null>(null);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
 
   const { data: loan, isLoading, error, refetch } = useLoanDetail(id);
   const { data: summary, isLoading: isSummaryLoading } = useLoanSummary(id);
@@ -143,9 +145,18 @@ export function LoanDetailPage() {
         }
         title={loan.contractNumber || `Hồ sơ vay #${loan.id.slice(-6)}`}
         badge={<LoanStatusBadge status={loan.status} />}
-        description={`Thành viên: ${loan.member?.fullName ?? '—'} (${loan.member?.memberCode ?? ''}) · ${LOAN_TYPE_LABELS[loan.loanType]} · ${LOAN_TERM_TYPE_LABELS[loan.termType]}`}
+        description={`Thành viên: ${loan.member?.fullName ?? '—'}${loan.member?.memberCode ? ` (${loan.member.memberCode})` : ' (Chưa cấp mã)'} · ${LOAN_TYPE_LABELS[loan.loanType]} · ${LOAN_TERM_TYPE_LABELS[loan.termType]}`}
         actions={
           <>
+            <Button
+              size="sm"
+              variant="primary"
+              leftIcon={<FileText className="h-4 w-4" />}
+              onClick={() => setExportDialogOpen(true)}
+            >
+              Xuất biểu mẫu Word
+            </Button>
+
             <Can perm="loan:delete">
               <Button
                 variant="outline"
@@ -379,7 +390,7 @@ export function LoanDetailPage() {
                           to={`/members/${loan.member.id}`}
                           className="font-semibold text-primary-700 hover:underline"
                         >
-                          {loan.member.fullName} ({loan.member.memberCode})
+                          {loan.member.fullName}{loan.member.memberCode ? ` (${loan.member.memberCode})` : ' (Chưa cấp mã)'}
                         </Link>
                       }
                     />
@@ -601,6 +612,14 @@ export function LoanDetailPage() {
         tone="danger"
         isLoading={deleteLoanMutation.isPending}
         onConfirm={handleDeleteLoan}
+      />
+
+      <TemplateExportDialog
+        open={exportDialogOpen}
+        onOpenChange={setExportDialogOpen}
+        loanId={loan.id}
+        contractNumber={loan.contractNumber}
+        loanType={loan.loanType}
       />
     </div>
   );

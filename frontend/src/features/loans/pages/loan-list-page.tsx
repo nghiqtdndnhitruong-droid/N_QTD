@@ -374,7 +374,7 @@ export function LoanListPage() {
             <div className="text-sm font-semibold text-slate-900">
               {row.member?.fullName ?? '—'}{' '}
               <span className="font-mono text-xs font-normal text-slate-500">
-                ({row.member?.memberCode})
+                {row.member?.memberCode ? `(${row.member.memberCode})` : ''}
               </span>
             </div>
             <div className="flex items-center justify-between text-xs text-slate-600">

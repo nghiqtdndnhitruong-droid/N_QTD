@@ -63,11 +63,13 @@ export function MemberFormPage() {
               try {
                 if (isEdit && id) {
                   await updateMutation.mutateAsync(values);
+                  guard.bypass();
                   setIsDirty(false);
                   notifySuccess('Đã cập nhật thông tin thành viên');
                   navigate(`/members/${id}`);
                 } else {
                   const created = await createMutation.mutateAsync(values);
+                  guard.bypass();
                   setIsDirty(false);
                   notifySuccess(`Đã tạo thành viên ${created.fullName}`);
                   navigate(`/members/${created.id}`);
@@ -95,4 +97,3 @@ export function MemberFormPage() {
     </div>
   );
 }
-

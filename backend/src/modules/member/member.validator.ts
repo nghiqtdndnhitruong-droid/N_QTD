@@ -33,9 +33,15 @@ const cccdIdNumberSchema = z
 
 const baseMemberFields = {
   memberCode: z
-    .string({ required_error: 'Mã thành viên là bắt buộc' })
+    .string()
     .trim()
-    .min(1, 'Mã thành viên không được để trống'),
+    .nullable()
+    .optional()
+    .transform((val) => (val && val.trim().length > 0 ? val.trim() : null)),
+  isNewMember: z
+    .boolean()
+    .optional()
+    .default(false),
   fullName: z
     .string({ required_error: 'Họ tên là bắt buộc' })
     .trim()
@@ -78,20 +84,45 @@ const baseMemberFields = {
 
 export const createMemberSchema = z
   .object(baseMemberFields)
-  .refine(
-    (data) =>
-      Boolean(
-        data.communeId ||
-          data.hamletId ||
-          (data.address && data.address.trim().length >= 3)
-      ),
-    {
-      message: 'Vui lòng chọn Tỉnh và Xã quản lý (Ấp có thể bỏ trống) hoặc nhập địa chỉ hợp lệ',
-      path: ['communeId'],
+  .superRefine((data, ctx) => {
+    // Mã thành viên cho phép bỏ trống (tự hiểu là thành viên mới).
+    // Nếu có nhập mã, độ dài tối thiểu 2 ký tự.
+    if (data.memberCode && data.memberCode.trim().length < 2) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Mã thành viên tối thiểu 2 ký tự',
+        path: ['memberCode'],
+      });
     }
-  );
 
-export const updateMemberSchema = z.object(baseMemberFields).partial();
+    const hasLocation = Boolean(
+      data.communeId ||
+        data.hamletId ||
+        (data.address && data.address.trim().length >= 3)
+    );
+    if (!hasLocation) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Vui lòng chọn Tỉnh và Xã quản lý (Ấp có thể bỏ trống) hoặc nhập địa chỉ hợp lệ',
+        path: ['communeId'],
+      });
+    }
+  });
+
+export const updateMemberSchema = z
+  .object(baseMemberFields)
+  .partial()
+  .superRefine((data, ctx) => {
+    // Mã thành viên cho phép bỏ trống để chuyển thành chưa cấp mã.
+    // Nếu có nhập mã, độ dài tối thiểu 2 ký tự.
+    if (data.memberCode && data.memberCode.trim().length < 2) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Mã thành viên tối thiểu 2 ký tự',
+        path: ['memberCode'],
+      });
+    }
+  });
 
 export const deleteMemberBodySchema = z
   .object({

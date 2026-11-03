@@ -457,7 +457,7 @@ export function attachDevMockFallback(client: AxiosInstance): void {
           (m) =>
             (!search ||
               m.fullName.toLowerCase().includes(search) ||
-              m.memberCode.toLowerCase().includes(search) ||
+              (m.memberCode ? m.memberCode.toLowerCase().includes(search) : false) ||
               m.idNumber.includes(search)) &&
             (!params.gender || m.gender === params.gender) &&
             (!params.idType || m.idType === params.idType),

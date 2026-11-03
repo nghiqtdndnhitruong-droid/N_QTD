@@ -34,4 +34,3 @@ export async function disconnectDatabase(): Promise<void> {
 }
 
 export { prisma };
-

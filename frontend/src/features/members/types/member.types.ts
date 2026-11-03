@@ -2,7 +2,8 @@ import type { Gender, IdDocumentType, ListQueryParams } from '@/shared/types';
 
 export interface Member {
   id: string;
-  memberCode: string;
+  memberCode?: string | null;
+  isNewMember?: boolean;
   fullName: string;
   yearOfBirth: number;
   idType: IdDocumentType;
@@ -26,7 +27,8 @@ export interface Member {
 }
 
 export interface CreateMemberPayload {
-  memberCode: string;
+  memberCode?: string | null;
+  isNewMember?: boolean;
   fullName: string;
   yearOfBirth?: number;
   idType: IdDocumentType;
@@ -47,7 +49,7 @@ export type UpdateMemberPayload = Partial<CreateMemberPayload>;
 
 export interface DeleteMemberResult {
   id: string;
-  memberCode: string;
+  memberCode?: string | null;
   fullName: string;
   deleteMode: 'SOFT_DELETE' | 'HARD_DELETE';
 }

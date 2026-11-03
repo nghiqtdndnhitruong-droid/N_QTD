@@ -65,6 +65,7 @@ export function MemberForm({
     resolver: zodResolver(memberFormSchema),
     mode: 'onTouched',
     defaultValues: {
+      isNewMember: !initialData?.memberCode,
       memberCode: initialData?.memberCode ?? '',
       fullName: initialData?.fullName ?? '',
       yearOfBirth: initialData?.yearOfBirth ?? 1985,
@@ -87,6 +88,8 @@ export function MemberForm({
 
   const watchedIdNumber = useWatch({ control, name: 'idNumber' });
   const watchedIdType = useWatch({ control, name: 'idType' });
+  const watchedMemberCode = useWatch({ control, name: 'memberCode' });
+  const isBlankCode = !watchedMemberCode || watchedMemberCode.trim().length === 0;
 
   // Tự động xác định giới tính và năm sinh từ số CCCD 12 số (Mục 3.1)
   useEffect(() => {
@@ -113,22 +116,36 @@ export function MemberForm({
 
   return (
     <form
-      onSubmit={handleSubmit((values) => onSubmit(values, setError))}
+      onSubmit={handleSubmit((values) => {
+        const cleanCode = values.memberCode?.trim() || '';
+        const normalizedValues: MemberFormValues = {
+          ...values,
+          memberCode: cleanCode,
+          isNewMember: !cleanCode,
+        };
+        return onSubmit(normalizedValues, setError);
+      })}
       noValidate
       className="space-y-6"
     >
       <div>
-        <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-          1. Thông tin định danh thành viên
-        </h4>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+            1. Thông tin định danh thành viên
+          </h4>
+        </div>
         <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <FormTextField
             control={control}
             name="memberCode"
             label="Mã thành viên"
-            required
-            placeholder="VD: TV-2026-001"
-            hint="Mã duy nhất trên toàn hệ thống"
+            required={false}
+            placeholder="Bỏ trống nếu là thành viên mới (hoặc VD: TV-2026-001)"
+            hint={
+              isBlankCode
+                ? 'Để trống đối với thành viên mới chưa cấp mã (có thể bổ sung mã sau)'
+                : 'Mã thành viên duy nhất trên toàn hệ thống'
+            }
           />
           <FormTextField
             control={control}

@@ -1,7 +1,9 @@
 import type { LucideIcon } from 'lucide-react';
 import {
   BarChart3,
+  BookOpen,
   CreditCard,
+  FileText,
   LandPlot,
   LayoutDashboard,
   MapPin,
@@ -62,6 +64,18 @@ export const NAVIGATION_SECTIONS: NavSection[] = [
     title: 'Danh mục cấu hình',
     items: [
       {
+        label: 'Quản lý biểu mẫu Word',
+        to: '/templates',
+        icon: FileText,
+        exact: true,
+      },
+      {
+        label: 'Thư viện từ khóa Word',
+        to: '/templates/catalog',
+        icon: BookOpen,
+        exact: true,
+      },
+      {
         label: 'Địa bàn Ấp / Xã',
         to: '/settings/areas',
         icon: MapPin,
@@ -105,19 +119,17 @@ export const NAVIGATION_SECTIONS: NavSection[] = [
 ];
 
 export const BREADCRUMB_NAME_MAP: Record<string, string> = {
-  members: 'Thành viên',
-  new: 'Tạo mới',
-  edit: 'Chỉnh sửa',
-  loans: 'Hồ sơ khoản vay',
-  reports: 'Báo cáo & Thống kê',
-  settings: 'Danh mục',
-  areas: 'Địa bàn Ấp / Xã',
-  'interest-rates': 'Bảng lãi suất',
-  'asset-pricing': 'Bảng giá tài sản',
-  admin: 'Quản trị',
-  users: 'Người dùng & Phân quyền',
-  profile: 'Tài khoản cá nhân',
-  dev: 'Kỹ thuật',
-  ui: 'Design System',
+  '/': 'Tổng quan',
+  '/members': 'Danh sách thành viên',
+  '/members/new': 'Thêm thành viên',
+  '/loans': 'Hồ sơ khoản vay',
+  '/loans/new': 'Lập hồ sơ vay',
+  '/templates': 'Quản lý biểu mẫu Word',
+  '/settings/areas': 'Quản lý địa bàn',
+  '/settings/interest-rates': 'Cấu hình lãi suất',
+  '/settings/asset-pricing': 'Bảng giá định giá tài sản',
+  '/reports': 'Báo cáo & Thống kê',
+  '/admin/users': 'Người dùng hệ thống',
+  '/profile': 'Thông tin cá nhân',
+  '/dev/ui': 'Design System',
 };
-

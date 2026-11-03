@@ -849,7 +849,7 @@ export function LoanCreatePage() {
                       ]
                     : (HEIR_RELATIONSHIP_OPTIONS as any)
                 }
-                placeholder="Chọn quan hệ (Vợ, Con, Cha, Mẹ)"
+                placeholder="Chọn quan hệ (Chồng, Vợ, Con, Cha, Mẹ)"
               />
               <FormTextField
                 control={heirForm.control}
@@ -1331,7 +1331,7 @@ export function LoanCreatePage() {
             <DescriptionList columns={3}>
               <DescriptionItem
                 label="Thành viên vay vốn"
-                value={`${draftLoan.member?.fullName ?? '—'} (${draftLoan.member?.memberCode ?? ''})`}
+                value={`${draftLoan.member?.fullName ?? '—'}${draftLoan.member?.memberCode ? ` (${draftLoan.member.memberCode})` : ' (Chưa cấp mã)'}`}
               />
               <DescriptionItem
                 label="Hình thức & Kỳ hạn"

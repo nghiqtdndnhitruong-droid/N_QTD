@@ -86,9 +86,15 @@ export function MemberDetailPage() {
         }
         title={member.fullName}
         badge={
-          <Badge tone="primary" className="font-mono">
-            {member.memberCode}
-          </Badge>
+          member.memberCode ? (
+            <Badge tone="primary" className="font-mono">
+              {member.memberCode}
+            </Badge>
+          ) : (
+            <Badge tone="warning">
+              Chưa cấp mã
+            </Badge>
+          )
         }
         description={`Hồ sơ thành viên · Cập nhật lần cuối: ${formatDateVN(member.updatedAt)}`}
         actions={
@@ -142,7 +148,17 @@ export function MemberDetailPage() {
         </CardHeader>
         <CardContent>
           <DescriptionList columns={3}>
-            <DescriptionItem label="Mã thành viên" value={member.memberCode} mono />
+            <DescriptionItem
+              label="Mã thành viên"
+              value={
+                member.memberCode || (
+                  <Badge tone="warning" className="text-xs font-normal">
+                    Chưa cấp mã
+                  </Badge>
+                )
+              }
+              mono={Boolean(member.memberCode)}
+            />
             <DescriptionItem label="Họ và tên" value={member.fullName} />
             <DescriptionItem
               label="Năm sinh / Giới tính"
@@ -252,7 +268,7 @@ export function MemberDetailPage() {
       <ConfirmDialog
         open={confirmDeleteOpen}
         onOpenChange={setConfirmDeleteOpen}
-        title={`Xác nhận xóa thành viên ${member.fullName} (${member.memberCode})?`}
+        title={`Xác nhận xóa thành viên ${member.fullName}${member.memberCode ? ` (${member.memberCode})` : ''}?`}
         description={
           activeLoans.length > 0
             ? `CẢNH BÁO: Thành viên này hiện có ${activeLoans.length} khoản vay chưa tất toán. Hệ thống sẽ chặn thao tác xóa cho đến khi các khoản vay được tất toán hoặc hủy.`

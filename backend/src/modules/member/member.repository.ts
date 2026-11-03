@@ -13,10 +13,11 @@ export class MemberRepository {
     return member;
   }
 
-  async findByMemberCode(memberCode: string): Promise<Member | null> {
+  async findByMemberCode(memberCode: string | null | undefined): Promise<Member | null> {
+    if (!memberCode || memberCode.trim().length === 0) return null;
     return prisma.member.findFirst({
       where: {
-        memberCode,
+        memberCode: memberCode.trim(),
         isDeleted: { not: true },
       },
     });
@@ -91,13 +92,17 @@ export class MemberRepository {
     },
     location: ResolvedLocationSnapshot
   ): Promise<Member> {
+    const cleanCode = data.memberCode && data.memberCode.trim().length > 0 ? data.memberCode.trim() : null;
+    const isNewMember = !cleanCode;
+
     return prisma.member.create({
       data: {
-        memberCode: data.memberCode,
-        fullName: data.fullName,
+        memberCode: cleanCode,
+        isNewMember,
+        fullName: data.fullName.trim(),
         yearOfBirth: data.yearOfBirth,
         idType: data.idType,
-        idNumber: data.idNumber,
+        idNumber: data.idNumber.trim(),
         idIssueDate: new Date(data.idIssueDate),
         idIssuePlace: data.idIssuePlace,
         idExpiry: data.idExpiry ? new Date(data.idExpiry) : null,
@@ -123,11 +128,17 @@ export class MemberRepository {
   ): Promise<Member> {
     const updateData: Prisma.MemberUpdateInput = {};
 
-    if (data.fullName !== undefined) updateData.fullName = data.fullName;
-    if (data.memberCode !== undefined) updateData.memberCode = data.memberCode;
+    if (data.fullName !== undefined) updateData.fullName = data.fullName.trim();
+    if (data.memberCode !== undefined) {
+      const cleanCode = data.memberCode && data.memberCode.trim().length > 0 ? data.memberCode.trim() : null;
+      updateData.memberCode = cleanCode;
+      updateData.isNewMember = !cleanCode;
+    } else if (data.isNewMember !== undefined) {
+      updateData.isNewMember = data.isNewMember;
+    }
     if (data.yearOfBirth !== undefined) updateData.yearOfBirth = data.yearOfBirth;
     if (data.idType !== undefined) updateData.idType = data.idType;
-    if (data.idNumber !== undefined) updateData.idNumber = data.idNumber;
+    if (data.idNumber !== undefined) updateData.idNumber = data.idNumber.trim();
     if (data.idIssueDate !== undefined) updateData.idIssueDate = new Date(data.idIssueDate);
     if (data.idIssuePlace !== undefined) updateData.idIssuePlace = data.idIssuePlace;
     if (data.idExpiry !== undefined) {
@@ -145,7 +156,7 @@ export class MemberRepository {
       updateData.hamletName = location.hamletName;
       updateData.addressDetail = location.addressDetail;
       updateData.address = location.address;
-    } else if (data.address !== undefined) {
+    } else if (data.address !== undefined && data.address !== null) {
       updateData.address = data.address;
     }
 
@@ -183,6 +194,7 @@ export class MemberRepository {
 
   async softDelete(member: Member, reason?: string): Promise<Member> {
     const suffix = `_DELETED_${Date.now()}`;
+
     return prisma.member.update({
       where: { id: member.id },
       data: {
@@ -190,7 +202,7 @@ export class MemberRepository {
         deletedAt: new Date(),
         deletedReason: reason || 'Xóa mềm hồ sơ thành viên',
         // Giải phóng unique constraint cho memberCode / idNumber nếu cần đăng ký lại
-        memberCode: `${member.memberCode}${suffix}`,
+        memberCode: member.memberCode ? `${member.memberCode}${suffix}` : null,
         idNumber: `${member.idNumber}${suffix}`,
       },
     });

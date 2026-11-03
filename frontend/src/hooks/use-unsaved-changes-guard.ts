@@ -1,24 +1,28 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useBlocker } from 'react-router';
 
 export interface UnsavedChangesGuard {
   isBlocked: boolean;
   proceed: () => void;
   reset: () => void;
+  bypass: () => void;
 }
 
 /**
  * Cảnh báo khi người dùng rời trang hoặc đóng tab mà dữ liệu Form chưa lưu.
  */
 export function useUnsavedChangesGuard(isDirty: boolean): UnsavedChangesGuard {
+  const isBypassedRef = useRef(false);
+
   const blocker = useBlocker(
     ({ currentLocation, nextLocation }) =>
-      isDirty && currentLocation.pathname !== nextLocation.pathname,
+      !isBypassedRef.current && isDirty && currentLocation.pathname !== nextLocation.pathname,
   );
 
   useEffect(() => {
-    if (!isDirty) return;
+    if (!isDirty || isBypassedRef.current) return;
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (isBypassedRef.current) return;
       event.preventDefault();
       event.returnValue = '';
     };
@@ -34,6 +38,8 @@ export function useUnsavedChangesGuard(isDirty: boolean): UnsavedChangesGuard {
     reset: () => {
       if (blocker.state === 'blocked') blocker.reset();
     },
+    bypass: () => {
+      isBypassedRef.current = true;
+    },
   };
 }
-

@@ -9,7 +9,7 @@ import {
   User as UserIcon,
 } from 'lucide-react';
 import { env } from '@/config/env';
-import { BREADCRUMB_NAME_MAP, NAVIGATION_SECTIONS } from '@/app/navigation';
+import { BREADCRUMB_NAME_MAP, NAVIGATION_SECTIONS, type NavItem } from '@/app/navigation';
 import { cn } from '@/lib/utils';
 import { useAuthStore, type UserRole } from '@/stores/auth.store';
 import { useUiStore } from '@/stores/ui.store';
@@ -39,6 +39,18 @@ function SidebarNavigation({
   onNavigate?: () => void;
 }) {
   const { can } = usePermission();
+  const location = useLocation();
+
+  const isItemActive = (item: NavItem, routerIsActive: boolean) => {
+    if (item.to === '/templates') {
+      return (
+        location.pathname === '/templates' ||
+        (location.pathname.startsWith('/templates/') &&
+          !location.pathname.startsWith('/templates/catalog'))
+      );
+    }
+    return routerIsActive;
+  };
 
   return (
     <div className="flex flex-1 flex-col justify-between overflow-y-auto px-2.5 py-4">
@@ -64,15 +76,16 @@ function SidebarNavigation({
                       to={item.to}
                       end={item.exact}
                       onClick={onNavigate}
-                      className={({ isActive }) =>
-                        cn(
+                      className={({ isActive }) => {
+                        const active = isItemActive(item, isActive);
+                        return cn(
                           'flex items-center gap-3 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors',
                           collapsed && 'justify-center px-0',
-                          isActive
+                          active
                             ? 'bg-primary-600 text-white shadow-xs'
                             : 'text-slate-300 hover:bg-primary-800 hover:text-white',
-                        )
-                      }
+                        );
+                      }}
                     >
                       <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
                       {!collapsed && <span className="truncate">{item.label}</span>}

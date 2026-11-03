@@ -2,7 +2,8 @@ import { IdDocumentType, Gender, Member } from '@prisma/client';
 import { PaginationQuery } from '../../shared/types';
 
 export interface CreateMemberDto {
-  memberCode: string;
+  memberCode?: string | null;
+  isNewMember?: boolean;
   fullName: string;
   yearOfBirth?: number;
   idType: IdDocumentType;
@@ -31,7 +32,7 @@ export interface MemberFilterQuery extends PaginationQuery {
 
 export interface DeleteMemberResult {
   id: string;
-  memberCode: string;
+  memberCode?: string | null;
   fullName: string;
   deleteMode: 'SOFT_DELETE' | 'HARD_DELETE';
 }

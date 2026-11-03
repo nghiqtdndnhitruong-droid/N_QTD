@@ -149,7 +149,8 @@ model AuditLog {
 
 model Member {
   id            String         @id @default(auto()) @map("_id") @db.ObjectId
-  memberCode    String         @unique
+  memberCode    String?
+  isNewMember   Boolean?       @default(false)
   fullName      String
   yearOfBirth   Int
   idType        IdDocumentType
@@ -180,6 +181,7 @@ model Member {
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
+  @@index([memberCode])
   @@index([fullName])
   @@index([communeId, hamletId])
   @@index([isDeleted])
@@ -501,5 +503,133 @@ model AssetPricingRule {
   @@index([landCategory, isActive])
   @@index([effectiveDate])
   @@map("asset_pricing_rules")
+}
+
+// ============================================================
+// DYNAMIC WORD TEMPLATE ENGINE (Quản lý mẫu Word & Điền dữ liệu)
+// ============================================================
+
+model WordTemplate {
+  id               String                @id @default(auto()) @map("_id") @db.ObjectId
+  code             String                @unique // Mã biểu mẫu (vd: "HD_THE_CHAP_2026")
+  title            String                // Tên hiển thị (vd: "Hợp đồng thế chấp tài sản")
+  category         String                // Nhóm biểu mẫu: "Hồ sơ thế chấp", "Hồ sơ tín chấp", "Định giá"...
+  loanTypeScope    String                @default("ALL") // "ALL" | "THE_CHAP" | "TIN_CHAP"
+  description      String?
+  isActive         Boolean               @default(true)
+  currentVersion   Int                   @default(1)
+
+  // File Word hiện tại
+  currentFilePath  String                // Đường dẫn lưu file trên máy chủ
+  originalFileName String                // Tên file gốc người dùng upload
+  fileSize         Int                   // Kích thước bytes
+
+  // Quan hệ
+  versions         WordTemplateVersion[]
+  mappings         WordTemplateMapping[]
+  exportLogs       WordExportLog[]
+
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+
+  @@index([category])
+  @@index([isActive])
+  @@map("word_templates")
+}
+
+model WordTemplateVersion {
+  id               String        @id @default(auto()) @map("_id") @db.ObjectId
+  templateId       String        @db.ObjectId
+  template         WordTemplate  @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  version          Int
+  filePath         String
+  fileName         String
+  fileSize         Int
+  changeNote       String?       // Ghi chú lý do cập nhật phiên bản
+  createdBy        String        @default("SYSTEM")
+  mappingsSnapshot Json?         // Bản sao lưu toàn bộ cấu hình ánh xạ tại phiên bản này
+
+  createdAt        DateTime      @default(now())
+
+  @@unique([templateId, version])
+  @@map("word_template_versions")
+}
+
+model WordTemplateMapping {
+  id            String        @id @default(auto()) @map("_id") @db.ObjectId
+  templateId    String        @db.ObjectId
+  template      WordTemplate  @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  keyword       String        // Tên từ khóa trong file Word (vd: "HO_TEN_NGUOI_VAY")
+  displayName   String        // Tên mô tả dễ hiểu (vd: "Họ và tên người vay")
+  isLoop        Boolean       @default(false) // Có phải khối danh sách lặp bảng không
+  loopContext   String?       // Nhóm lặp: "collaterals" | "relatedPersons" | "expenses" | "revenues"
+
+  dataPath      String?       // Đường dẫn trường dữ liệu nguồn (vd: "member.fullName", "loan.loanAmount")
+  dataType      String        @default("TEXT") // TEXT | NUMBER | DATE | CURRENCY | CURRENCY_WORDS | GENDER_TITLE | BOOLEAN | LIST
+  formatPattern String?       // Định dạng áp dụng (vd: "DD/MM/YYYY", "VND", "VND_WORDS")
+  defaultValue  String?       // Giá trị mặc định khi trống (vd: "...................")
+  isRequired    Boolean       @default(false) // Cảnh báo nếu thiếu dữ liệu khi xuất
+  description   String?
+
+  condition     Json?         // Điều kiện logic hiển thị nếu có
+
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@unique([templateId, keyword])
+  @@index([templateId])
+  @@map("word_template_mappings")
+}
+
+model WordExportLog {
+  id              String        @id @default(auto()) @map("_id") @db.ObjectId
+  templateId      String        @db.ObjectId
+  template        WordTemplate  @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  templateVersion Int
+  loanId          String        @db.ObjectId
+
+  exportedBy      String        @default("SYSTEM")
+  exportedAt      DateTime      @default(now())
+  outputFileName  String
+  outputFileSize  Int
+  status          String        // "SUCCESS" | "FAILED" | "WARNING"
+  warnings        Json?         // Danh sách các từ khóa thiếu dữ liệu nếu có
+  errorMessage    String?
+
+  @@index([templateId])
+  @@index([loanId])
+  @@index([exportedAt])
+  @@map("word_export_logs")
+}
+
+// ============================================================
+// GLOBAL WORD KEYWORD CATALOG (Thư viện từ khóa toàn cục)
+// ============================================================
+
+model GlobalWordKeyword {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  keyword       String    @unique // Mã từ khóa duy nhất (vd: "HO_TEN_NGUOI_VAY", "DANH_SACH_TAI_SAN")
+  displayName   String    // Tên hiển thị dễ hiểu (vd: "Họ và tên người vay")
+  category      String    // "NGUOI_VAY" | "KHOAN_VAY" | "TAI_SAN" | "NGUOI_LIEN_QUAN" | "NGUOI_THUA_KE" | "QUY_TIN_DUNG" | "CHUNG"
+
+  // Ánh xạ nguồn dữ liệu hệ thống
+  dataPath      String    // Đường dẫn dữ liệu (vd: "member.fullName", "collaterals", "loan.loanAmount")
+  dataType      String    @default("TEXT") // TEXT | NUMBER | DATE | CURRENCY | CURRENCY_WORDS | GENDER_TITLE | LIST | BOOLEAN
+  formatPattern String?   // "DD/MM/YYYY", "VND", "VND_WORDS"
+  defaultValue  String?   @default("...................") // Giá trị mặc định khi trống
+
+  // Cờ danh sách lặp và thuộc tính con
+  isList        Boolean   @default(false)
+  itemProperties Json?    // Định nghĩa các trường con nếu là danh sách lặp
+
+  description   String?
+  isSystem      Boolean   @default(true) // Từ khóa chuẩn hệ thống tạo sẵn
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([category])
+  @@map("global_word_keywords")
 }
 

@@ -50,6 +50,63 @@ describe('Schema kiểm tra Địa bàn (Tỉnh -> Xã -> Ấp) và Mã tài s�
     expect(parsed.success).toBe(true);
   });
 
+  it('cho phép để trống Mã thành viên (tự động là thành viên mới)', () => {
+    const parsed = memberFormSchema.safeParse({
+      memberCode: '',
+      fullName: 'Nguyễn Văn Mới',
+      yearOfBirth: 1990,
+      idType: IdDocumentType.CAN_CUOC_CONG_DAN,
+      idNumber: '084190001234',
+      idIssueDate: '2022-05-10',
+      idIssuePlace: 'Cục Cảnh sát QLHC về TTXH',
+      idExpiry: '',
+      gender: Gender.NAM,
+      provinceId: '65f000000000000000000001',
+      communeId: '65f000000000000000000002',
+      address: 'Xã Nhị Trường, Tỉnh Vĩnh Long',
+    });
+    expect(parsed.success).toBe(true);
+  });
+
+  it('cho phép nhập Mã thành viên hợp lệ (từ 2 ký tự trở lên)', () => {
+    const parsed = memberFormSchema.safeParse({
+      memberCode: 'TV-2026-001',
+      fullName: 'Nguyễn Văn Cũ',
+      yearOfBirth: 1990,
+      idType: IdDocumentType.CAN_CUOC_CONG_DAN,
+      idNumber: '084190001234',
+      idIssueDate: '2022-05-10',
+      idIssuePlace: 'Cục Cảnh sát QLHC về TTXH',
+      idExpiry: '',
+      gender: Gender.NAM,
+      provinceId: '65f000000000000000000001',
+      communeId: '65f000000000000000000002',
+      address: 'Xã Nhị Trường, Tỉnh Vĩnh Long',
+    });
+    expect(parsed.success).toBe(true);
+  });
+
+  it('từ chối khi nhập Mã thành viên có độ dài dưới 2 ký tự', () => {
+    const parsed = memberFormSchema.safeParse({
+      memberCode: 'A',
+      fullName: 'Nguyễn Văn Test',
+      yearOfBirth: 1990,
+      idType: IdDocumentType.CAN_CUOC_CONG_DAN,
+      idNumber: '084190001234',
+      idIssueDate: '2022-05-10',
+      idIssuePlace: 'Cục Cảnh sát QLHC về TTXH',
+      idExpiry: '',
+      gender: Gender.NAM,
+      provinceId: '65f000000000000000000001',
+      communeId: '65f000000000000000000002',
+      address: 'Xã Nhị Trường, Tỉnh Vĩnh Long',
+    });
+    expect(parsed.success).toBe(false);
+    if (!parsed.success) {
+      expect(parsed.error.issues[0]?.message).toContain('Mã thành viên tối thiểu 2 ký tự');
+    }
+  });
+
   it('bắt buộc nhập Mã tài sản (assetCode) và Địa bàn tài sản (Tỉnh -> Xã -> Ấp) độc lập', () => {
     const parsed = collateralFormSchema.safeParse({
       assetType: CollateralAssetType.QUYEN_SU_DUNG_DAT,
@@ -77,4 +134,3 @@ describe('Schema kiểm tra Địa bàn (Tỉnh -> Xã -> Ấp) và Mã tài s�
     expect(parsed.success).toBe(true);
   });
 });
-

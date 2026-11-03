@@ -46,6 +46,21 @@ const AreaManagementPage = lazy(() =>
     default: m.AreaManagementPage,
   })),
 );
+const TemplateListPage = lazy(() =>
+  import('@/features/word-templates/pages/template-list-page').then((m) => ({
+    default: m.TemplateListPage,
+  })),
+);
+const TemplateEditorPage = lazy(() =>
+  import('@/features/word-templates/pages/template-editor-page').then((m) => ({
+    default: m.TemplateEditorPage,
+  })),
+);
+const TemplateCatalogPage = lazy(() =>
+  import('@/features/word-templates/pages/template-catalog-page').then((m) => ({
+    default: m.TemplateCatalogPage,
+  })),
+);
 const ReportsPage = lazy(() =>
   import('@/features/reports/pages/reports-page').then((m) => ({ default: m.ReportsPage })),
 );
@@ -155,6 +170,30 @@ export const appRouter = createBrowserRouter([
             ),
           },
           {
+            path: 'templates',
+            element: (
+              <LazyPage>
+                <TemplateListPage />
+              </LazyPage>
+            ),
+          },
+          {
+            path: 'templates/catalog',
+            element: (
+              <LazyPage>
+                <TemplateCatalogPage />
+              </LazyPage>
+            ),
+          },
+          {
+            path: 'templates/:id',
+            element: (
+              <LazyPage>
+                <TemplateEditorPage />
+              </LazyPage>
+            ),
+          },
+          {
             path: 'reports',
             element: (
               <RequirePermission perm="report:view">
@@ -224,17 +263,16 @@ export const appRouter = createBrowserRouter([
                 },
               ]
             : []),
-          {
-            path: '403',
-            element: <ForbiddenPage />,
-          },
-          {
-            path: '*',
-            element: <NotFoundPage />,
-          },
         ],
       },
     ],
   },
+  {
+    path: '/403',
+    element: <ForbiddenPage />,
+  },
+  {
+    path: '*',
+    element: <NotFoundPage />,
+  },
 ]);
-

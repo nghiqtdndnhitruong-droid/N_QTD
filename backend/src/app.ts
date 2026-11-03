@@ -14,6 +14,7 @@ import { collateralRoutes } from './modules/collateral/collateral.routes';
 import { disbursementRoutes } from './modules/disbursement/disbursement.routes';
 import { repaymentRoutes } from './modules/repayment/repayment.routes';
 import { areaRoutes } from './modules/area/area.routes';
+import { wordTemplateRoutes } from './modules/word-template/word-template.routes';
 
 const app: Application = express();
 
@@ -60,6 +61,7 @@ apiRouter.use('/collaterals', collateralRoutes);
 apiRouter.use('/disbursements', disbursementRoutes);
 apiRouter.use('/repayments', repaymentRoutes);
 apiRouter.use('/areas', areaRoutes);
+apiRouter.use('/word-templates', wordTemplateRoutes);
 
 app.use(env.apiPrefix, apiRouter);
 
@@ -72,4 +74,3 @@ app.use((req: Request, _res: Response, next: NextFunction) => {
 app.use(errorHandler);
 
 export { app };
-

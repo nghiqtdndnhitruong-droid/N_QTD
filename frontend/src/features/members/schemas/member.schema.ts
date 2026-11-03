@@ -9,11 +9,13 @@ import {
 
 export const memberFormSchema = z
   .object({
+    isNewMember: z.boolean().optional(),
     memberCode: z
-      .string({ required_error: 'Mã thành viên là bắt buộc' })
+      .string()
       .trim()
-      .min(2, 'Mã thành viên tối thiểu 2 ký tự')
-      .max(30, 'Mã thành viên tối đa 30 ký tự'),
+      .max(30, 'Mã thành viên tối đa 30 ký tự')
+      .optional()
+      .or(z.literal('')),
     fullName: z
       .string({ required_error: 'Họ và tên là bắt buộc' })
       .trim()
@@ -42,6 +44,17 @@ export const memberFormSchema = z
     hamletId: z.string().trim().optional(),
     addressDetail: z.string().trim().max(250).optional(),
     address: z.string().trim().optional(),
+  })
+  .superRefine((data, ctx) => {
+    // Mã thành viên cho phép bỏ trống (tự hiểu là thành viên mới).
+    // Nếu có nhập mã, độ dài tối thiểu 2 ký tự.
+    if (data.memberCode && data.memberCode.trim().length > 0 && data.memberCode.trim().length < 2) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Mã thành viên tối thiểu 2 ký tự',
+        path: ['memberCode'],
+      });
+    }
   });
 
 export type MemberFormValues = z.infer<typeof memberFormSchema>;
