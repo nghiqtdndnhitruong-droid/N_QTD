@@ -10,6 +10,7 @@ import type { LoanStatus, Paginated } from '@/shared/types';
 import type {
   Collateral,
   CreateCollateralPayload,
+  CreateLoanValuationPayload,
   CreateDisbursementPayload,
   CreateLoanPayload,
   CreateRelatedPersonPayload,
@@ -19,6 +20,7 @@ import type {
   InterestEstimate,
   Loan,
   LoanListQuery,
+  LoanValuation,
   LoanSummary,
   NextInterestPeriodInfo,
   RelatedPerson,
@@ -26,6 +28,7 @@ import type {
   UpdateCollateralPayload,
   UpdateDisbursementPayload,
   UpdateLoanPayload,
+  UpdateLoanValuationPayload,
   UpdateRelatedPersonPayload,
   UpdateRepaymentPayload,
 } from '../types/loan.types';
@@ -82,6 +85,33 @@ export const loansApi = {
 
   deleteCollateral(collateralId: string): Promise<void> {
     return apiDelete(`/collaterals/${collateralId}`);
+  },
+
+  // Định giá tài sản khoản vay
+  listValuations(loanId: string): Promise<LoanValuation[]> {
+    return apiGet<LoanValuation[]>(`/loans/${loanId}/valuations`);
+  },
+
+  addValuation(loanId: string, payload: CreateLoanValuationPayload): Promise<LoanValuation> {
+    return apiPost<LoanValuation, CreateLoanValuationPayload>(
+      `/loans/${loanId}/valuations`,
+      payload
+    );
+  },
+
+  updateValuation(
+    loanId: string,
+    valuationId: string,
+    payload: UpdateLoanValuationPayload
+  ): Promise<LoanValuation> {
+    return apiPut<LoanValuation, UpdateLoanValuationPayload>(
+      `/loans/${loanId}/valuations/${valuationId}`,
+      payload
+    );
+  },
+
+  deleteValuation(loanId: string, valuationId: string): Promise<void> {
+    return apiDelete(`/loans/${loanId}/valuations/${valuationId}`);
   },
 
   // Người liên quan (chỉ áp dụng cho vay thế chấp >= 140.000.000)

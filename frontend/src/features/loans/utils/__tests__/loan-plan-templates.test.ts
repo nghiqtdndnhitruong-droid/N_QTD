@@ -39,7 +39,7 @@ describe('calculateLoanPlanTemplate', () => {
     // Nguồn thu = Tổng chi phí + 50tr = 335_300_000 (60% / 40%)
     expect(res.totalRevenues).toBe(335_300_000);
     expect(res.revenues).toEqual([
-      { name: 'Trả bằng nguồn thu từ sản xuất lúa', amount: 201_180_000 },
+      { name: 'Trả bằng nguồn thu sản xuất lúa', amount: 201_180_000 },
       { name: 'Trả bằng nguồn thu khác', amount: 134_120_000 },
     ]);
     expect(res.profit).toBe(50_000_000);
@@ -70,8 +70,8 @@ describe('calculateLoanPlanTemplate', () => {
     // Nguồn thu = 483.2tr + 50tr = 533.2tr (30% / 50% / 20%)
     expect(res.totalRevenues).toBe(533_200_000);
     expect(res.revenues).toEqual([
-      { name: 'Trả bằng nguồn thu từ sản xuất lúa', amount: 159_960_000 },
-      { name: 'Trả bằng nguồn thu từ chăn nuôi', amount: 266_600_000 },
+      { name: 'Trả bằng nguồn thu sản xuất lúa', amount: 159_960_000 },
+      { name: 'Trả bằng nguồn chăn nuôi', amount: 266_600_000 },
       { name: 'Trả bằng nguồn thu khác', amount: 106_640_000 },
     ]);
     expect(res.profit).toBe(50_000_000);

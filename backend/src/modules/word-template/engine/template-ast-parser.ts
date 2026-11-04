@@ -95,6 +95,7 @@ export class TemplateAstParser {
         let expr;
         try {
           expr = this.expressionParser.parse(conditionStr);
+          this.extractIdentifiersFromExpr(expr, detectedKeywords);
         } catch {
           diagnostics.push({
             code: 'INVALID_EXPRESSION',
@@ -150,6 +151,7 @@ export class TemplateAstParser {
         let expr;
         try {
           expr = this.expressionParser.parse(conditionStr);
+          this.extractIdentifiersFromExpr(expr, detectedKeywords);
         } catch {
           expr = { type: 'LITERAL', value: false } as const;
         }
@@ -380,6 +382,18 @@ export class TemplateAstParser {
         detectedConditions,
       },
     };
+  }
+
+  private extractIdentifiersFromExpr(expr: any, set: Set<string>): void {
+    if (!expr) return;
+    if (expr.type === 'IDENTIFIER' && expr.name) {
+      set.add(expr.name);
+    } else if (expr.type === 'BINARY') {
+      this.extractIdentifiersFromExpr(expr.left, set);
+      this.extractIdentifiersFromExpr(expr.right, set);
+    } else if (expr.type === 'UNARY') {
+      this.extractIdentifiersFromExpr(expr.argument, set);
+    }
   }
 }
 

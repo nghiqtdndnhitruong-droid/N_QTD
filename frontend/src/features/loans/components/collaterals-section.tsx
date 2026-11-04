@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Calculator, LandPlot, MapPin, Pencil, Plus, Search, Trash2 } from 'lucide-react';
+import { LandPlot, MapPin, Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import {
   CollateralAssetType,
   CollateralCertificateType,
@@ -24,11 +24,9 @@ import {
 } from '@/shared/constants';
 import { formatArea, formatVND } from '@/shared/format';
 import {
-  calculateFlooredValuationAmount,
-  getCanonicalIdIssuePlace,
+    getCanonicalIdIssuePlace,
   parseCitizenIdInfo,
-  resolveEffectiveCollateralArea,
-} from '@/shared/utils/identity-document';
+  } from '@/shared/utils/identity-document';
 import { applyServerErrorsToForm } from '@/lib/http';
 import {
   Badge,
@@ -46,12 +44,10 @@ import {
 } from '@/components/ui';
 import {
   FormAreaCascadeFields,
-  FormCurrencyField,
   FormDateField,
   FormNumberField,
   FormSelectField,
   FormTextField,
-  SelectInput,
 } from '@/components/form';
 import {
   Alert,
@@ -62,8 +58,6 @@ import {
 } from '@/components/feedback';
 import { Can } from '@/features/auth/components/can';
 import { useAreaTree } from '@/features/areas/hooks/use-areas';
-import { assetPricingApi } from '@/features/asset-pricing/api/asset-pricing.api';
-import { useAssetPricingList } from '@/features/asset-pricing/hooks/use-asset-pricing';
 import {
   useAddCollateral,
   useDeleteCollateral,
@@ -73,7 +67,7 @@ import {
   createCollateralFormSchema,
   type CollateralFormValues,
 } from '../schemas/loan.schema';
-import type { Collateral } from '../types/loan.types';
+import type { Collateral, ThirdPartyInfo } from '../types/loan.types';
 
 export interface CollateralsSectionProps {
   loanId: string;
@@ -96,8 +90,6 @@ export function CollateralsSection({
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<Collateral | null>(null);
   const [deletingItem, setDeletingItem] = useState<Collateral | null>(null);
-  const [selectedLandCategory, setSelectedLandCategory] = useState('');
-  const [isCalculatingPrice, setIsCalculatingPrice] = useState(false);
 
   // Bộ lọc và tìm kiếm tài sản theo Mã TS / Số GCN / Xã / Ấp
   const [searchKeyword, setSearchKeyword] = useState('');
@@ -107,7 +99,6 @@ export function CollateralsSection({
   const addMutation = useAddCollateral(loanId);
   const updateMutation = useUpdateCollateral(loanId);
   const deleteMutation = useDeleteCollateral(loanId);
-  const { data: pricingRules } = useAssetPricingList({ page: 1, limit: 50, isActive: true });
   const { data: areaTree = [] } = useAreaTree();
 
   const communes = useMemo(() => areaTree[0]?.communes ?? [], [areaTree]);
@@ -168,6 +159,7 @@ export function CollateralsSection({
     reset,
     setValue,
     setError,
+    clearErrors,
   } = useForm<CollateralFormValues>({
     resolver: zodResolver(schema),
     mode: 'onTouched',
@@ -201,8 +193,6 @@ export function CollateralsSection({
   });
 
   const watchedOwnerType = useWatch({ control, name: 'ownerType' });
-  const watchedArea = useWatch({ control, name: 'area' });
-  const watchedActualArea = useWatch({ control, name: 'actualArea' });
   const watchedThirdPartyIdNumber = useWatch({ control, name: 'thirdPartyInfo.idNumber' });
   const watchedThirdPartyIdType = useWatch({ control, name: 'thirdPartyInfo.idType' });
   const isThirdParty = watchedOwnerType === CollateralOwnerType.BAO_LANH;
@@ -227,6 +217,22 @@ export function CollateralsSection({
       });
     }
   }, [watchedThirdPartyIdType, setValue]);
+
+  // Khi chuyển từ "Bên thứ ba bảo lãnh" sang chủ sở hữu khác (người vay...), xóa lỗi validation và làm sạch dữ liệu người bảo lãnh
+  useEffect(() => {
+    if (watchedOwnerType !== CollateralOwnerType.BAO_LANH) {
+      clearErrors([
+        'thirdPartyInfo',
+        'thirdPartyInfo.fullName',
+        'thirdPartyInfo.idType',
+        'thirdPartyInfo.idNumber',
+        'thirdPartyInfo.address',
+        'thirdPartyInfo.yearOfBirth',
+        'thirdPartyInfo.gender',
+        'thirdPartyInfo.idIssuePlace',
+      ]);
+    }
+  }, [watchedOwnerType, clearErrors]);
 
   const openCreate = () => {
     setEditingItem(null);
@@ -294,36 +300,7 @@ export function CollateralsSection({
     setDrawerOpen(true);
   };
 
-  const handleCalculateFundPricing = async () => {
-    if (!selectedLandCategory || !watchedArea || watchedArea <= 0) return;
-    setIsCalculatingPrice(true);
-    try {
-      const { effectiveArea, areaSource } = resolveEffectiveCollateralArea(
-        watchedArea,
-        watchedActualArea
-      );
-      const calc = await assetPricingApi.calculate({
-        landCategory: selectedLandCategory,
-        area: effectiveArea,
-      });
-      const floored = calculateFlooredValuationAmount(effectiveArea, calc.pricePerSqMeter);
-      setValue('valuationMethod', ValuationMethod.BANG_GIA_QUY, { shouldValidate: true });
-      setValue('valuationAmount', floored, { shouldValidate: true });
-      setValue('pricePerSqMeter', calc.pricePerSqMeter, { shouldValidate: true });
-      const areaSourceText =
-        areaSource === 'ACTUAL_AREA'
-          ? `Diện tích thực (${formatArea(effectiveArea)})`
-          : `Diện tích GCN (${formatArea(effectiveArea)})`;
-      notifySuccess(
-        `Định giá tự động: ${formatVND(floored)}`,
-        `${areaSourceText} × ${formatVND(calc.pricePerSqMeter)}/m² (${calc.landCategory})`,
-      );
-    } catch (err) {
-      notifyApiError(err);
-    } finally {
-      setIsCalculatingPrice(false);
-    }
-  };
+
 
   const onSubmit = async (values: CollateralFormValues) => {
     const payload = {
@@ -334,7 +311,10 @@ export function CollateralsSection({
       issueDate: values.issueDate || undefined,
       valuationMethod: isUnsecured ? null : values.valuationMethod,
       valuationAmount: isUnsecured ? 0 : (values.valuationAmount ?? 0),
-      thirdPartyInfo: isThirdParty ? values.thirdPartyInfo : undefined,
+      thirdPartyInfo:
+        values.ownerType === CollateralOwnerType.BAO_LANH && values.thirdPartyInfo
+          ? (values.thirdPartyInfo as ThirdPartyInfo)
+          : undefined,
     };
 
     try {
@@ -770,58 +750,7 @@ export function CollateralsSection({
                 hamletRequired={false}
               />
 
-              {/* Khối định giá tài sản (chỉ bắt buộc với Vay thế chấp) */}
-              {isUnsecured ? (
-                <div className="rounded-lg border border-primary-200 bg-primary-50/40 p-3.5 text-xs text-primary-900">
-                  <strong>Khoản vay tín chấp:</strong> Chỉ kê khai thông tin Giấy chứng nhận QSDĐ và địa bàn tài sản, không yêu cầu định giá tài sản.
-                </div>
-              ) : (
-                <div className="rounded-lg border border-slate-200 bg-slate-50/70 p-4 space-y-4">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-                    <SelectInput
-                      label="Tra cứu nhanh theo Bảng giá đất của Quỹ"
-                      value={selectedLandCategory}
-                      onChange={(e) => setSelectedLandCategory(e.target.value)}
-                      placeholder="-- Chọn loại đất để tự động nhân với diện tích --"
-                      options={(pricingRules?.items ?? []).map((r) => ({
-                        value: r.landCategory,
-                        label: `${r.landCategory} (${formatVND(r.pricePerSqMeter)}/m²)`,
-                      }))}
-                      wrapperClassName="flex-1"
-                    />
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="md"
-                      disabled={!selectedLandCategory}
-                      isLoading={isCalculatingPrice}
-                      leftIcon={<Calculator className="h-4 w-4" />}
-                      onClick={handleCalculateFundPricing}
-                    >
-                      Tính theo bảng giá
-                    </Button>
-                  </div>
 
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <FormSelectField
-                      control={control}
-                      name="valuationMethod"
-                      label="Phương pháp định giá"
-                      required
-                      options={Object.entries(VALUATION_METHOD_LABELS).map(([value, label]) => ({
-                        value,
-                        label,
-                      }))}
-                    />
-                    <FormCurrencyField
-                      control={control}
-                      name="valuationAmount"
-                      label="Giá trị định giá tài sản"
-                      required
-                    />
-                  </div>
-                </div>
-              )}
 
               {/* Chủ sở hữu & Bên thứ ba bảo lãnh */}
               <div className="space-y-4 border-t border-slate-200 pt-4">

@@ -134,13 +134,13 @@ export const mortgageContractFormSchema = z.object({
 export type MortgageContractFormValues = z.infer<typeof mortgageContractFormSchema>;
 
 export const thirdPartyInfoFormSchema = z.object({
-  fullName: z.string().trim().min(2, 'Họ tên người bảo lãnh tối thiểu 2 ký tự'),
+  fullName: z.string().trim().optional(),
   yearOfBirth: z.number().int().min(1900).max(new Date().getFullYear()).optional(),
   gender: z.nativeEnum(Gender).optional(),
-  idType: z.nativeEnum(IdDocumentType),
-  idNumber: idNumberSchema,
+  idType: z.nativeEnum(IdDocumentType).optional(),
+  idNumber: z.string().trim().optional(),
   idIssuePlace: z.string().trim().optional(),
-  address: z.string().trim().min(3, 'Địa chỉ tối thiểu 3 ký tự'),
+  address: z.string().trim().optional(),
 });
 
 const baseCollateralObjectSchema = z.object({
@@ -197,38 +197,47 @@ const baseCollateralObjectSchema = z.object({
   thirdPartyInfo: thirdPartyInfoFormSchema.nullable().optional(),
 });
 
-export function createCollateralFormSchema(loanType: LoanType = LoanType.THE_CHAP) {
+export function createCollateralFormSchema(_loanType: LoanType = LoanType.THE_CHAP) {
   return baseCollateralObjectSchema.superRefine((data, ctx) => {
     if (data.ownerType === CollateralOwnerType.BAO_LANH) {
-      const hasValidGuarantor = Boolean(
-        data.thirdPartyInfo &&
-          data.thirdPartyInfo.fullName.trim().length >= 2 &&
-          data.thirdPartyInfo.idNumber.trim().length >= 9,
-      );
-      if (!hasValidGuarantor) {
+      if (!data.thirdPartyInfo?.fullName || data.thirdPartyInfo.fullName.trim().length < 2) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ['thirdPartyInfo', 'fullName'],
-          message: 'Tài sản bên thứ ba bảo lãnh bắt buộc phải nhập đầy đủ thông tin người bảo lãnh',
+          message: 'Họ tên người bảo lãnh tối thiểu 2 ký tự',
+        });
+      }
+      if (!data.thirdPartyInfo?.idType) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['thirdPartyInfo', 'idType'],
+          message: 'Vui lòng chọn loại giấy tờ',
+        });
+      }
+      const idRes = idNumberSchema.safeParse(data.thirdPartyInfo?.idNumber);
+      if (!idRes.success) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['thirdPartyInfo', 'idNumber'],
+          message: idRes.error.issues[0]?.message || 'Số CCCD/Căn cước không hợp lệ',
+        });
+      }
+      if (!data.thirdPartyInfo?.address || data.thirdPartyInfo.address.trim().length < 3) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['thirdPartyInfo', 'address'],
+          message: 'Địa chỉ người bảo lãnh tối thiểu 3 ký tự',
         });
       }
     }
 
-    if (loanType === LoanType.THE_CHAP) {
-      if (!data.valuationMethod) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ['valuationMethod'],
-          message: 'Phương thức định giá là bắt buộc đối với khoản vay thế chấp',
-        });
-      }
-      if (!data.valuationAmount || data.valuationAmount <= 0) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ['valuationAmount'],
-          message: 'Giá trị định giá phải lớn hơn 0 ₫ đối với khoản vay thế chấp',
-        });
-      }
+    // Định giá tài sản được quản lý độc lập tại tab Định giá riêng (LoanValuation).
+    if (data.valuationAmount && data.valuationAmount > 0 && !data.valuationMethod) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['valuationMethod'],
+        message: 'Vui lòng chọn phương thức định giá khi có nhập giá trị định giá',
+      });
     }
   });
 }

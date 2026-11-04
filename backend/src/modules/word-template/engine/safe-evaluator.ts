@@ -101,7 +101,29 @@ export class SafeExpressionParser {
     return parseOr();
   }
 
-  private tokenize(str: string): string[] {
+  private tokenize(rawStr: string): string[] {
+    // 1. Chuẩn hóa XML entities thường gặp khi người dùng gõ trong Microsoft Word
+    let str = rawStr
+      .replace(/&amp;lt;/gi, '<')
+      .replace(/&lt;/gi, '<')
+      .replace(/&amp;gt;/gi, '>')
+      .replace(/&gt;/gi, '>')
+      .replace(/&amp;le;/gi, '<=')
+      .replace(/&le;/gi, '<=')
+      .replace(/&amp;ge;/gi, '>=')
+      .replace(/&ge;/gi, '>=')
+      .replace(/&amp;quot;/gi, '"')
+      .replace(/&quot;/gi, '"')
+      .replace(/&amp;apos;/gi, "'")
+      .replace(/&apos;/gi, "'")
+      .replace(/&amp;amp;/gi, '&')
+      .replace(/&amp;/gi, '&');
+
+    // 2. Chuẩn hóa smart quotes của Microsoft Word (dấu ngoặc kép cong và dấu nháy đơn cong)
+    str = str
+      .replace(/[\u201C\u201D\u201E\u201F\u00AB\u00BB]/g, '"')
+      .replace(/[\u2018\u2019\u201A\u201B]/g, "'");
+
     const tokens: string[] = [];
     let i = 0;
     const len = str.length;
@@ -151,6 +173,20 @@ export class SafeExpressionParser {
         continue;
       }
 
+      // Người dùng gõ dấu gán đơn '=' -> coi như '=='
+      if (char === '=' && str[i + 1] !== '=') {
+        tokens.push('==');
+        i++;
+        continue;
+      }
+
+      // Dấu & hoặc | đơn lẻ -> chuẩn hóa thành && và ||
+      if (char === '&' || char === '|') {
+        tokens.push(char === '&' ? '&&' : '||');
+        i++;
+        continue;
+      }
+
       // One-char operators and parens
       if (['>', '<', '!', '(', ')'].includes(char)) {
         tokens.push(char);
@@ -170,6 +206,10 @@ export class SafeExpressionParser {
       }
       if (word) {
         tokens.push(word);
+      } else {
+        // Fallback an toàn tuyệt đối: nếu gặp ký tự lạ, luôn tiến i++ để không bao giờ bị lặp vô tận
+        tokens.push(str[i]);
+        i++;
       }
     }
 
@@ -235,14 +275,34 @@ export class SafeExpressionEvaluator {
             return this.looseEquals(leftVal, rightVal);
           case '!=':
             return !this.looseEquals(leftVal, rightVal);
-          case '>':
-            return Number(leftVal) > Number(rightVal);
-          case '<':
-            return Number(leftVal) < Number(rightVal);
-          case '>=':
-            return Number(leftVal) >= Number(rightVal);
-          case '<=':
-            return Number(leftVal) <= Number(rightVal);
+          case '>': {
+            const leftNum = this.toNumber(leftVal);
+            const rightNum = this.toNumber(rightVal);
+            return !isNaN(leftNum) && !isNaN(rightNum)
+              ? leftNum > rightNum
+              : String(leftVal) > String(rightVal);
+          }
+          case '<': {
+            const leftNum = this.toNumber(leftVal);
+            const rightNum = this.toNumber(rightVal);
+            return !isNaN(leftNum) && !isNaN(rightNum)
+              ? leftNum < rightNum
+              : String(leftVal) < String(rightVal);
+          }
+          case '>=': {
+            const leftNum = this.toNumber(leftVal);
+            const rightNum = this.toNumber(rightVal);
+            return !isNaN(leftNum) && !isNaN(rightNum)
+              ? leftNum >= rightNum
+              : String(leftVal) >= String(rightVal);
+          }
+          case '<=': {
+            const leftNum = this.toNumber(leftVal);
+            const rightNum = this.toNumber(rightVal);
+            return !isNaN(leftNum) && !isNaN(rightNum)
+              ? leftNum <= rightNum
+              : String(leftVal) <= String(rightVal);
+          }
           default:
             return false;
         }
@@ -326,6 +386,15 @@ export class SafeExpressionEvaluator {
     return Boolean(val);
   }
 
+  private toNumber(val: any): number {
+    if (typeof val === 'number') return val;
+    if (val === null || val === undefined) return NaN;
+    const str = String(val).trim().replace(/đ|VND|m²|m2|%|đồng/gi, '').trim();
+    const normalized = str.replace(/\./g, '').replace(/,/g, '.');
+    const num = Number(normalized);
+    return isNaN(num) ? NaN : num;
+  }
+
   private looseEquals(a: any, b: any): boolean {
     if (a === b) return true;
     if (a == null && b == null) return true;
@@ -336,9 +405,11 @@ export class SafeExpressionEvaluator {
       return a.trim() === b.trim();
     }
 
-    // So sánh số và chuỗi số
-    if (!isNaN(Number(a)) && !isNaN(Number(b))) {
-      return Number(a) === Number(b);
+    // So sánh số và chuỗi số (có hỗ trợ format tiền tệ)
+    const aNum = this.toNumber(a);
+    const bNum = this.toNumber(b);
+    if (!isNaN(aNum) && !isNaN(bNum)) {
+      return aNum === bNum;
     }
 
     return String(a) === String(b);

@@ -70,6 +70,13 @@ enum ValuationMethod {
   THI_TRUONG    // Theo giá thị trường
 }
 
+enum ValuationType {
+  THEO_NGHI_DINH_QUY                       // 1. Theo nghị định Quỹ
+  THEO_NGHI_DINH_QUY_CU                    // 2. Theo nghị định Quỹ (Cũ)
+  THEO_GIA_THI_TRUONG                      // 3. Theo giá thị trường
+  THEO_GIA_THI_TRUONG_VA_NGHI_DINH_QUY     // 4. Theo giá thị trường và theo nghị định Quỹ
+}
+
 // ============================================================
 // ADMINISTRATIVE AREA (Địa bàn: Tỉnh -> Xã -> Ấp)
 // ============================================================
@@ -276,6 +283,7 @@ model Loan {
   collaterals      Collateral[]
   disbursements    Disbursement[]
   repayments       Repayment[]
+  valuations       LoanValuation[]
 
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
@@ -391,6 +399,8 @@ model Collateral {
   ownerType           CollateralOwnerType
   thirdPartyInfo      ThirdPartyInfo?     // Thông tin bên thứ 3 (nếu BAO_LANH)
 
+  valuations          LoanValuation[]
+
   createdAt           DateTime            @default(now())
   updatedAt           DateTime            @updatedAt
 
@@ -398,6 +408,41 @@ model Collateral {
   @@index([certificateNumber])
   @@index([communeId, hamletId])
   @@map("collaterals")
+}
+
+// ============================================================
+// LOAN VALUATION (Định giá khoản vay - nhiều dòng độc lập)
+// ============================================================
+
+model LoanValuation {
+  id              String         @id @default(auto()) @map("_id") @db.ObjectId
+  loanId          String         @db.ObjectId
+  loan            Loan           @relation(fields: [loanId], references: [id])
+  collateralId    String?        @db.ObjectId
+  collateral      Collateral?    @relation(fields: [collateralId], references: [id])
+
+  // 4 loại định giá chuẩn hóa
+  valuationType   ValuationType
+
+  // Ngày định giá (không tự động gán nếu chưa nhập)
+  valuationDate   DateTime?
+
+  // Chi tiết (String giữ số 0 ở đầu)
+  sheetNumber     String
+  plotNumber      String
+  area            Float
+  actualArea      Float?
+  pricePerSqMeter Float
+  totalPrice      Float
+  notes           String?
+
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([loanId])
+  @@index([collateralId])
+  @@index([valuationType])
+  @@map("loan_valuations")
 }
 
 // ============================================================

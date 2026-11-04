@@ -4,6 +4,8 @@ import type { LoanStatus } from '@/shared/types';
 import { loansApi } from '../api/loans.api';
 import type {
   CreateCollateralPayload,
+  CreateLoanValuationPayload,
+  UpdateLoanValuationPayload,
   CreateDisbursementPayload,
   CreateLoanPayload,
   CreateRelatedPersonPayload,
@@ -62,6 +64,7 @@ function invalidateLoanEverything(qc: ReturnType<typeof useQueryClient>, loanId:
   void qc.invalidateQueries({ queryKey: queryKeys.loans.lists() });
   void qc.invalidateQueries({ queryKey: ['loans', loanId, 'related-persons'] });
   void qc.invalidateQueries({ queryKey: ['loans', loanId, 'collaterals'] });
+  void qc.invalidateQueries({ queryKey: ['loans', loanId, 'valuations'] });
   void qc.invalidateQueries({ queryKey: queryKeys.dashboard.all });
   void qc.invalidateQueries({ queryKey: queryKeys.reports.all });
 }
@@ -217,6 +220,40 @@ export function useDeleteRelatedPerson(loanId: string) {
   return useMutation({
     mutationFn: ({ id, reason }: { id: string; reason?: string }) =>
       loansApi.deleteRelatedPerson(loanId, id, reason),
+    onSuccess: () => invalidateLoanEverything(qc, loanId),
+  });
+}
+
+export function useLoanValuations(loanId: string | undefined, enabled = true) {
+  return useQuery({
+    queryKey: ['loans', loanId, 'valuations'],
+    queryFn: () => loansApi.listValuations(loanId!),
+    enabled: Boolean(loanId) && enabled,
+  });
+}
+
+export function useAddLoanValuation(loanId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: CreateLoanValuationPayload) =>
+      loansApi.addValuation(loanId, payload),
+    onSuccess: () => invalidateLoanEverything(qc, loanId),
+  });
+}
+
+export function useUpdateLoanValuation(loanId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: UpdateLoanValuationPayload }) =>
+      loansApi.updateValuation(loanId, id, payload),
+    onSuccess: () => invalidateLoanEverything(qc, loanId),
+  });
+}
+
+export function useDeleteLoanValuation(loanId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => loansApi.deleteValuation(loanId, id),
     onSuccess: () => invalidateLoanEverything(qc, loanId),
   });
 }

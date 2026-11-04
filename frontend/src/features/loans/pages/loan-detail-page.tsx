@@ -50,6 +50,7 @@ import { Can } from '@/features/auth/components/can';
 import { isLoanEligibleForRelatedPerson } from '@/shared/utils/identity-document';
 import { buildInterestExpenseItemName } from '../utils/loan-plan-templates';
 import { CollateralsSection } from '../components/collaterals-section';
+import { LoanValuationSection } from '../components/loan-valuation-section';
 import { DisbursementsSection } from '../components/disbursements-section';
 import { LoanSummaryStrip } from '../components/loan-summary-strip';
 import { RelatedPersonsSection } from '../components/related-persons-section';
@@ -271,6 +272,17 @@ export function LoanDetailPage() {
             </TabsTrigger>
           )}
           <TabsTrigger value="collaterals">
+            {loan.loanType === LoanType.TIN_CHAP ? 'Tài sản kê khai' : 'Tài sản thế chấp'} (
+            {loan.collaterals?.length ?? 0})
+          </TabsTrigger>
+          <TabsTrigger value="valuations">
+            Định giá ({loan.valuations?.length ?? 0})
+          </TabsTrigger>
+          <TabsTrigger value="valuations">
+            Định giá ({loan.valuations?.length ?? 0})
+          </TabsTrigger>
+          {/* placeholder */}
+          <TabsTrigger value="_collaterals_old">
             {loan.loanType === LoanType.TIN_CHAP ? 'Tài sản kê khai' : 'Tài sản thế chấp'} (
             {loan.collaterals?.length ?? 0})
           </TabsTrigger>
@@ -544,6 +556,14 @@ export function LoanDetailPage() {
             collaterals={loan.collaterals ?? []}
             readOnly={!isEditable}
             hasHeir={Boolean(loan.heir?.fullName?.trim())}
+          />
+        </TabsContent>
+
+        <TabsContent value="valuations">
+          <LoanValuationSection
+            loanId={loan.id}
+            collaterals={loan.collaterals ?? []}
+            readOnly={!isEditable}
           />
         </TabsContent>
 

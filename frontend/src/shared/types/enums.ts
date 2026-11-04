@@ -70,3 +70,11 @@ export const ValuationMethod = {
   THI_TRUONG: 'THI_TRUONG',
 } as const;
 export type ValuationMethod = (typeof ValuationMethod)[keyof typeof ValuationMethod];
+
+export const ValuationType = {
+  THEO_NGHI_DINH_QUY: 'THEO_NGHI_DINH_QUY',
+  THEO_NGHI_DINH_QUY_CU: 'THEO_NGHI_DINH_QUY_CU',
+  THEO_GIA_THI_TRUONG: 'THEO_GIA_THI_TRUONG',
+  THEO_GIA_THI_TRUONG_VA_NGHI_DINH_QUY: 'THEO_GIA_THI_TRUONG_VA_NGHI_DINH_QUY',
+} as const;
+export type ValuationType = (typeof ValuationType)[keyof typeof ValuationType];

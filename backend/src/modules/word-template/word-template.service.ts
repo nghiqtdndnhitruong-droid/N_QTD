@@ -350,6 +350,7 @@ export class WordTemplateService {
       if (k.includes('TAI_SAN') || k.includes('COLLATERAL')) return { path: 'collaterals', dataType: 'LIST' };
       if (k.includes('LIEN_QUAN') || k.includes('RELATED')) return { path: 'relatedPersons', dataType: 'LIST' };
       if (k.includes('CHI_PHI') || k.includes('EXPENSE')) return { path: 'DANH_SACH_CHI_PHI', dataType: 'LIST' };
+      if (k.includes('THU_NHAP')) return { path: 'DANH_SACH_THU_NHAP', dataType: 'LIST' };
       if (k.includes('NGUON_THU') || k.includes('REVENUE')) return { path: 'DANH_SACH_NGUON_THU', dataType: 'LIST' };
       return null;
     }
@@ -375,6 +376,12 @@ export class WordTemplateService {
         if (k.includes('DANH_SACH')) return { path: 'DANH_SACH_CHI_PHI', dataType: 'LIST' };
         if (k.includes('CHU')) return { path: 'PHUONG_AN.TONG_CHI_PHI_CHU', dataType: 'CURRENCY_WORDS' };
         return { path: 'PHUONG_AN.TONG_CHI_PHI', dataType: 'CURRENCY' };
+      }
+      if (k.includes('DANH_SACH_THU_NHAP') || (k.includes('THU_NHAP') && k.includes('DANH_SACH'))) {
+        return { path: 'DANH_SACH_THU_NHAP', dataType: 'LIST' };
+      }
+      if (k.includes('THU_NHAP_GOP')) {
+        return { path: 'PHUONG_AN.DANH_SACH_THU_NHAP_GOP', dataType: 'TEXT' };
       }
       if (k.includes('THU_NHAP') || k.includes('NGUON_THU')) {
         if (k.includes('GOP')) return { path: 'PHUONG_AN.NGUON_THU_GOP', dataType: 'TEXT' };
@@ -412,6 +419,11 @@ export class WordTemplateService {
         return { path: 'heir.address', dataType: 'TEXT' };
     }
 
+    // Tổng số lượng tài sản
+    if (k.includes('SO_LUONG_TAI_SAN') || k.includes('TONG_SO_TAI_SAN')) {
+      return { path: 'collaterals_summary.totalCount', dataType: 'NUMBER' };
+    }
+
     // Tổng diện tích tất cả tài sản
     if (k.includes('TONG_DIEN_TICH') || k.includes('TOTAL_AREA')) {
       if (k.includes('CHU') || k.includes('WORDS')) {
@@ -420,8 +432,31 @@ export class WordTemplateService {
       return { path: 'collaterals_summary.totalArea', dataType: 'TEXT' };
     }
 
+    // Tổng định giá tất cả tài sản
+    if (k.includes('TONG_DINH_GIA') || k.includes('TONG_GIA_TRI_DINH_GIA')) {
+      if (k.includes('CHU') || k.includes('WORDS')) {
+        return { path: 'collaterals_summary.totalValuationAmountWords', dataType: 'CURRENCY_WORDS' };
+      }
+      return { path: 'collaterals_summary.totalValuationAmountRounded', dataType: 'CURRENCY' };
+    }
+
     // Tài sản gộp (nguyên tắc: nối dấu ; khi khác nhau, giữ nguyên 1 giá trị nếu giống nhau)
     if (k.startsWith('TAI_SAN.') || k.includes('_GOP')) {
+      if (k.includes('SO_LUONG_TAI_SAN') || k.includes('TONG_SO_TAI_SAN') || k.includes('SO_LUONG')) {
+        return { path: 'TAI_SAN.SO_LUONG_TAI_SAN', dataType: 'NUMBER' };
+      }
+      if (k.includes('TONG_DINH_GIA') || k.includes('TONG_GIA_TRI_DINH_GIA')) {
+        if (k.includes('CHU') || k.includes('WORDS')) {
+          return { path: 'TAI_SAN.TONG_DINH_GIA_CHU', dataType: 'CURRENCY_WORDS' };
+        }
+        return { path: 'TAI_SAN.TONG_DINH_GIA', dataType: 'CURRENCY' };
+      }
+      if (k.includes('TONG_DIEN_TICH')) {
+        if (k.includes('CHU') || k.includes('WORDS')) {
+          return { path: 'TAI_SAN.TONG_DIEN_TICH_CHU', dataType: 'TEXT' };
+        }
+        return { path: 'TAI_SAN.TONG_DIEN_TICH', dataType: 'TEXT' };
+      }
       if (k.includes('MA_TAI_SAN') || k.includes('ASSET_CODE'))
         return { path: 'TAI_SAN.MA_TAI_SAN_GOP', dataType: 'TEXT' };
       if (k.includes('SO_GCN') || k.includes('SO_PHAT_HANH_GCN') || k.includes('CERTIFICATE_NUMBER'))

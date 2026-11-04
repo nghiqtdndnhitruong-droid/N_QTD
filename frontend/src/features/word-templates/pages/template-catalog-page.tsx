@@ -379,6 +379,40 @@ export function TemplateCatalogPage() {
               </table>
             </div>
           </Card>
+
+          {/* Card 6: DANH SÁCH THU NHẬP & KIỂM TRA TRUNG HẠN */}
+          <Card className="p-5 border border-slate-200 bg-white space-y-4 lg:col-span-2">
+            <div className="flex items-center gap-2 font-bold text-slate-900 border-b border-slate-100 pb-3">
+              <Database className="h-5 w-5 text-teal-600" />
+              <span>6. Danh sách thu nhập phương án (DANH_SACH_THU_NHAP) & Điều kiện Trung Hạn</span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+              <div className="space-y-2">
+                <span className="font-semibold text-slate-700">Vòng lặp thu nhập (tự động ánh xạ tên & số tiền):</span>
+                <div className="rounded bg-slate-900 p-3 font-mono text-emerald-400 whitespace-pre-wrap">
+{`{{#FOR tn IN DANH_SACH_THU_NHAP}}
++ {{tn.TEN_THU_NHAP}} {{tn.SO_TIEN}}
+{{/FOR}}`}
+                </div>
+                <p className="text-[11px] text-slate-500">
+                  Biến <code>tn.TEN_THU_NHAP</code> tự động chuyển đổi thành <em>"Thu nhập từ sản xuất nông nghiệp"</em>, <em>"Thu nhập từ chăn nuôi"</em>, hoặc <em>"Thu nhập khác"</em> (không kèm dấu hai chấm) tùy theo loại phương án vay.
+                </p>
+              </div>
+              <div className="space-y-2">
+                <span className="font-semibold text-slate-700">Điều kiện kiểm tra thời hạn trung hạn:</span>
+                <div className="rounded bg-slate-900 p-3 font-mono text-emerald-400 whitespace-pre-wrap">
+{`{{#IF isTrungHan}}
+Khoản vay áp dụng thời hạn trung hạn...
+{{#ELSE}}
+Khoản vay áp dụng thời hạn ngắn hạn...
+{{/IF}}`}
+                </div>
+                <p className="text-[11px] text-slate-500">
+                  Hỗ trợ cả <code>isTrungHan</code>, <code>IS_TRUNG_HAN</code>, <code>LA_TRUNG_HAN</code> hoặc <code>KHOAN_VAY.IS_TRUNG_HAN</code>.
+                </p>
+              </div>
+            </div>
+          </Card>
         </div>
       ) : (
         /* TAB 2: HƯỚNG DẪN CÚ PHÁP CHUẨN (DOCS & CHEAT SHEET) */
@@ -591,7 +625,8 @@ Người liên quan đầu tiên: {{DANH_SACH_NGUOI_LIEN_QUAN[0].HO_TEN}}`}
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
               <div className="rounded bg-slate-900 p-3 font-mono text-emerald-400">
-                {`Mã tài sản gộp: {{TAI_SAN.MA_TAI_SAN_GOP}}
+                {`Số lượng tài sản: {{TAI_SAN.SO_LUONG_TAI_SAN}}
+Mã tài sản gộp: {{TAI_SAN.MA_TAI_SAN_GOP}}
 Số GCN gộp: {{TAI_SAN.SO_GCN_GOP}}
 Số vào sổ gộp: {{TAI_SAN.SO_VAO_SO_GOP}}
 Số thửa gộp: {{TAI_SAN.SO_THUA_GOP}}
@@ -599,7 +634,8 @@ Số tờ bản đồ gộp: {{TAI_SAN.SO_TO_GOP}}`}
               </div>
               <div className="rounded bg-slate-900 p-3 font-mono text-emerald-400">
                 {`Diện tích gộp: {{TAI_SAN.DIEN_TICH_GOP}}
-Tổng diện tích: {{TONG_DIEN_TICH}}
+Tổng diện tích: {{TONG_DIEN_TICH}} (hoặc {{TAI_SAN.TONG_DIEN_TICH}})
+Tổng định giá: {{TAI_SAN.TONG_DINH_GIA}} (hoặc {{TONG_DINH_GIA}})
 Địa chỉ gộp: {{TAI_SAN.DIA_CHI_GOP}}
 Chủ sở hữu gộp: {{TAI_SAN.CHU_SO_HUU_GOP}}
 Ngày cấp GCN gộp: {{TAI_SAN.NGAY_CAP_GOP}}

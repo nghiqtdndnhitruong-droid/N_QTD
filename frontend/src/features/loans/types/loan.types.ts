@@ -9,6 +9,7 @@ import type {
   LoanTermType,
   LoanType,
   ValuationMethod,
+  ValuationType,
 } from '@/shared/types';
 import type { Member } from '@/features/members/types/member.types';
 
@@ -205,6 +206,7 @@ export interface Loan {
   loanPlan: LoanPlan | null;
   mortgageContract: MortgageContract | null;
   collaterals?: Collateral[];
+  valuations?: LoanValuation[];
   disbursements?: Disbursement[];
   repayments?: Repayment[];
   _count?: {
@@ -368,3 +370,51 @@ export interface LoanListQuery extends ListQueryParams {
   communeId?: string;
   hamletId?: string;
 }
+
+export { ValuationType } from '@/shared/types';
+
+export const VALUATION_TYPE_LABELS: Record<ValuationType, string> = {
+  THEO_NGHI_DINH_QUY: 'Theo nghị định Quỹ',
+  THEO_NGHI_DINH_QUY_CU: 'Theo nghị định Quỹ (Cũ)',
+  THEO_GIA_THI_TRUONG: 'Theo giá thị trường',
+  THEO_GIA_THI_TRUONG_VA_NGHI_DINH_QUY: 'Theo giá thị trường và theo nghị định Quỹ',
+};
+
+export interface LoanValuation {
+  id: string;
+  loanId: string;
+  collateralId?: string | null;
+  collateral?: {
+    id: string;
+    assetCode: string;
+    certificateNumber: string;
+    sheetNumber: string;
+    plotNumber: string;
+  } | null;
+  valuationType: ValuationType;
+  valuationDate: string | null;
+  sheetNumber: string;
+  plotNumber: string;
+  area: number;
+  actualArea?: number | null;
+  pricePerSqMeter: number;
+  totalPrice: number;
+  notes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateLoanValuationPayload {
+  collateralId?: string | null;
+  valuationType: ValuationType;
+  valuationDate?: string | null;
+  sheetNumber: string;
+  plotNumber: string;
+  area: number;
+  actualArea?: number | null;
+  pricePerSqMeter: number;
+  totalPrice?: number;
+  notes?: string | null;
+}
+
+export interface UpdateLoanValuationPayload extends Partial<CreateLoanValuationPayload> {}

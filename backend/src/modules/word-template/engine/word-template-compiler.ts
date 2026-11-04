@@ -106,7 +106,7 @@ export class WordTemplateCompiler {
 
     // 5. Xử lý IF – ELSE IF – ELSE
     // Thuật toán: Quét các khối IF, tính toán giá trị logic của từng nhánh và gắn thẻ boolean cho docxtemplater
-    compiled = this.compileIfBlocks(compiled, enrichedData, evaluatedConditions, condCounter);
+    compiled = this.compileIfBlocks(compiled, enrichedData, evaluatedConditions, condCounter, loopConfigs);
 
     return {
       compiledXml: compiled,
@@ -149,8 +149,10 @@ export class WordTemplateCompiler {
     xml: string,
     context: Record<string, any>,
     evaluatedConditions: Record<string, boolean>,
-    counterRef: number
+    counterRef: number,
+    loopConfigs: { iterator: string; collectionPath: string }[] = []
   ): string {
+    const iterators = new Set(loopConfigs.map((l) => l.iterator));
     // Regex tìm cấu trúc IF/ELSE
     const ifTokenRegex = /\{\{#IF\s+([\s\S]*?)\}\}|\{\{#(?:ELSE\s+IF|ELIF)\s+([\s\S]*?)\}\}|\{\{#ELSE\}\}|\{\{\/IF\}\}/gi;
 
@@ -165,9 +167,25 @@ export class WordTemplateCompiler {
     return xml.replace(ifTokenRegex, (match, ifCond, elifCond) => {
       // 1. Gặp #IF <condition>
       if (ifCond !== undefined) {
+        const trimmed = ifCond.trim();
+        // Kiểm tra xem condition có phải là thuộc tính boolean của biến lặp không:
+        // ví dụ: "dg.LA_NGHI_DINH_QUY" hoặc "!dg.LA_NGHI_DINH_QUY" hoặc "NOT dg.LA_NGHI_DINH_QUY"
+        const loopPropMatch = /^(NOT\s+|!\s*)?([a-zA-Z0-9_]+)\.([a-zA-Z0-9_]+)$/i.exec(trimmed);
+        if (loopPropMatch && iterators.has(loopPropMatch[2])) {
+          const isNegated = Boolean(loopPropMatch[1]);
+          const propName = loopPropMatch[3];
+          const branchTag = isNegated ? `^${propName}` : `#${propName}`;
+          ifStack.push({
+            condId: propName,
+            satisfied: true,
+            activeBranchKey: propName,
+          });
+          return `{{${branchTag}}}`;
+        }
+
         counterRef++;
         const condId = `__c_${counterRef}`;
-        const isTrue = safeExpressionEvaluator.evaluate(ifCond.trim(), context);
+        const isTrue = safeExpressionEvaluator.evaluate(trimmed, context);
 
         evaluatedConditions[`${condId}_then`] = isTrue;
         context[`${condId}_then`] = isTrue;

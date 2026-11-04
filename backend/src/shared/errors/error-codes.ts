@@ -52,6 +52,7 @@ export const ErrorCode = {
 
   // Asset Pricing
   ASSET_PRICING_RULE_NOT_FOUND: 'ASSET_PRICING_RULE_NOT_FOUND',
+  VALUATION_NOT_FOUND: 'VALUATION_NOT_FOUND',
 } as const;
 
 export type ErrorCodeType = (typeof ErrorCode)[keyof typeof ErrorCode];

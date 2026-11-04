@@ -37,11 +37,35 @@ describe('loan.schema validation', () => {
       sheetNumber: '10',
       plotNumber: '20',
       area: 500,
+      provinceId: '79',
+      communeId: '001',
       valuationMethod: ValuationMethod.BANG_GIA_QUY,
       valuationAmount: 200_000_000,
       ownerType: CollateralOwnerType.BAO_LANH,
     });
     expect(missingThirdParty.success).toBe(false);
+  });
+
+  it('cho phép tạo tài sản khi chọn lại người vay đứng tên dù form người bảo lãnh từng được nhập dở hoặc bỏ trống', () => {
+    const validOwner = collateralFormSchema.safeParse({
+      assetType: CollateralAssetType.QUYEN_SU_DUNG_DAT,
+      assetCode: 'TS-01',
+      certificateNumber: 'CS 123',
+      sheetNumber: '10',
+      plotNumber: '20',
+      area: 500,
+      provinceId: '79',
+      communeId: '001',
+      valuationMethod: ValuationMethod.BANG_GIA_QUY,
+      valuationAmount: 200_000_000,
+      ownerType: CollateralOwnerType.NGUOI_VAY_CA_NHAN,
+      thirdPartyInfo: {
+        fullName: '',
+        idNumber: '',
+        address: '',
+      },
+    });
+    expect(validOwner.success).toBe(true);
   });
 
   it('yêu cầu tổng tiền gốc + lãi thu nợ phải > 0', () => {
@@ -55,4 +79,3 @@ describe('loan.schema validation', () => {
     expect(zeroRepay.success).toBe(false);
   });
 });
-

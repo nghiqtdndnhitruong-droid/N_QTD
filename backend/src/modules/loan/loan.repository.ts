@@ -11,6 +11,9 @@ export class LoanRepository {
       include: {
         member: true,
         collaterals: true,
+        valuations: {
+          orderBy: { createdAt: 'asc' },
+        },
         relatedPersons: {
           where: { isDeleted: { not: true } },
           orderBy: { createdAt: 'asc' },
@@ -19,6 +22,11 @@ export class LoanRepository {
           orderBy: { disbursementDate: 'asc' },
         },
         repayments: {
+          orderBy: { repaymentDate: 'asc' },
+        },
+        valuations: {
+          orderBy: { createdAt: 'asc' },
+        },
           orderBy: { repaymentDate: 'asc' },
         },
       },
@@ -84,6 +92,11 @@ export class LoanRepository {
             orderBy: { disbursementDate: 'asc' },
           },
           repayments: {
+          orderBy: { repaymentDate: 'asc' },
+        },
+        valuations: {
+          orderBy: { createdAt: 'asc' },
+        },
             orderBy: { repaymentDate: 'asc' },
           },
           _count: {

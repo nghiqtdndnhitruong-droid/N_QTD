@@ -15,7 +15,7 @@ export interface DataDictionaryField {
   label: string; // vd: "Họ và tên thành viên/người vay"
   dataType: MappingDataType;
   description?: string;
-  sampleValue?: string | number;
+  sampleValue?: string | number | boolean;
   isList?: boolean; // Nếu là mảng (vd: collaterals, relatedPersons)
   itemFields?: DataDictionaryField[]; // Các trường bên trong mỗi phần tử mảng
 }

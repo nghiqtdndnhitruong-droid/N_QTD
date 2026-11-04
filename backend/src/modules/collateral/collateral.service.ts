@@ -16,7 +16,7 @@ import {
   requireValidCitizenIdInfo,
   resolveEffectiveCollateralArea,
 } from '../../shared/utils/identity-document.util';
-import { LoanType } from '@prisma/client';
+import { LoanType, CollateralOwnerType } from '@prisma/client';
 
 function normalizeThirdPartyInfo(info?: ThirdPartyInfoDto | null) {
   if (!info) return null;
@@ -109,21 +109,15 @@ export class CollateralService {
     // 1b. Phân biệt Vay thế chấp (THE_CHAP) và Vay tín chấp (TIN_CHAP):
     // - Vay thế chấp bắt buộc phải có định giá tài sản (> 0) và phương pháp định giá.
     // - Vay tín chấp bắt buộc khai báo tài sản nhưng KHÔNG yêu cầu định giá.
-    if (loan.loanType === LoanType.THE_CHAP) {
-      if (!valuation.valuationAmount || valuation.valuationAmount <= 0) {
-        throw AppError.badRequest(
-          'Khoản vay thế chấp bắt buộc phải nhập Giá trị định giá tài sản (> 0 VNĐ).',
-          ErrorCode.VALIDATION_ERROR,
-          [{ field: 'valuationAmount', message: 'Giá trị định giá tài sản phải lớn hơn 0' }]
-        );
-      }
-      if (!dto.valuationMethod) {
-        throw AppError.badRequest(
-          'Khoản vay thế chấp bắt buộc phải chọn Phương pháp định giá tài sản.',
-          ErrorCode.VALIDATION_ERROR,
-          [{ field: 'valuationMethod', message: 'Vui lòng chọn phương pháp định giá' }]
-        );
-      }
+    // 1b. Định giá tài sản:
+    // Chức năng định giá đã được tách sang tab Định giá độc lập (LoanValuation).
+    // Nếu tài sản có truyền định giá thì kiểm tra hợp lệ, không bắt buộc khi tạo tài sản.
+    if (valuation.valuationAmount && valuation.valuationAmount > 0 && !dto.valuationMethod) {
+      throw AppError.badRequest(
+        'Vui lòng chọn Phương pháp định giá tài sản khi có nhập giá trị định giá.',
+        ErrorCode.VALIDATION_ERROR,
+        [{ field: 'valuationMethod', message: 'Vui lòng chọn phương pháp định giá' }]
+      );
     }
 
     // 2. Quy tắc Mã tài sản (assetCode): Bắt buộc duy nhất trên toàn hệ thống
@@ -152,7 +146,10 @@ export class CollateralService {
       fallbackAddress: dto.address,
     });
 
-    const normalizedThirdParty = normalizeThirdPartyInfo(dto.thirdPartyInfo);
+    const normalizedThirdParty =
+      dto.ownerType === CollateralOwnerType.BAO_LANH
+        ? normalizeThirdPartyInfo(dto.thirdPartyInfo)
+        : null;
 
     return this.repo.create(
       {
@@ -261,9 +258,9 @@ export class CollateralService {
     }
 
     const normalizedThirdParty =
-      dto.thirdPartyInfo !== undefined
-        ? normalizeThirdPartyInfo(dto.thirdPartyInfo)
-        : undefined;
+      dto.ownerType !== undefined
+        ? (dto.ownerType === CollateralOwnerType.BAO_LANH ? normalizeThirdPartyInfo(dto.thirdPartyInfo) : null)
+        : (dto.thirdPartyInfo !== undefined ? normalizeThirdPartyInfo(dto.thirdPartyInfo) : undefined);
 
     const { thirdPartyInfo: _rawThirdParty, ...restDto } = dto;
 

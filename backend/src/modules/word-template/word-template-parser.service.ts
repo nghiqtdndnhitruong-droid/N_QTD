@@ -93,9 +93,21 @@ export class WordTemplateParserService {
       return text.replace(/<[^>]+>/g, '');
     }
 
-    return matches
+    const raw = matches
       .map((t) => t.replace(/<w:t[^>]*>/, '').replace(/<\/w:t>/, ''))
       .join('');
+
+    return raw
+      .replace(/&amp;lt;/g, '<')
+      .replace(/&lt;/g, '<')
+      .replace(/&amp;gt;/g, '>')
+      .replace(/&gt;/g, '>')
+      .replace(/&amp;quot;/g, '"')
+      .replace(/&quot;/g, '"')
+      .replace(/&amp;apos;/g, "'")
+      .replace(/&apos;/g, "'")
+      .replace(/&amp;amp;/g, '&')
+      .replace(/&amp;/g, '&');
   }
 }
 

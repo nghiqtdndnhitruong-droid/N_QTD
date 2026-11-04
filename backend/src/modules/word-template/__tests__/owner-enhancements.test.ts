@@ -734,4 +734,426 @@ describe('Word Template Owner Enhancements (TAI_SAN.CHU_SO_HUU & DANH_SACH_CHU_S
       'Nguồn thu từ sản xuất lúa: 91.752.000 đ; Nguồn thu từ chăn nuôi: 152.920.000 đ'
     );
   });
+  it('15. Tự động khử trùng lặp và giữ danh xưng cá nhân khi có tài sản Hộ và Cá nhân cùng 1 người', () => {
+    // Trường hợp 1: Tài sản 1 là NGUOI_VAY_HO, Tài sản 2 là NGUOI_VAY_CA_NHAN
+    const loan1 = {
+      loanType: 'THE_CHAP',
+      member: baseMember,
+      collaterals: [
+        { assetCode: 'TS-01', area: 1000, ownerType: 'NGUOI_VAY_HO' },
+        { assetCode: 'TS-02', area: 2000, ownerType: 'NGUOI_VAY_CA_NHAN' },
+      ],
+    };
+
+    const res1 = wordTemplateDataDictionaryService.resolveLoanData(loan1 as any, []).resolvedContext;
+
+    expect(res1['DANH_SACH_CHU_SO_HUU']).toHaveLength(1);
+    expect(res1['DANH_SACH_CHU_SO_HUU'][0].HO_TEN).toBe('Nguyễn Văn An');
+    expect(res1['DANH_SACH_CHU_SO_HUU'][0].DANH_XUNG).toBe('Ông');
+    expect(res1['DANH_SACH_CHU_SO_HUU'][0].XUNG_HO).toBe('Ông');
+    expect(res1['DANH_SACH_CHU_SO_HUU'][0].QUAN_HE).toBe('Người vay');
+    expect(res1['TAI_SAN.CHU_SO_HUU']).toBe('Nguyễn Văn An');
+    expect(res1['CHU_SO_HUU_DANH_XUNG']).toBe('Ông');
+    expect(res1['CHU_SO_HUU_GOP']).toBe('Nguyễn Văn An');
+    expect(res1['CO_MOT_CHU_SO_HUU']).toBe(true);
+    expect(res1['CO_NHIEU_CHU_SO_HUU']).toBe(false);
+    expect(res1['SO_LUONG_CHU_SO_HUU']).toBe(1);
+
+    // Trường hợp 2: Thứ tự ngược lại - Tài sản 1 là Cá nhân, Tài sản 2 là Hộ
+    const loan2 = {
+      loanType: 'THE_CHAP',
+      member: baseMember,
+      collaterals: [
+        { assetCode: 'TS-01', area: 1000, ownerType: 'NGUOI_VAY_CA_NHAN' },
+        { assetCode: 'TS-02', area: 2000, ownerType: 'NGUOI_VAY_HO' },
+      ],
+    };
+
+    const res2 = wordTemplateDataDictionaryService.resolveLoanData(loan2 as any, []).resolvedContext;
+
+    expect(res2['DANH_SACH_CHU_SO_HUU']).toHaveLength(1);
+    expect(res2['DANH_SACH_CHU_SO_HUU'][0].HO_TEN).toBe('Nguyễn Văn An');
+    expect(res2['DANH_SACH_CHU_SO_HUU'][0].DANH_XUNG).toBe('Ông');
+    expect(res2['DANH_SACH_CHU_SO_HUU'][0].XUNG_HO).toBe('Ông');
+
+    // Trường hợp 3: Người thừa kế có 1 tài sản Hộ và 1 tài sản Cá nhân
+    const loan3 = {
+      loanType: 'THE_CHAP',
+      member: baseMember,
+      heir: baseHeir,
+      collaterals: [
+        { assetCode: 'TS-01', area: 1000, ownerType: 'NGUOI_THUA_KE_HO' },
+        { assetCode: 'TS-02', area: 2000, ownerType: 'NGUOI_THUA_KE_CA_NHAN' },
+      ],
+    };
+
+    const res3 = wordTemplateDataDictionaryService.resolveLoanData(loan3 as any, []).resolvedContext;
+
+    expect(res3['DANH_SACH_CHU_SO_HUU']).toHaveLength(1);
+    expect(res3['DANH_SACH_CHU_SO_HUU'][0].HO_TEN).toBe('Nguyễn Thị Bích');
+    expect(res3['DANH_SACH_CHU_SO_HUU'][0].DANH_XUNG).toBe('Bà');
+    expect(res3['DANH_SACH_CHU_SO_HUU'][0].XUNG_HO).toBe('Bà');
+
+    // Trường hợp 4: Cả 2 tài sản đều là Hộ -> giữ nguyên Hộ
+    const loan4 = {
+      loanType: 'THE_CHAP',
+      member: baseMember,
+      collaterals: [
+        { assetCode: 'TS-01', area: 1000, ownerType: 'NGUOI_VAY_HO' },
+        { assetCode: 'TS-02', area: 2000, ownerType: 'NGUOI_VAY_HO' },
+      ],
+    };
+
+    const res4 = wordTemplateDataDictionaryService.resolveLoanData(loan4 as any, []).resolvedContext;
+
+    expect(res4['DANH_SACH_CHU_SO_HUU']).toHaveLength(1);
+    expect(res4['DANH_SACH_CHU_SO_HUU'][0].HO_TEN).toBe('Hộ Nguyễn Văn An');
+    expect(res4['DANH_SACH_CHU_SO_HUU'][0].DANH_XUNG).toBe('Hộ Ông');
+
+    // Trường hợp 5: 3 tài sản gồm người vay (Hộ + Cá nhân) và bên thứ ba bảo lãnh
+    const loan5 = {
+      loanType: 'THE_CHAP',
+      member: baseMember,
+      collaterals: [
+        { assetCode: 'TS-01', area: 1000, ownerType: 'NGUOI_VAY_HO' },
+        { assetCode: 'TS-02', area: 2000, ownerType: 'NGUOI_VAY_CA_NHAN' },
+        { assetCode: 'TS-03', area: 3000, ownerType: 'BAO_LANH', thirdPartyInfo: guarantor },
+      ],
+    };
+
+    const res5 = wordTemplateDataDictionaryService.resolveLoanData(loan5 as any, []).resolvedContext;
+
+    expect(res5['DANH_SACH_CHU_SO_HUU']).toHaveLength(2);
+    expect(res5['DANH_SACH_CHU_SO_HUU'][0].HO_TEN).toBe('Nguyễn Văn An');
+    expect(res5['DANH_SACH_CHU_SO_HUU'][0].DANH_XUNG).toBe('Ông');
+    expect(res5['DANH_SACH_CHU_SO_HUU'][1].HO_TEN).toBe('Lê Văn Cường');
+    expect(res5['DANH_SACH_CHU_SO_HUU'][1].DANH_XUNG).toBe('Ông');
+    expect(res5['TAI_SAN.CHU_SO_HUU_GOP']).toBe('Nguyễn Văn An và Lê Văn Cường');
+    expect(res5['CO_MOT_CHU_SO_HUU']).toBe(false);
+    expect(res5['CO_NHIEU_CHU_SO_HUU']).toBe(true);
+    expect(res5['SO_LUONG_CHU_SO_HUU']).toBe(2);
+  });
+  it('16. Kiểm tra keyword KHOAN_VAY.DANH_XUNG chuẩn hóa theo số lượng chủ sở hữu và giới tính / Hộ', () => {
+    // Case 1: Tài sản là 1 người nam cá nhân -> "Ông: Lê Văn A"
+    const loan1 = {
+      loanType: 'THE_CHAP',
+      member: baseMember,
+      collaterals: [
+        { assetCode: 'TS-01', area: 1000, ownerType: 'NGUOI_VAY_CA_NHAN' },
+      ],
+    };
+    const res1 = wordTemplateDataDictionaryService.resolveLoanData(loan1 as any, []).resolvedContext;
+    expect(res1['KHOAN_VAY.DANH_XUNG']).toBe('Ông: Nguyễn Văn An');
+    expect(res1.KHOAN_VAY.DANH_XUNG).toBe('Ông: Nguyễn Văn An');
+    expect(res1.loan.DANH_XUNG).toBe('Ông: Nguyễn Văn An');
+
+    // Case 2: Tài sản là 1 người nữ cá nhân -> "Bà: Nguyễn Thị Bích"
+    const loan2 = {
+      loanType: 'THE_CHAP',
+      member: baseMember,
+      heir: baseHeir,
+      collaterals: [
+        { assetCode: 'TS-02', area: 1000, ownerType: 'NGUOI_THUA_KE_CA_NHAN' },
+      ],
+    };
+    const res2 = wordTemplateDataDictionaryService.resolveLoanData(loan2 as any, []).resolvedContext;
+    expect(res2['KHOAN_VAY.DANH_XUNG']).toBe('Bà: Nguyễn Thị Bích');
+
+    // Case 3: Tài sản là 1 người nam theo Hộ -> "Hộ Ông: Nguyễn Văn An"
+    const loan3 = {
+      loanType: 'THE_CHAP',
+      member: baseMember,
+      collaterals: [
+        { assetCode: 'TS-03', area: 1000, ownerType: 'NGUOI_VAY_HO' },
+      ],
+    };
+    const res3 = wordTemplateDataDictionaryService.resolveLoanData(loan3 as any, []).resolvedContext;
+    expect(res3['KHOAN_VAY.DANH_XUNG']).toBe('Hộ Ông: Nguyễn Văn An');
+
+    // Case 4: Tài sản là 1 người nữ theo Hộ -> "Hộ Bà: Nguyễn Thị Bích"
+    const loan4 = {
+      loanType: 'THE_CHAP',
+      member: baseMember,
+      heir: baseHeir,
+      collaterals: [
+        { assetCode: 'TS-04', area: 1000, ownerType: 'NGUOI_THUA_KE_HO' },
+      ],
+    };
+    const res4 = wordTemplateDataDictionaryService.resolveLoanData(loan4 as any, []).resolvedContext;
+    expect(res4['KHOAN_VAY.DANH_XUNG']).toBe('Hộ Bà: Nguyễn Thị Bích');
+
+    // Case 5: Tài sản là 2 người khác nhau (cá nhân) -> "Ông (Bà): Nguyễn A + Nguyễn Thị B"
+    const loan5 = {
+      loanType: 'THE_CHAP',
+      member: baseMember,
+      heir: baseHeir,
+      collaterals: [
+        { assetCode: 'TS-01', area: 1000, ownerType: 'NGUOI_VAY_CA_NHAN' },
+        { assetCode: 'TS-02', area: 2000, ownerType: 'NGUOI_THUA_KE_CA_NHAN' },
+      ],
+    };
+    const res5 = wordTemplateDataDictionaryService.resolveLoanData(loan5 as any, []).resolvedContext;
+    expect(res5['KHOAN_VAY.DANH_XUNG']).toBe('Ông (Bà): Nguyễn Văn An + Nguyễn Thị Bích');
+
+    // Case 6: Tài sản là 2 người khác nhau nhưng có Hộ -> "Hộ Ông (Bà): Nguyễn Văn An + Lê Văn Cường"
+    const loan6 = {
+      loanType: 'THE_CHAP',
+      member: baseMember,
+      collaterals: [
+        { assetCode: 'TS-01', area: 1000, ownerType: 'NGUOI_VAY_HO' },
+        { assetCode: 'TS-02', area: 2000, ownerType: 'BAO_LANH', thirdPartyInfo: guarantor },
+      ],
+    };
+    const res6 = wordTemplateDataDictionaryService.resolveLoanData(loan6 as any, []).resolvedContext;
+    expect(res6['KHOAN_VAY.DANH_XUNG']).toBe('Hộ Ông (Bà): Nguyễn Văn An + Lê Văn Cường');
+
+    // Case 7: 2 tài sản nhưng cùng 1 người (1 Hộ + 1 Cá nhân) -> khử trùng lặp còn 1 cá nhân -> "Ông: Nguyễn Văn An"
+    const loan7 = {
+      loanType: 'THE_CHAP',
+      member: baseMember,
+      collaterals: [
+        { assetCode: 'TS-01', area: 1000, ownerType: 'NGUOI_VAY_HO' },
+        { assetCode: 'TS-02', area: 2000, ownerType: 'NGUOI_VAY_CA_NHAN' },
+      ],
+    };
+    const res7 = wordTemplateDataDictionaryService.resolveLoanData(loan7 as any, []).resolvedContext;
+    expect(res7['KHOAN_VAY.DANH_XUNG']).toBe('Ông: Nguyễn Văn An');
+
+    // Case 8: Khoản vay tín chấp không có tài sản -> lấy theo người vay
+    const loan8 = {
+      loanType: 'TIN_CHAP',
+      member: baseMember,
+      collaterals: [],
+    };
+    const res8 = wordTemplateDataDictionaryService.resolveLoanData(loan8 as any, []).resolvedContext;
+    expect(res8['KHOAN_VAY.DANH_XUNG']).toBe('Ông: Nguyễn Văn An');
+  });
+
+  it('17. Kiểm tra biến boolean TAI_SAN.IS_KHAC_DIA_CHI (phát hiện khác địa chỉ, kể cả 1 cái cấp Xã và 1 cái cấp Ấp)', () => {
+    // Case 1: Chỉ có 1 tài sản -> không có nhiều tài sản khác địa chỉ -> false
+    const loan1 = {
+      loanType: 'THE_CHAP',
+      member: baseMember,
+      collaterals: [
+        {
+          assetCode: 'TS-01',
+          address: 'Ấp Nô Lựa, Xã Nhị Trường, Tỉnh Vĩnh Long',
+          hamletName: 'Ấp Nô Lựa',
+          communeName: 'Xã Nhị Trường',
+          provinceName: 'Tỉnh Vĩnh Long',
+        },
+      ],
+    };
+    const res1 = wordTemplateDataDictionaryService.resolveLoanData(loan1 as any, []).resolvedContext;
+    expect(res1['TAI_SAN.IS_KHAC_DIA_CHI']).toBe(false);
+    expect(res1.TAI_SAN.IS_KHAC_DIA_CHI).toBe(false);
+
+    // Case 2: 2 tài sản CÙNG địa chỉ (cùng Ấp, Xã, Tỉnh) -> false
+    const loan2 = {
+      loanType: 'THE_CHAP',
+      member: baseMember,
+      collaterals: [
+        {
+          assetCode: 'TS-01',
+          address: 'Ấp Nô Lựa, Xã Nhị Trường, Tỉnh Vĩnh Long',
+          hamletName: 'Ấp Nô Lựa',
+          communeName: 'Xã Nhị Trường',
+          provinceName: 'Tỉnh Vĩnh Long',
+        },
+        {
+          assetCode: 'TS-02',
+          address: 'Ấp Nô Lựa, Xã Nhị Trường, Tỉnh Vĩnh Long',
+          hamletName: 'Ấp Nô Lựa',
+          communeName: 'Xã Nhị Trường',
+          provinceName: 'Tỉnh Vĩnh Long',
+        },
+      ],
+    };
+    const res2 = wordTemplateDataDictionaryService.resolveLoanData(loan2 as any, []).resolvedContext;
+    expect(res2['TAI_SAN.IS_KHAC_DIA_CHI']).toBe(false);
+    expect(res2.TAI_SAN.IS_KHAC_DIA_CHI).toBe(false);
+
+    // Case 3: 2 tài sản, 1 cái ở cấp Xã và 1 cái ở cấp Ấp -> true
+    const loan3 = {
+      loanType: 'THE_CHAP',
+      member: baseMember,
+      collaterals: [
+        {
+          assetCode: 'TS-01',
+          address: 'Ấp Nô Lựa, Xã Nhị Trường, Tỉnh Vĩnh Long',
+          hamletName: 'Ấp Nô Lựa',
+          communeName: 'Xã Nhị Trường',
+          provinceName: 'Tỉnh Vĩnh Long',
+        },
+        {
+          assetCode: 'TS-02',
+          address: 'Xã Nhị Trường, Tỉnh Vĩnh Long',
+          hamletName: null,
+          communeName: 'Xã Nhị Trường',
+          provinceName: 'Tỉnh Vĩnh Long',
+        },
+      ],
+    };
+    const res3 = wordTemplateDataDictionaryService.resolveLoanData(loan3 as any, []).resolvedContext;
+    expect(res3['TAI_SAN.IS_KHAC_DIA_CHI']).toBe(true);
+    expect(res3.TAI_SAN.IS_KHAC_DIA_CHI).toBe(true);
+    expect(res3.IS_KHAC_DIA_CHI).toBe(true);
+
+    // Case 4: 2 tài sản ở 2 Ấp khác nhau trong cùng 1 Xã -> true
+    const loan4 = {
+      loanType: 'THE_CHAP',
+      member: baseMember,
+      collaterals: [
+        {
+          assetCode: 'TS-01',
+          address: 'Ấp Nô Lựa, Xã Nhị Trường, Tỉnh Vĩnh Long',
+          hamletName: 'Ấp Nô Lựa',
+          communeName: 'Xã Nhị Trường',
+        },
+        {
+          assetCode: 'TS-02',
+          address: 'Ấp Bông Ven, Xã Nhị Trường, Tỉnh Vĩnh Long',
+          hamletName: 'Ấp Bông Ven',
+          communeName: 'Xã Nhị Trường',
+        },
+      ],
+    };
+    const res4 = wordTemplateDataDictionaryService.resolveLoanData(loan4 as any, []).resolvedContext;
+    expect(res4['TAI_SAN.IS_KHAC_DIA_CHI']).toBe(true);
+
+    // Case 5: 2 tài sản chỉ có chuỗi address text (1 cái có Ấp, 1 cái chỉ có Xã) -> true
+    const loan5 = {
+      loanType: 'THE_CHAP',
+      member: baseMember,
+      collaterals: [
+        { assetCode: 'TS-01', address: 'Ấp Nô Lựa, Xã Nhị Trường' },
+        { assetCode: 'TS-02', address: 'Xã Nhị Trường' },
+      ],
+    };
+    const res5 = wordTemplateDataDictionaryService.resolveLoanData(loan5 as any, []).resolvedContext;
+    expect(res5['TAI_SAN.IS_KHAC_DIA_CHI']).toBe(true);
+  });
+  it('18. Kiểm tra Render thực tế file Word với KHOAN_VAY.DANH_XUNG và điều kiện IF TAI_SAN.IS_KHAC_DIA_CHI', () => {
+    const zip = new PizZip();
+    zip.file(
+      '[Content_Types].xml',
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+      <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+        <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+        <Default Extension="xml" ContentType="application/xml"/>
+        <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+      </Types>`
+    );
+    zip.file(
+      '_rels/.rels',
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+      <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+        <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
+      </Relationships>`
+    );
+
+    const docXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+      <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+        <w:body>
+          <w:p><w:t>Danh xưng: {{KHOAN_VAY.DANH_XUNG}}</w:t></w:p>
+          <w:p><w:t>{{#IF TAI_SAN.IS_KHAC_DIA_CHI}}Tài sản tại các địa bàn khác nhau{{/IF}}</w:t></w:p>
+        </w:body>
+      </w:document>`;
+    zip.file('word/document.xml', docXml);
+
+    const templateBuf = zip.generate({ type: 'nodebuffer' });
+
+    // Loan có 2 tài sản khác địa chỉ (1 cái cấp Ấp, 1 cái cấp Xã)
+    const loan = {
+      loanType: 'THE_CHAP',
+      member: baseMember,
+      heir: baseHeir,
+      collaterals: [
+        { assetCode: 'TS-01', area: 1000, ownerType: 'NGUOI_VAY_CA_NHAN', address: 'Ấp Nô Lựa, Xã Nhị Trường' },
+        { assetCode: 'TS-02', area: 2000, ownerType: 'NGUOI_THUA_KE_CA_NHAN', address: 'Xã Nhị Trường' },
+      ],
+    };
+
+    const { resolvedContext } = wordTemplateDataDictionaryService.resolveLoanData(loan as any, []);
+    const outputBuffer = wordTemplateGeneratorService.generateDocx(templateBuf, resolvedContext);
+
+    const outZip = new PizZip(outputBuffer);
+    const outXml = outZip.file('word/document.xml')?.asText() || '';
+
+    expect(outXml).toContain('Danh xưng: Ông (Bà): Nguyễn Văn An + Nguyễn Thị Bích');
+    expect(outXml).toContain('Tài sản tại các địa bàn khác nhau');
+  });
+  it('19. Kiểm tra các keyword KHOAN_VAY.SO_HOP_DONG_THE_CHAP, KHOAN_VAY.SO_KHE_UOC, KHOAN_VAY.NGAY_CAP_KHE_UOC và biến so sánh trùng khớp', () => {
+    // Case 1: Số khế ước GIỐNG số HĐ thế chấp (cùng là "01/2026/HĐTC")
+    const loan1 = {
+      loanType: 'THE_CHAP',
+      contractNumber: '01/2026/HĐTC',
+      contractDate: new Date('2026-05-20'),
+      mortgageContract: {
+        contractNumber: '01/2026/HĐTC',
+        contractExpiryDate: new Date('2028-05-20'),
+      },
+      member: baseMember,
+      collaterals: [
+        { assetCode: 'TS-01', area: 1000, ownerType: 'NGUOI_VAY_CA_NHAN' },
+      ],
+    };
+
+    const res1 = wordTemplateDataDictionaryService.resolveLoanData(loan1 as any, []).resolvedContext;
+
+    expect(res1['KHOAN_VAY.SO_KHE_UOC']).toBe('01/2026/HĐTC');
+    expect(res1['KHOAN_VAY,SO_KHE_UOC']).toBe('01/2026/HĐTC');
+    expect(res1['SO_KHE_UOC']).toBe('01/2026/HĐTC');
+    expect(res1.KHOAN_VAY.SO_KHE_UOC).toBe('01/2026/HĐTC');
+
+    expect(res1['KHOAN_VAY.NGAY_CAP_KHE_UOC']).toBe('20/05/2026');
+    expect(res1['NGAY_CAP_KHE_UOC']).toBe('20/05/2026');
+    expect(res1.KHOAN_VAY.NGAY_CAP_KHE_UOC).toBe('20/05/2026');
+
+    expect(res1['KHOAN_VAY.SO_HOP_DONG_THE_CHAP']).toBe('01/2026/HĐTC');
+    expect(res1['SO_HOP_DONG_THE_CHAP']).toBe('01/2026/HĐTC');
+    expect(res1.KHOAN_VAY.SO_HOP_DONG_THE_CHAP).toBe('01/2026/HĐTC');
+
+    // Biến check số khế ước có giống với số hợp đồng thế chấp không -> TRUE
+    expect(res1['KHOAN_VAY.IS_SO_KHE_UOC_GIONG_SO_HD_THE_CHAP']).toBe(true);
+    expect(res1['IS_SO_KHE_UOC_GIONG_SO_HD_THE_CHAP']).toBe(true);
+    expect(res1.KHOAN_VAY.IS_SO_KHE_UOC_GIONG_SO_HD_THE_CHAP).toBe(true);
+    expect(res1.isSoKheUocGiongSoHdTheChap).toBe(true);
+
+    // Case 2: Số khế ước KHÁC số HĐ thế chấp
+    const loan2 = {
+      loanType: 'THE_CHAP',
+      contractNumber: 'KU-999',
+      contractDate: new Date('2026-05-20'),
+      mortgageContract: {
+        contractNumber: 'TC-888',
+      },
+      member: baseMember,
+      collaterals: [
+        { assetCode: 'TS-01', area: 1000, ownerType: 'NGUOI_VAY_CA_NHAN' },
+      ],
+    };
+
+    const res2 = wordTemplateDataDictionaryService.resolveLoanData(loan2 as any, []).resolvedContext;
+
+    expect(res2['KHOAN_VAY.SO_KHE_UOC']).toBe('KU-999');
+    expect(res2['KHOAN_VAY.SO_HOP_DONG_THE_CHAP']).toBe('TC-888');
+    expect(res2['KHOAN_VAY.IS_SO_KHE_UOC_GIONG_SO_HD_THE_CHAP']).toBe(false);
+    expect(res2['IS_SO_KHE_UOC_GIONG_SO_HD_THE_CHAP']).toBe(false);
+
+    // Case 3: Vay tín chấp (không có hợp đồng thế chấp) -> FALSE
+    const loan3 = {
+      loanType: 'TIN_CHAP',
+      contractNumber: 'KU-123',
+      contractDate: new Date('2026-05-20'),
+      member: baseMember,
+      collaterals: [],
+    };
+
+    const res3 = wordTemplateDataDictionaryService.resolveLoanData(loan3 as any, []).resolvedContext;
+
+    expect(res3['KHOAN_VAY.SO_KHE_UOC']).toBe('KU-123');
+    expect(res3['KHOAN_VAY.SO_HOP_DONG_THE_CHAP']).toBe('');
+    expect(res3['KHOAN_VAY.IS_SO_KHE_UOC_GIONG_SO_HD_THE_CHAP']).toBe(false);
+  });
 });

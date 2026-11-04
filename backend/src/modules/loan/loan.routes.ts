@@ -13,11 +13,13 @@ import { collateralRoutes } from '../collateral/collateral.routes';
 import { disbursementRoutes } from '../disbursement/disbursement.routes';
 import { repaymentRoutes } from '../repayment/repayment.routes';
 import { relatedPersonRoutes } from '../related-person/related-person.routes';
+import { loanValuationRoutes } from '../loan-valuation/loan-valuation.routes';
 
 const router = Router();
 
 // Sub-resources của khoản vay
 router.use('/:loanId/collaterals', collateralRoutes);
+router.use('/:loanId/valuations', loanValuationRoutes);
 router.use('/:loanId/disbursements', disbursementRoutes);
 router.use('/:loanId/repayments', repaymentRoutes);
 router.use('/:loanId/related-persons', relatedPersonRoutes);

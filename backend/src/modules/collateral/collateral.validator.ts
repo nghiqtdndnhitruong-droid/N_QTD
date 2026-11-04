@@ -96,23 +96,44 @@ export const baseCollateralSchema = z.object({
   ownerType: z.nativeEnum(CollateralOwnerType, {
     errorMap: () => ({ message: 'Tư cách chủ sở hữu không hợp lệ' }),
   }),
-  thirdPartyInfo: thirdPartyInfoSchema.nullable().optional(),
+  thirdPartyInfo: z.preprocess((val) => {
+    if (!val || typeof val !== 'object') return null;
+    const obj = val as Record<string, any>;
+    const hasAny = Object.values(obj).some(
+      (v) => v !== null && v !== undefined && String(v).trim() !== ''
+    );
+    return hasAny ? val : null;
+  }, thirdPartyInfoSchema.nullable().optional()),
 });
 
-export const createCollateralSchema = baseCollateralSchema.refine(
-  (data) => {
-    if (data.ownerType === CollateralOwnerType.BAO_LANH) {
-      return !!data.thirdPartyInfo;
+export const createCollateralSchema = baseCollateralSchema
+  .refine(
+    (data) => {
+      if (data.ownerType === CollateralOwnerType.BAO_LANH) {
+        return !!data.thirdPartyInfo;
+      }
+      return true;
+    },
+    {
+      message: 'Tài sản bên thứ ba bảo lãnh bắt buộc phải cung cấp thông tin người bảo lãnh',
+      path: ['thirdPartyInfo'],
     }
-    return true;
-  },
-  {
-    message: 'Tài sản bên thứ ba bảo lãnh bắt buộc phải cung cấp thông tin người bảo lãnh',
-    path: ['thirdPartyInfo'],
-  }
-);
+  )
+  .transform((data) => {
+    if (data.ownerType !== CollateralOwnerType.BAO_LANH) {
+      return { ...data, thirdPartyInfo: null };
+    }
+    return data;
+  });
 
-export const updateCollateralSchema = baseCollateralSchema.partial();
+export const updateCollateralSchema = baseCollateralSchema
+  .partial()
+  .transform((data) => {
+    if (data.ownerType !== undefined && data.ownerType !== CollateralOwnerType.BAO_LANH) {
+      return { ...data, thirdPartyInfo: null };
+    }
+    return data;
+  });
 
 export const collateralFilterQuerySchema = z.object({
   page: z.coerce.number().int().positive().optional().default(1),

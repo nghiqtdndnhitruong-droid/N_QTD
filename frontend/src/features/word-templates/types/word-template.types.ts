@@ -15,7 +15,7 @@ export interface DataDictionaryField {
   label: string;
   dataType: MappingDataType;
   description?: string;
-  sampleValue?: string | number;
+  sampleValue?: string | number | boolean;
   isList?: boolean;
   itemFields?: DataDictionaryField[];
 }

@@ -70,7 +70,7 @@ export class LoanCalculationService {
       const otherRevenue = Math.max(0, targetTotalRevenues - riceRevenue);
 
       const revenues = [
-        { name: 'Trả bằng nguồn thu từ sản xuất lúa', amount: riceRevenue },
+        { name: 'Trả bằng nguồn thu sản xuất lúa', amount: riceRevenue },
         { name: 'Trả bằng nguồn thu khác', amount: otherRevenue },
       ];
 
@@ -111,8 +111,8 @@ export class LoanCalculationService {
     const otherRevenue = Math.max(0, targetTotalRevenues - riceRevenue - livestockRevenue);
 
     const revenues = [
-      { name: 'Trả bằng nguồn thu từ sản xuất lúa', amount: riceRevenue },
-      { name: 'Trả bằng nguồn thu từ chăn nuôi', amount: livestockRevenue },
+      { name: 'Trả bằng nguồn thu sản xuất lúa', amount: riceRevenue },
+      { name: 'Trả bằng nguồn chăn nuôi', amount: livestockRevenue },
       { name: 'Trả bằng nguồn thu khác', amount: otherRevenue },
     ];
 

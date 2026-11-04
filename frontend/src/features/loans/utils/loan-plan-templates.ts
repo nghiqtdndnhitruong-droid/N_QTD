@@ -106,7 +106,7 @@ export function calculateLoanPlanTemplate(
     const otherRevenue = targetTotalRevenues - riceRevenue;
 
     const revenues: FinancialItem[] = [
-      { name: 'Trả bằng nguồn thu từ sản xuất lúa', amount: riceRevenue },
+      { name: 'Trả bằng nguồn thu sản xuất lúa', amount: riceRevenue },
       { name: 'Trả bằng nguồn thu khác', amount: otherRevenue },
     ];
 
@@ -152,8 +152,8 @@ export function calculateLoanPlanTemplate(
   const otherRevenue = targetTotalRevenues - riceRevenue - livestockRevenue;
 
   const revenues: FinancialItem[] = [
-    { name: 'Trả bằng nguồn thu từ sản xuất lúa', amount: riceRevenue },
-    { name: 'Trả bằng nguồn thu từ chăn nuôi', amount: livestockRevenue },
+    { name: 'Trả bằng nguồn thu sản xuất lúa', amount: riceRevenue },
+    { name: 'Trả bằng nguồn chăn nuôi', amount: livestockRevenue },
     { name: 'Trả bằng nguồn thu khác', amount: otherRevenue },
   ];
 

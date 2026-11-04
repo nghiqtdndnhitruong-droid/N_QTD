@@ -1,4 +1,5 @@
 import dayjs from 'dayjs';
+import { VALUATION_TYPE_LABELS, ValuationType } from '../loan-valuation/loan-valuation.types';
 import {
   vndToWords,
   numberToVietnameseWords,
@@ -46,6 +47,47 @@ export function mergeAssetValues<T>(
   }
 
   return values.join('; ');
+}
+
+/**
+ * Tự động đọc và ánh xạ tên khoản thu thành TEN_THU_NHAP chuẩn hóa theo mẫu của Quỹ:
+ * - Trồng trọt, lúa, nông nghiệp -> "Thu nhập từ sản xuất nông nghiệp:"
+ * - Chăn nuôi, bò, gia súc... -> "Thu nhập từ chăn nuôi:"
+ * - Khác -> "Thu nhập khác:"
+ */
+export function resolveIncomeTitle(
+  name: string,
+  _index: number = 0,
+): { title: string; withoutColon: string; withColon: string } {
+  const raw = (name || '').trim();
+  const lower = raw.toLowerCase();
+
+  let withoutColon = '';
+  // 1. Nông nghiệp / Lúa / Trồng trọt
+  if (lower.includes('lúa') || lower.includes('nông nghiệp') || lower.includes('trồng')) {
+    withoutColon = 'Thu nhập từ sản xuất nông nghiệp';
+  } else if (
+    lower.includes('chăn nuôi') ||
+    lower.includes('nuôi bò') ||
+    lower.includes('bò') ||
+    lower.includes('gia súc') ||
+    lower.includes('gia cầm') ||
+    lower.includes('heo')
+  ) {
+    withoutColon = 'Thu nhập từ chăn nuôi';
+  } else if (lower.includes('khác')) {
+    withoutColon = 'Thu nhập khác';
+  } else {
+    // 4. Mặc định/tùy chỉnh: loại bỏ tiền tố "Trả bằng nguồn thu / Trả bằng nguồn" nếu có
+    const clean = raw.replace(/^Trả bằng nguồn (thu )?/i, 'Thu nhập từ ').replace(/:+$/, '').trim();
+    withoutColon = clean.replace(/:+$/, '');
+  }
+
+  return {
+    title: withoutColon,
+    withoutColon,
+    withColon: `${withoutColon}:`,
+  };
 }
 
 export class WordTemplateDataDictionaryService {
@@ -98,6 +140,16 @@ export class WordTemplateDataDictionaryService {
           { path: 'loan.expectedMaturityDate', label: 'Ngày đáo hạn dự kiến (dd/mm/yyyy)', dataType: 'DATE', sampleValue: '20/05/2027' },
           { path: 'loan.maturityDate', label: 'Ngày đáo hạn thực tế (dd/mm/yyyy)', dataType: 'DATE', sampleValue: '20/05/2027' },
           { path: 'loan.halfTermPaymentDate', label: 'Ngày phải trả phân nửa (trung hạn)', dataType: 'DATE', sampleValue: '20/05/2027' },
+          { path: 'isTrungHan', label: 'Khoản vay là trung hạn (True/False)', dataType: 'BOOLEAN', sampleValue: true },
+          { path: 'isNganHan', label: 'Khoản vay là ngắn hạn (True/False)', dataType: 'BOOLEAN', sampleValue: false },
+          { path: 'KHOAN_VAY.DANH_XUNG', label: 'Danh xưng khoản vay / chủ tài sản (ví dụ: Ông: Lê Văn A hoặc Ông (Bà): Nguyễn A + Nguyễn Thị B)', dataType: 'TEXT', sampleValue: 'Ông: Lê Văn An' },
+          { path: 'KHOAN_VAY.SO_KHE_UOC', label: 'Số khế ước nhận nợ (SO_KHE_UOC)', dataType: 'TEXT', sampleValue: '01/2026/HĐTD-QTD' },
+          { path: 'KHOAN_VAY.NGAY_CAP_KHE_UOC', label: 'Ngày cấp khế ước nhận nợ (dd/mm/yyyy)', dataType: 'DATE', sampleValue: '20/05/2026' },
+          { path: 'KHOAN_VAY.SO_HOP_DONG_THE_CHAP', label: 'Số hợp đồng thế chấp (KHOAN_VAY.SO_HOP_DONG_THE_CHAP)', dataType: 'TEXT', sampleValue: '01/2026/HĐTC' },
+          { path: 'KHOAN_VAY.IS_SO_KHE_UOC_GIONG_SO_HD_THE_CHAP', label: 'Kiểm tra số khế ước có giống số HĐ thế chấp không (True/False)', dataType: 'BOOLEAN', sampleValue: true },
+          { path: 'loan.DANH_XUNG', label: 'Danh xưng khoản vay / chủ tài sản', dataType: 'TEXT', sampleValue: 'Ông: Lê Văn An' },
+          { path: 'KHOAN_VAY.DANH_XUNG', label: 'Danh xưng khoản vay / chủ tài sản (ví dụ: Ông: Lê Văn A hoặc Ông (Bà): Nguyễn A + Nguyễn Thị B)', dataType: 'TEXT', sampleValue: 'Ông: Lê Văn An' },
+          { path: 'loan.DANH_XUNG', label: 'Danh xưng khoản vay / chủ tài sản', dataType: 'TEXT', sampleValue: 'Ông: Lê Văn An' },
         ],
       },
       {
@@ -121,6 +173,7 @@ export class WordTemplateDataDictionaryService {
           { path: 'PHUONG_AN.TONG_THU_NHAP_CHU', label: 'Tổng thu nhập / nguồn thu bằng chữ', dataType: 'CURRENCY_WORDS', sampleValue: 'Ba trăm lẻ năm triệu tám trăm bốn mươi nghìn đồng' },
           { path: 'PHUONG_AN.LOI_NHUAN', label: 'Lợi nhuận phương án bằng số (VND)', dataType: 'CURRENCY', sampleValue: '50.000.000 đ' },
           { path: 'PHUONG_AN.LOI_NHUAN_CHU', label: 'Lợi nhuận phương án bằng chữ', dataType: 'CURRENCY_WORDS', sampleValue: 'Năm mươi triệu đồng' },
+          { path: 'PHUONG_AN.IS_TRUNG_HAN', label: 'Phương án là trung hạn (True/False)', dataType: 'BOOLEAN', sampleValue: true },
         ],
       },
       {
@@ -172,6 +225,11 @@ export class WordTemplateDataDictionaryService {
           { path: 'TAI_SAN.DON_GIA_GOP', label: 'Đơn giá định giá gộp (nối dấu ;)', dataType: 'TEXT', sampleValue: '60.000 đ' },
           { path: 'TAI_SAN.TONG_DIEN_TICH', label: 'Tổng diện tích tất cả tài sản (m²)', dataType: 'TEXT', sampleValue: '2.500 m²' },
           { path: 'TAI_SAN.TONG_DIEN_TICH_CHU', label: 'Tổng diện tích tất cả tài sản bằng chữ', dataType: 'TEXT', sampleValue: 'Hai nghìn năm trăm mét vuông' },
+          { path: 'TAI_SAN.TONG_DINH_GIA', label: 'Tổng định giá tất cả tài sản (VND)', dataType: 'CURRENCY', sampleValue: '673.000.000 đ' },
+          { path: 'TAI_SAN.TONG_DINH_GIA_CHU', label: 'Tổng định giá tất cả tài sản bằng chữ', dataType: 'CURRENCY_WORDS', sampleValue: 'Sáu trăm bảy mươi ba triệu đồng' },
+          { path: 'TAI_SAN.SO_LUONG_TAI_SAN', label: 'Tổng số lượng tài sản', dataType: 'NUMBER', sampleValue: 2 },
+          { path: 'TAI_SAN.TONG_SO_TAI_SAN', label: 'Tổng số lượng tài sản (alias)', dataType: 'NUMBER', sampleValue: 2 },
+          { path: 'TAI_SAN.IS_KHAC_DIA_CHI', label: 'Các tài sản ở khác địa chỉ (True/False)', dataType: 'BOOLEAN', sampleValue: false },
         ],
       },
       {
@@ -330,6 +388,128 @@ export class WordTemplateDataDictionaryService {
           },
         ],
       },
+      {
+        id: 'valuations_list',
+        label: '12. Danh sách Định giá tài sản (Bảng lặp {#DANH_SACH_DINH_GIA} / {#KHOAN_VAY.DANH_SACH_DINH_GIA})',
+        description: 'Dùng cho bảng lặp {{#FOR dinh_gia IN KHOAN_VAY.DANH_SACH_DINH_GIA}} hoặc {{#DANH_SACH_DINH_GIA}}',
+        fields: [
+          {
+            path: 'KHOAN_VAY.DANH_SACH_DINH_GIA',
+            label: 'Danh sách định giá tài sản khoản vay (Khối lặp FOR/Bảng)',
+            dataType: 'LIST',
+            isList: true,
+            itemFields: [
+              { path: 'LOAI_DINH_GIA', label: 'Loại định giá (Tên hiển thị)', dataType: 'TEXT', sampleValue: 'Theo nghị định Quỹ' },
+              { path: 'NGAY_DINH_GIA', label: 'Ngày định giá (DD/MM/YYYY)', dataType: 'DATE', sampleValue: '25/08/2026' },
+              { path: 'SO_TO', label: 'Số tờ (giữ số 0 đầu)', dataType: 'TEXT', sampleValue: '05' },
+              { path: 'SO_THUA', label: 'Số thửa (giữ số 0 đầu)', dataType: 'TEXT', sampleValue: '012' },
+              { path: 'DIEN_TICH', label: 'Diện tích (m²)', dataType: 'NUMBER', sampleValue: '500' },
+              { path: 'DIEN_TICH_THUC_TE', label: 'Diện tích thực tế (m²)', dataType: 'NUMBER', sampleValue: '480' },
+              { path: 'DON_GIA', label: 'Đơn giá (VNĐ/m²)', dataType: 'CURRENCY', sampleValue: '1.200.000' },
+              { path: 'GIA_TIEN', label: 'Giá tiền định giá (VNĐ)', dataType: 'CURRENCY', sampleValue: '576.000.000' },
+              { path: 'GIA_TIEN_CHU', label: 'Giá tiền bằng chữ', dataType: 'CURRENCY_WORDS', sampleValue: 'Năm trăm bảy mươi sáu triệu đồng' },
+              { path: 'GHI_CHU', label: 'Ghi chú', dataType: 'TEXT', sampleValue: '' },
+              { path: 'LA_NGHI_DINH_QUY', label: 'Boolean: là Theo nghị định Quỹ', dataType: 'BOOLEAN', sampleValue: true },
+              { path: 'LA_NGHI_DINH_QUY_CU', label: 'Boolean: là Theo nghị định Quỹ (Cũ)', dataType: 'BOOLEAN', sampleValue: false },
+              { path: 'LA_GIA_THI_TRUONG', label: 'Boolean: là Theo giá thị trường', dataType: 'BOOLEAN', sampleValue: false },
+              { path: 'LA_GIA_THI_TRUONG_VA_NGHI_DINH_QUY', label: 'Boolean: là Giá thị trường và theo nghị định Quỹ', dataType: 'BOOLEAN', sampleValue: false },
+            ],
+          },
+          {
+            path: 'KHOAN_VAY.SO_LUONG_DINH_GIA',
+            label: 'Tổng số lượng bản ghi định giá',
+            dataType: 'NUMBER',
+            sampleValue: 2,
+          },
+          {
+            path: 'KHOAN_VAY.CO_DINH_GIA',
+            label: 'Khoản vay có bản ghi định giá hay không',
+            dataType: 'BOOLEAN',
+            sampleValue: true,
+          },
+          {
+            path: 'KHOAN_VAY.NGAY_DINH_GIA',
+            label: 'Ngày định giá duy nhất (nếu nhiều ngày khác nhau trả về rỗng)',
+            dataType: 'TEXT',
+            sampleValue: '25/08/2026',
+          },
+          {
+            path: 'KHOAN_VAY.LOAI_DINH_GIA',
+            label: 'Loại định giá duy nhất (nếu nhiều loại khác nhau trả về rỗng)',
+            dataType: 'TEXT',
+            sampleValue: 'Theo nghị định Quỹ',
+          },
+          {
+            path: 'KHOAN_VAY.TONG_GIA_TIEN_DINH_GIA',
+            label: 'Tổng giá tiền định giá của khoản vay',
+            dataType: 'CURRENCY',
+            sampleValue: '1.200.000.000',
+          },
+          {
+            path: 'KHOAN_VAY.TONG_GIA_TIEN_DINH_GIA_CHU',
+            label: 'Tổng giá tiền định giá của khoản vay bằng chữ',
+            dataType: 'CURRENCY_WORDS',
+            sampleValue: 'Một tỷ hai trăm triệu đồng',
+          },
+          {
+            path: 'KHOAN_VAY.CO_DINH_GIA_THEO_NGHI_DINH_QUY',
+            label: 'Có bản ghi định giá Theo nghị định Quỹ (True/False)',
+            dataType: 'BOOLEAN',
+            sampleValue: true,
+          },
+          {
+            path: 'KHOAN_VAY.CO_DINH_GIA_THEO_NGHI_DINH_QUY_CU',
+            label: 'Có bản ghi định giá Theo nghị định Quỹ (Cũ) (True/False)',
+            dataType: 'BOOLEAN',
+            sampleValue: false,
+          },
+          {
+            path: 'KHOAN_VAY.CO_DINH_GIA_THEO_GIA_THI_TRUONG',
+            label: 'Có bản ghi định giá Theo giá thị trường (True/False)',
+            dataType: 'BOOLEAN',
+            sampleValue: false,
+          },
+          {
+            path: 'KHOAN_VAY.CO_DINH_GIA_THEO_GIA_THI_TRUONG_VA_NGHI_DINH_QUY',
+            label: 'Có bản ghi định giá Theo giá thị trường và theo nghị định Quỹ (True/False)',
+            dataType: 'BOOLEAN',
+            sampleValue: false,
+          },
+        ],
+      },
+      {
+        id: 'incomes_list',
+        label: '11. Danh sách Thu nhập phương án (Bảng lặp {#DANH_SACH_THU_NHAP} / {#PHUONG_AN.DANH_SACH_THU_NHAP})',
+        description: 'Dùng cho bảng lặp {#DANH_SACH_THU_NHAP}...{/DANH_SACH_THU_NHAP} hoặc {{#FOR tn IN DANH_SACH_THU_NHAP}} với biến TEN_THU_NHAP chuẩn hóa',
+        fields: [
+          {
+            path: 'DANH_SACH_THU_NHAP',
+            label: 'Danh sách thu nhập phương án (Khối lặp FOR/Bảng)',
+            dataType: 'LIST',
+            isList: true,
+            itemFields: [
+              { path: 'STT', label: 'Số thứ tự (1, 2, 3...)', dataType: 'NUMBER', sampleValue: 1 },
+              { path: 'TEN_THU_NHAP', label: 'Tên thu nhập chuẩn hóa (không có dấu :)', dataType: 'TEXT', sampleValue: 'Thu nhập từ sản xuất nông nghiệp' },
+              { path: 'TEN_THU_NHAP_KHONG_DAU_HAI_CHAM', label: 'Tên thu nhập (không có dấu :)', dataType: 'TEXT', sampleValue: 'Thu nhập từ sản xuất nông nghiệp' },
+              { path: 'SO_TIEN', label: 'Số tiền bằng số có đơn vị (VND)', dataType: 'CURRENCY', sampleValue: '159.960.000 đ' },
+              { path: 'SO_TIEN_CHU', label: 'Số tiền bằng chữ', dataType: 'CURRENCY_WORDS', sampleValue: 'Một trăm năm mươi chín triệu chín trăm sáu mươi nghìn đồng' },
+              { path: 'GHI_CHU', label: 'Ghi chú nguồn thu', dataType: 'TEXT', sampleValue: '' },
+            ],
+          },
+          {
+            path: 'PHUONG_AN.DANH_SACH_THU_NHAP',
+            label: 'Danh sách thu nhập phương án (tiền tố PHUONG_AN)',
+            dataType: 'LIST',
+            isList: true,
+          },
+          {
+            path: 'PHUONG_AN.DANH_SACH_THU_NHAP_GOP',
+            label: 'Danh sách thu nhập gộp dạng văn bản (nối dấu ;)',
+            dataType: 'TEXT',
+            sampleValue: 'Thu nhập từ sản xuất nông nghiệp: 159.960.000 đ; Thu nhập từ chăn nuôi: 266.600.000 đ',
+          },
+        ],
+      },
     ];
   }
 
@@ -433,6 +613,7 @@ export class WordTemplateDataDictionaryService {
       return {
         key: `BAO_LANH_${tp.idNumber || tp.fullName || 'tp'}`,
         ownerType: 'BAO_LANH',
+        isHousehold: false,
         fullName: tp.fullName || '',
         gender: tp.gender === 'NAM' ? 'Nam' : tp.gender === 'NU' ? 'Nữ' : '',
         genderTitle,
@@ -452,6 +633,7 @@ export class WordTemplateDataDictionaryService {
       return {
         key: `MEMBER_AND_HEIR_${member?.idNumber || 'm'}_${heir?.idNumber || 'h'}`,
         ownerType,
+        isHousehold: false,
         fullName: `${memberName} và ${heirName}`,
         gender: member?.gender === 'NAM' ? 'Nam' : 'Nữ',
         genderTitle: 'Đồng sở hữu',
@@ -473,6 +655,7 @@ export class WordTemplateDataDictionaryService {
       return {
         key: `HEIR_${heir?.idNumber || heir?.fullName || 'heir'}`,
         ownerType,
+        isHousehold,
         fullName: isHousehold && heir?.fullName ? `Hộ ${heir.fullName}` : (heir?.fullName || ''),
         gender: heir?.gender === 'NAM' ? 'Nam' : 'Nữ',
         genderTitle,
@@ -494,6 +677,7 @@ export class WordTemplateDataDictionaryService {
     return {
       key: `MEMBER_${member?.idNumber || member?.fullName || 'member'}`,
       ownerType,
+      isHousehold,
       fullName: isHousehold && member?.fullName ? `Hộ ${member.fullName}` : (member?.fullName || ''),
       gender: member?.gender === 'NAM' ? 'Nam' : 'Nữ',
       genderTitle,
@@ -549,22 +733,33 @@ export class WordTemplateDataDictionaryService {
     // Lọc danh sách các chủ sở hữu duy nhất (unique)
     // Nếu tài sản thuộc loại NGUOI_VAY_VA_NGUOI_THUA_KE, bổ sung cả 2 người vào danh sách chủ sở hữu
     const uniqueOwnersMap = new Map<string, any>();
+    const addOwner = (o: any) => {
+      if (!o || !o.fullName) return;
+      const baseName = (o.fullName || '').replace(/^Hộ\s+/i, '').trim().toLowerCase();
+      const idKey = (o.idNumber || '').trim().toLowerCase();
+      // Khóa định danh cá nhân duy nhất (dựa trên CCCD nếu có, hoặc tên không tiền tố "Hộ ")
+      const personKey = idKey ? `id:${idKey}` : `name:${baseName}`;
+      if (!personKey) return;
+
+      const existing = uniqueOwnersMap.get(personKey);
+      if (!existing) {
+        uniqueOwnersMap.set(personKey, o);
+      } else {
+        // Nếu bản ghi hiện tại là Hộ nhưng bản ghi mới là Cá nhân -> ưu tiên thay thế bằng Cá nhân (giữ nguyên danh xưng cá nhân)
+        if (existing.isHousehold && !o.isHousehold) {
+          uniqueOwnersMap.set(personKey, o);
+        }
+      }
+    };
+
     collaterals.forEach((c: any) => {
       if (c.ownerType === 'NGUOI_VAY_VA_NGUOI_THUA_KE') {
         const borrowerOwner = this.extractOwnerInfo({ ownerType: 'NGUOI_VAY_CA_NHAN' }, member, heir);
         const heirOwner = this.extractOwnerInfo({ ownerType: 'NGUOI_THUA_KE_CA_NHAN' }, member, heir);
-        [borrowerOwner, heirOwner].forEach((o) => {
-          const k = (o.fullName || '').trim().toLowerCase();
-          if (k && !uniqueOwnersMap.has(k)) {
-            uniqueOwnersMap.set(k, o);
-          }
-        });
+        [borrowerOwner, heirOwner].forEach((o) => addOwner(o));
       } else {
         const o = this.extractOwnerInfo(c, member, heir);
-        const k = (o.fullName || '').trim().toLowerCase();
-        if (k && !uniqueOwnersMap.has(k)) {
-          uniqueOwnersMap.set(k, o);
-        }
+        addOwner(o);
       }
     });
 
@@ -597,7 +792,7 @@ export class WordTemplateDataDictionaryService {
       mergedOwners = `${allExceptLast} và ${uniqueOwnerNames[uniqueOwnerNames.length - 1]}`;
     }
 
-    const firstOwner = assetOwners[0] || this.extractOwnerInfo({ ownerType: 'NGUOI_VAY_CA_NHAN' }, member, heir);
+    const firstOwner = uniqueOwnersList[0] || assetOwners[0] || this.extractOwnerInfo({ ownerType: 'NGUOI_VAY_CA_NHAN' }, member, heir);
     const firstOwnerObj = {
       ...firstOwner,
       HO_TEN: firstOwner.fullName,
@@ -612,6 +807,150 @@ export class WordTemplateDataDictionaryService {
       NAM_SINH: firstOwner.yearOfBirth,
       QUAN_HE: firstOwner.relationship,
     };
+
+    // 1. Xác định danh xưng khoản vay (KHOAN_VAY.DANH_XUNG)
+    // - Tài sản là 1 người: căn cứ vào giới tính mà ghi là Ông/Bà/Hộ Ông/Hộ Bà + : + Tên của họ (ví dụ: Ông: Lê Văn A)
+    // - Tài sản là từ 2 người khác nhau: hiển thị là Ông (Bà): + Tên 1 + Tên 2 (ví dụ: Ông (Bà): Nguyễn A + Nguyễn Thị B). Nếu Hộ thì Hộ Ông (Bà).
+    let loanDanhXung = '';
+    if (uniqueOwnersList.length === 1) {
+      const o = uniqueOwnersList[0];
+      const isHousehold = o.isHousehold || (o.genderTitle && o.genderTitle.includes('Hộ'));
+      let title = o.genderTitle;
+      if (!title || title === 'Đồng sở hữu') {
+        const isMale = o.gender === 'NAM' || o.gender === 'Nam';
+        title = isHousehold ? (isMale ? 'Hộ Ông' : 'Hộ Bà') : (isMale ? 'Ông' : 'Bà');
+      }
+      const cleanName = (o.fullName || '').replace(/^Hộ\s+/i, '').trim();
+      loanDanhXung = `${title}: ${cleanName}`;
+    } else if (uniqueOwnersList.length >= 2) {
+      const isAnyHousehold = uniqueOwnersList.some(
+        (o: any) => o.isHousehold || (o.genderTitle && o.genderTitle.includes('Hộ'))
+      );
+      const prefix = isAnyHousehold ? 'Hộ Ông (Bà): ' : 'Ông (Bà): ';
+      const cleanNames = uniqueOwnersList
+        .map((o: any) => (o.fullName || '').replace(/^Hộ\s+/i, '').trim())
+        .filter(Boolean);
+      loanDanhXung = `${prefix}${cleanNames.join(' + ')}`;
+    } else {
+      const isMale = member?.gender === 'NAM' || member?.gender === 'Nam';
+      const memberTitle = isMale ? 'Ông' : 'Bà';
+      const cleanMemberName = (member?.fullName || '').trim();
+      loanDanhXung = cleanMemberName ? `${memberTitle}: ${cleanMemberName}` : '';
+    }
+
+    // 2. Xác định các tài sản ở khác địa chỉ (TAI_SAN.IS_KHAC_DIA_CHI)
+    // Nếu có nhiều tài sản và các tài sản ở khác địa chỉ:
+    // (ví dụ 1 cái chỉ có địa chỉ ở cấp Xã, 1 cái thì địa chỉ ở cấp Ấp thì cũng tính là khác địa chỉ)
+    const normalizeAddrStr = (str: string) =>
+      str ? str.trim().toLowerCase().replace(/\s+/g, ' ') : '';
+
+    const getCollateralAddressKey = (c: any) => {
+      const fullAddr = normalizeAddrStr(c?.address || '');
+      const hamlet = normalizeAddrStr(c?.hamletName || '');
+      const commune = normalizeAddrStr(c?.communeName || '');
+      const province = normalizeAddrStr(c?.provinceName || '');
+      const detail = normalizeAddrStr(c?.addressDetail || '');
+      return `${fullAddr}|h:${hamlet}|c:${commune}|p:${province}|d:${detail}`;
+    };
+
+    const uniqueAddressKeys = new Set(collaterals.map(getCollateralAddressKey));
+    const isKhacDiaChi = collaterals.length > 1 && uniqueAddressKeys.size > 1;
+
+    // 3. Kiểm tra số khế ước có giống với số hợp đồng thế chấp không
+    const soKheUoc = (loan.contractNumber || '').trim();
+    const soHdTheChap = (mortgage?.contractNumber || '').trim();
+    const isSoKheUocGiongSoHdTheChap = Boolean(
+      soKheUoc && soHdTheChap && soKheUoc.toLowerCase() === soHdTheChap.toLowerCase()
+    );
+
+    // 4. Xử lý danh sách Định giá khoản vay (KHOAN_VAY.DANH_SACH_DINH_GIA & các trường liên quan)
+    const rawValuations = loan.valuations || [];
+    const valuationsList = rawValuations.map((v: any, index: number) => {
+      const vType = v.valuationType;
+      const vTypeLabel = (VALUATION_TYPE_LABELS as any)[vType] || vType;
+      const vDateFormatted = v.valuationDate ? dayjs(v.valuationDate).format('DD/MM/YYYY') : '';
+      const sheetNumber = String(v.sheetNumber ?? '');
+      const plotNumber = String(v.plotNumber ?? '');
+      const areaNum = Number(v.area) || 0;
+      const actualAreaNum = v.actualArea !== undefined && v.actualArea !== null ? Number(v.actualArea) : null;
+      const effectiveArea = actualAreaNum && actualAreaNum > 0 ? actualAreaNum : areaNum;
+      const pricePerSqMeterNum = Number(v.pricePerSqMeter) || 0;
+      const totalPriceNum = v.totalPrice !== undefined && v.totalPrice !== null ? Number(v.totalPrice) : Math.round(effectiveArea * pricePerSqMeterNum);
+
+      const areaFormatted = areaNum.toLocaleString('vi-VN');
+      const actualAreaFormatted = actualAreaNum !== null ? actualAreaNum.toLocaleString('vi-VN') : '';
+      const pricePerSqMeterFormatted = pricePerSqMeterNum.toLocaleString('vi-VN');
+      const totalPriceFormatted = totalPriceNum.toLocaleString('vi-VN');
+      const totalPriceWords = vndToWords(totalPriceNum);
+
+      const isTheoNghiDinhQuy = vType === 'THEO_NGHI_DINH_QUY';
+      const isTheoNghiDinhQuyCu = vType === 'THEO_NGHI_DINH_QUY_CU';
+      const isTheoGiaThiTruong = vType === 'THEO_GIA_THI_TRUONG';
+      const isTheoGiaThiTruongVaNghiDinhQuy = vType === 'THEO_GIA_THI_TRUONG_VA_NGHI_DINH_QUY';
+
+      return {
+        _index: index,
+        _number: index + 1,
+        id: v.id,
+        collateralId: v.collateralId || '',
+        LOAI_DINH_GIA: vTypeLabel,
+        valuationType: vType,
+        valuationTypeLabel: vTypeLabel,
+        NGAY_DINH_GIA: vDateFormatted,
+        valuationDate: vDateFormatted,
+        SO_TO: sheetNumber,
+        sheetNumber,
+        SO_THUA: plotNumber,
+        plotNumber,
+        DIEN_TICH: areaFormatted,
+        DIEN_TICH_SO: areaNum,
+        area: areaFormatted,
+        areaNumber: areaNum,
+        DIEN_TICH_THUC_TE: actualAreaFormatted,
+        DIEN_TICH_THUC_TE_SO: actualAreaNum,
+        actualArea: actualAreaFormatted,
+        actualAreaNumber: actualAreaNum,
+        DON_GIA: pricePerSqMeterFormatted,
+        DON_GIA_SO: pricePerSqMeterNum,
+        pricePerSqMeter: pricePerSqMeterFormatted,
+        pricePerSqMeterNumber: pricePerSqMeterNum,
+        GIA_TIEN: totalPriceFormatted,
+        GIA_TIEN_SO: totalPriceNum,
+        GIA_TIEN_CHU: totalPriceWords,
+        totalPrice: totalPriceFormatted,
+        totalPriceNumber: totalPriceNum,
+        totalPriceWords,
+        GHI_CHU: v.notes || '',
+        notes: v.notes || '',
+        // Boolean flags cho từng dòng
+        LA_NGHI_DINH_QUY: isTheoNghiDinhQuy,
+        LA_NGHI_DINH_QUY_CU: isTheoNghiDinhQuyCu,
+        LA_GIA_THI_TRUONG: isTheoGiaThiTruong,
+        LA_GIA_THI_TRUONG_VA_NGHI_DINH_QUY: isTheoGiaThiTruongVaNghiDinhQuy,
+        isTheoNghiDinhQuy,
+        isTheoNghiDinhQuyCu,
+        isTheoGiaThiTruong,
+        isTheoGiaThiTruongVaNghiDinhQuy,
+      };
+    });
+
+    const valuationCount = valuationsList.length;
+    const hasValuations = valuationCount > 0;
+    const uniqueValuationDates = Array.from(new Set(valuationsList.map((v: any) => v.NGAY_DINH_GIA).filter(Boolean)));
+    const loanValuationDate = uniqueValuationDates.length === 1 ? uniqueValuationDates[0] : '';
+
+    const uniqueValuationTypes = Array.from(new Set(valuationsList.map((v: any) => v.LOAI_DINH_GIA).filter(Boolean)));
+    const loanValuationType = uniqueValuationTypes.length === 1 ? uniqueValuationTypes[0] : '';
+
+    const totalValuationPrice = valuationsList.reduce((sum: number, v: any) => sum + (v.GIA_TIEN_SO || 0), 0);
+    const totalValuationPriceFormatted = totalValuationPrice.toLocaleString('vi-VN');
+    const totalValuationPriceWords = vndToWords(totalValuationPrice);
+
+    const hasValuationTheoNghiDinhQuy = valuationsList.some((v: any) => v.LA_NGHI_DINH_QUY);
+    const hasValuationTheoNghiDinhQuyCu = valuationsList.some((v: any) => v.LA_NGHI_DINH_QUY_CU);
+    const hasValuationTheoGiaThiTruong = valuationsList.some((v: any) => v.LA_GIA_THI_TRUONG);
+    const hasValuationTheoGiaThiTruongVaNghiDinhQuy = valuationsList.some((v: any) => v.LA_GIA_THI_TRUONG_VA_NGHI_DINH_QUY);
+
 
     const hasSingleOwner = uniqueOwnersMap.size === 1;
     const hasMultipleOwners = uniqueOwnersMap.size > 1;
@@ -798,6 +1137,7 @@ export class WordTemplateDataDictionaryService {
       const amountWords = vndToWords(amountNum);
       const name = r.name || '';
       const note = r.notes || r.note || '';
+      const { withColon, withoutColon } = resolveIncomeTitle(name, idx);
       return {
         index: idx + 1,
         STT: idx + 1,
@@ -809,6 +1149,9 @@ export class WordTemplateDataDictionaryService {
         NGUON_THU: name,
         NOI_DUNG: name,
         MUC_THU: name,
+        TEN_THU_NHAP: withoutColon,
+        TEN_THU_NHAP_CO_DAU_HAI_CHAM: withColon,
+        TEN_THU_NHAP_KHONG_DAU_HAI_CHAM: withoutColon,
         amount: amountStr,
         amountNumber: amountNum,
         amountWords,
@@ -820,6 +1163,46 @@ export class WordTemplateDataDictionaryService {
         note,
       };
     });
+
+    const incomesList = (plan?.revenues || []).map((r: any, idx: number) => {
+      const amountNum = Number(r.amount || 0);
+      const amountStr = `${amountNum.toLocaleString('vi-VN')} đ`;
+      const amountWords = vndToWords(amountNum);
+      const rawName = r.name || '';
+      const note = r.notes || r.note || '';
+      const { withColon, withoutColon } = resolveIncomeTitle(rawName, idx);
+      return {
+        index: idx + 1,
+        STT: idx + 1,
+        TEN_THU_NHAP: withoutColon,
+        TEN_THU_NHAP_CO_DAU_HAI_CHAM: withColon,
+        TEN_THU_NHAP_KHONG_DAU_HAI_CHAM: withoutColon,
+        name: withoutColon,
+        TEN: withoutColon,
+        TEN_NGUON_THU: withoutColon,
+        TEN_KHOAN_THU: withoutColon,
+        KHOAN_THU: withoutColon,
+        NGUON_THU: withoutColon,
+        NOI_DUNG: withoutColon,
+        MUC_THU: withoutColon,
+        TEN_GOC: rawName,
+        ORIGINAL_NAME: rawName,
+        amount: amountStr,
+        amountNumber: amountNum,
+        amountWords,
+        SO_TIEN: amountStr,
+        SO_TIEN_SO: amountStr,
+        SO_TIEN_CHU: amountWords,
+        SO_TIEN_RAW: amountNum,
+        GHI_CHU: note,
+        note,
+      };
+    });
+
+    const mergedIncomes =
+      incomesList.length > 0
+        ? incomesList.map((i: any) => `${i.TEN_THU_NHAP} ${i.SO_TIEN}`).join('; ')
+        : '...................';
 
     const mergedExpenses =
       expensesList.length > 0
@@ -868,9 +1251,24 @@ export class WordTemplateDataDictionaryService {
       DANH_SACH_NGUON_THU: revenuesList,
       NGUON_THU: revenuesList,
       revenues: revenuesList,
-      incomes: revenuesList,
       NGUON_THU_GOP: mergedRevenues,
       DANH_SACH_NGUON_THU_GOP: mergedRevenues,
+      DANH_SACH_THU_NHAP: incomesList,
+      THU_NHAP: incomesList,
+      incomes: incomesList,
+      DANH_SACH_THU_NHAP_PHUONG_AN: incomesList,
+      DANH_SACH_THU_NHAP_GOP: mergedIncomes,
+      'PHUONG_AN.DANH_SACH_THU_NHAP': incomesList,
+      'PHUONG_AN.THU_NHAP': incomesList,
+      'PHUONG_AN_DANH_SACH_THU_NHAP': incomesList,
+      'PHUONG_AN.DANH_SACH_THU_NHAP_GOP': mergedIncomes,
+      PHUONG_AN_DANH_SACH_THU_NHAP_GOP: mergedIncomes,
+      isTrungHan: loan.termType === 'TRUNG_HAN',
+      IS_TRUNG_HAN: loan.termType === 'TRUNG_HAN',
+      LA_TRUNG_HAN: loan.termType === 'TRUNG_HAN',
+      isNganHan: loan.termType === 'NGAN_HAN',
+      IS_NGAN_HAN: loan.termType === 'NGAN_HAN',
+      LA_NGAN_HAN: loan.termType === 'NGAN_HAN',
     };
 
     const nested = {
@@ -934,6 +1332,14 @@ export class WordTemplateDataDictionaryService {
         halfTermPaymentDate: loan.halfTermPaymentDate
           ? dayjs(loan.halfTermPaymentDate).format('DD/MM/YYYY')
           : '',
+        isTrungHan: loan.termType === 'TRUNG_HAN',
+        isNganHan: loan.termType === 'NGAN_HAN',
+        DANH_XUNG: loanDanhXung,
+        SO_KHE_UOC: loan.contractNumber || '',
+        NGAY_CAP_KHE_UOC: contractDate.format('DD/MM/YYYY'),
+        SO_HOP_DONG_THE_CHAP: mortgage?.contractNumber || '',
+        isSoKheUocGiongSoHdTheChap,
+        IS_SO_KHE_UOC_GIONG_SO_HD_THE_CHAP: isSoKheUocGiongSoHdTheChap,
       },
       mortgage: {
         contractNumber: mortgage?.contractNumber || '',
@@ -956,6 +1362,8 @@ export class WordTemplateDataDictionaryService {
           firstCollateral?.ownerType === 'BAO_LANH' && firstCollateral?.thirdPartyInfo?.fullName
             ? firstCollateral.thirdPartyInfo.fullName
             : member.fullName,
+        isKhacDiaChi,
+        IS_KHAC_DIA_CHI: isKhacDiaChi,
       },
       TAI_SAN: {
         MA_TAI_SAN_GOP: mergedAssetCodes,
@@ -988,6 +1396,8 @@ export class WordTemplateDataDictionaryService {
         TEN_TAI_SAN_GOP: mergedAssetTypes,
         GIA_TRI_DINH_GIA_GOP: mergedValuations,
         DON_GIA_GOP: mergedPrices,
+        IS_KHAC_DIA_CHI: isKhacDiaChi,
+        LA_KHAC_DIA_CHI: isKhacDiaChi,
 
         // Tổng diện tích tất cả tài sản
         TONG_DIEN_TICH: `${totalCollateralArea.toLocaleString('vi-VN')} m²`,
@@ -995,6 +1405,19 @@ export class WordTemplateDataDictionaryService {
         TONG_DIEN_TICH_CHU: areaToWords(totalCollateralArea),
         TONG_DIEN_TICH_DAT: `${totalCollateralArea.toLocaleString('vi-VN')} m²`,
         TONG_DIEN_TICH_TAI_SAN: `${totalCollateralArea.toLocaleString('vi-VN')} m²`,
+
+        // Tổng định giá tất cả tài sản
+        TONG_DINH_GIA: `${totalCollateralValuationRounded.toLocaleString('vi-VN')} đ`,
+        TONG_DINH_GIA_SO: `${totalCollateralValuationRounded.toLocaleString('vi-VN')} đ`,
+        TONG_DINH_GIA_CHU: vndToWords(totalCollateralValuationRounded),
+        TONG_DINH_GIA_RAW: totalCollateralValuationRounded,
+        TONG_GIA_TRI_DINH_GIA: `${totalCollateralValuationRounded.toLocaleString('vi-VN')} đ`,
+        TONG_GIA_TRI_DINH_GIA_CHU: vndToWords(totalCollateralValuationRounded),
+
+        // Tổng số lượng tài sản
+        SO_LUONG_TAI_SAN: collaterals.length,
+        TONG_SO_TAI_SAN: collaterals.length,
+        SO_LUONG: collaterals.length,
 
         // Đơn lẻ / Tài sản đầu tiên
         MA_TAI_SAN: firstCollateral?.assetCode || '',
@@ -1144,6 +1567,10 @@ export class WordTemplateDataDictionaryService {
       NGAY_KY: nested.loan.contractDate,
       SO_HD_THE_CHAP: nested.mortgage.contractNumber,
       TONG_SO_TAI_SAN: nested.collaterals_summary.totalCount,
+      SO_LUONG_TAI_SAN: nested.collaterals_summary.totalCount,
+      'TAI_SAN.SO_LUONG_TAI_SAN': nested.collaterals_summary.totalCount,
+      'TAI_SAN.TONG_SO_TAI_SAN': nested.collaterals_summary.totalCount,
+      'TAI_SAN.SO_LUONG': nested.collaterals_summary.totalCount,
       TONG_DIEN_TICH: nested.collaterals_summary.totalArea,
       TONG_DIEN_TICH_SO: totalCollateralArea.toLocaleString('vi-VN'),
       TONG_DIEN_TICH_CHU: nested.collaterals_summary.totalAreaWords,
@@ -1154,6 +1581,15 @@ export class WordTemplateDataDictionaryService {
       'TAI_SAN.TONG_DIEN_TICH_DAT': nested.collaterals_summary.totalArea,
       TONG_GIA_TRI_DINH_GIA: nested.collaterals_summary.totalValuationAmountRounded,
       TONG_GIA_TRI_DINH_GIA_CHU: nested.collaterals_summary.totalValuationAmountWords,
+      TONG_DINH_GIA: nested.collaterals_summary.totalValuationAmountRounded,
+      TONG_DINH_GIA_SO: nested.collaterals_summary.totalValuationAmountRounded,
+      TONG_DINH_GIA_CHU: nested.collaterals_summary.totalValuationAmountWords,
+      'TAI_SAN.TONG_DINH_GIA': nested.collaterals_summary.totalValuationAmountRounded,
+      'TAI_SAN.TONG_DINH_GIA_SO': nested.collaterals_summary.totalValuationAmountRounded,
+      'TAI_SAN.TONG_DINH_GIA_CHU': nested.collaterals_summary.totalValuationAmountWords,
+      'TAI_SAN.TONG_DINH_GIA_RAW': totalCollateralValuationRounded,
+      'TAI_SAN.TONG_GIA_TRI_DINH_GIA': nested.collaterals_summary.totalValuationAmountRounded,
+      'TAI_SAN.TONG_GIA_TRI_DINH_GIA_CHU': nested.collaterals_summary.totalValuationAmountWords,
       NGAY_HIEN_TAI: nested.fund.currentDay,
       THANG_HIEN_TAI: nested.fund.currentMonth,
       NAM_HIEN_TAI: nested.fund.currentYear,
@@ -1167,6 +1603,24 @@ export class WordTemplateDataDictionaryService {
       hasCollaterals: collaterals.length > 0,
       isTheChap: loan.loanType === 'THE_CHAP',
       isTinChap: loan.loanType === 'TIN_CHAP',
+      isTrungHan: loan.termType === 'TRUNG_HAN',
+      IS_TRUNG_HAN: loan.termType === 'TRUNG_HAN',
+      LA_TRUNG_HAN: loan.termType === 'TRUNG_HAN',
+      isNganHan: loan.termType === 'NGAN_HAN',
+      IS_NGAN_HAN: loan.termType === 'NGAN_HAN',
+      LA_NGAN_HAN: loan.termType === 'NGAN_HAN',
+      'loan.isTrungHan': loan.termType === 'TRUNG_HAN',
+      'loan.isNganHan': loan.termType === 'NGAN_HAN',
+      'PHUONG_AN.IS_TRUNG_HAN': loan.termType === 'TRUNG_HAN',
+      'PHUONG_AN.LA_TRUNG_HAN': loan.termType === 'TRUNG_HAN',
+      'PHUONG_AN.IS_NGAN_HAN': loan.termType === 'NGAN_HAN',
+      'PHUONG_AN.LA_NGAN_HAN': loan.termType === 'NGAN_HAN',
+      'KHOAN_VAY.IS_TRUNG_HAN': loan.termType === 'TRUNG_HAN',
+      'KHOAN_VAY.LA_TRUNG_HAN': loan.termType === 'TRUNG_HAN',
+      'KHOAN_VAY.IS_NGAN_HAN': loan.termType === 'NGAN_HAN',
+      'KHOAN_VAY.LA_NGAN_HAN': loan.termType === 'NGAN_HAN',
+      DANH_SACH_THU_NHAP: incomesList,
+      THU_NHAP: incomesList,
 
       // Người thừa kế (tiền tố NGUOI_THUA_KE.*)
       'NGUOI_THUA_KE.HO_TEN': nested.heir?.fullName || '',
@@ -1266,6 +1720,48 @@ export class WordTemplateDataDictionaryService {
       isOwnerHeir,
       isOwnerGuarantor,
       SO_LUONG_CHU_SO_HUU: uniqueOwnersMap.size,
+      'TAI_SAN.IS_KHAC_DIA_CHI': isKhacDiaChi,
+      'TAI_SAN.LA_KHAC_DIA_CHI': isKhacDiaChi,
+      // Định giá khoản vay (KHOAN_VAY.* & cấp khoản vay)
+      'KHOAN_VAY.SO_LUONG_DINH_GIA': valuationCount,
+      'KHOAN_VAY.CO_DINH_GIA': hasValuations,
+      'KHOAN_VAY.NGAY_DINH_GIA': loanValuationDate,
+      'KHOAN_VAY.LOAI_DINH_GIA': loanValuationType,
+      'KHOAN_VAY.TONG_GIA_TIEN_DINH_GIA': totalValuationPriceFormatted,
+      'KHOAN_VAY.TONG_GIA_TIEN_DINH_GIA_SO': totalValuationPrice,
+      'KHOAN_VAY.TONG_GIA_TIEN_DINH_GIA_CHU': totalValuationPriceWords,
+      'KHOAN_VAY.CO_DINH_GIA_THEO_NGHI_DINH_QUY': hasValuationTheoNghiDinhQuy,
+      'KHOAN_VAY.CO_DINH_GIA_THEO_NGHI_DINH_QUY_CU': hasValuationTheoNghiDinhQuyCu,
+      'KHOAN_VAY.CO_DINH_GIA_THEO_GIA_THI_TRUONG': hasValuationTheoGiaThiTruong,
+      'KHOAN_VAY.CO_DINH_GIA_THEO_GIA_THI_TRUONG_VA_NGHI_DINH_QUY': hasValuationTheoGiaThiTruongVaNghiDinhQuy,
+      'KHOAN_VAY.DANH_SACH_DINH_GIA': valuationsList,
+      'DANH_SACH_DINH_GIA': valuationsList,
+      'TAI_SAN.CO_KHAC_DIA_CHI': isKhacDiaChi,
+      IS_KHAC_DIA_CHI: isKhacDiaChi,
+      LA_KHAC_DIA_CHI: isKhacDiaChi,
+      'KHOAN_VAY.DANH_XUNG': loanDanhXung,
+      'loan.DANH_XUNG': loanDanhXung,
+      DANH_XUNG_KHOAN_VAY: loanDanhXung,
+      'KHOAN_VAY.SO_HOP_DONG_THE_CHAP': nested.mortgage.contractNumber,
+      SO_HOP_DONG_THE_CHAP: nested.mortgage.contractNumber,
+      'KHOAN_VAY.SO_HD_THE_CHAP': nested.mortgage.contractNumber,
+      'loan.SO_HOP_DONG_THE_CHAP': nested.mortgage.contractNumber,
+      'KHOAN_VAY.SO_KHE_UOC': nested.loan.contractNumber,
+      'KHOAN_VAY,SO_KHE_UOC': nested.loan.contractNumber,
+      'loan.SO_KHE_UOC': nested.loan.contractNumber,
+      'KHOAN_VAY.NGAY_CAP_KHE_UOC': nested.loan.contractDate,
+      NGAY_CAP_KHE_UOC: nested.loan.contractDate,
+      'loan.NGAY_CAP_KHE_UOC': nested.loan.contractDate,
+      'KHOAN_VAY.IS_SO_KHE_UOC_GIONG_SO_HD_THE_CHAP': isSoKheUocGiongSoHdTheChap,
+      'KHOAN_VAY.IS_SO_KHE_UOC_GIONG_SO_HOP_DONG_THE_CHAP': isSoKheUocGiongSoHdTheChap,
+      'KHOAN_VAY.SO_KHE_UOC_GIONG_SO_HD_THE_CHAP': isSoKheUocGiongSoHdTheChap,
+      'KHOAN_VAY.SO_KHE_UOC_GIONG_SO_HOP_DONG_THE_CHAP': isSoKheUocGiongSoHdTheChap,
+      IS_SO_KHE_UOC_GIONG_SO_HD_THE_CHAP: isSoKheUocGiongSoHdTheChap,
+      IS_SO_KHE_UOC_GIONG_SO_HOP_DONG_THE_CHAP: isSoKheUocGiongSoHdTheChap,
+      SO_KHE_UOC_GIONG_SO_HD_THE_CHAP: isSoKheUocGiongSoHdTheChap,
+      SO_KHE_UOC_GIONG_SO_HOP_DONG_THE_CHAP: isSoKheUocGiongSoHdTheChap,
+      'loan.isSoKheUocGiongSoHdTheChap': isSoKheUocGiongSoHdTheChap,
+      isSoKheUocGiongSoHdTheChap,
       'TAI_SAN.NGAY_CAP_GOP': mergedIssueDates,
       NGAY_CAP_GOP: mergedIssueDates,
       NGAY_CAP_GCN_GOP: mergedIssueDates,
@@ -1430,6 +1926,29 @@ export class WordTemplateDataDictionaryService {
         TONG_SO_TAI_SAN: nested.collaterals_summary.totalCount,
         TONG_GIA_TRI_TAI_SAN_SO: nested.collaterals_summary.totalValuationAmountRounded,
         TONG_GIA_TRI_TAI_SAN_CHU: nested.collaterals_summary.totalValuationAmountWords,
+        IS_TRUNG_HAN: loan.termType === 'TRUNG_HAN',
+        LA_TRUNG_HAN: loan.termType === 'TRUNG_HAN',
+        IS_NGAN_HAN: loan.termType === 'NGAN_HAN',
+        LA_NGAN_HAN: loan.termType === 'NGAN_HAN',
+        DANH_XUNG: loanDanhXung,
+        SO_KHE_UOC: nested.loan.contractNumber,
+        NGAY_CAP_KHE_UOC: nested.loan.contractDate,
+        SO_HOP_DONG_THE_CHAP: nested.mortgage.contractNumber,
+        isSoKheUocGiongSoHdTheChap,
+        IS_SO_KHE_UOC_GIONG_SO_HD_THE_CHAP: isSoKheUocGiongSoHdTheChap,
+        SO_KHE_UOC_GIONG_SO_HD_THE_CHAP: isSoKheUocGiongSoHdTheChap,
+        SO_LUONG_DINH_GIA: valuationCount,
+        CO_DINH_GIA: hasValuations,
+        NGAY_DINH_GIA: loanValuationDate,
+        LOAI_DINH_GIA: loanValuationType,
+        TONG_GIA_TIEN_DINH_GIA: totalValuationPriceFormatted,
+        TONG_GIA_TIEN_DINH_GIA_SO: totalValuationPrice,
+        TONG_GIA_TIEN_DINH_GIA_CHU: totalValuationPriceWords,
+        CO_DINH_GIA_THEO_NGHI_DINH_QUY: hasValuationTheoNghiDinhQuy,
+        CO_DINH_GIA_THEO_NGHI_DINH_QUY_CU: hasValuationTheoNghiDinhQuyCu,
+        CO_DINH_GIA_THEO_GIA_THI_TRUONG: hasValuationTheoGiaThiTruong,
+        CO_DINH_GIA_THEO_GIA_THI_TRUONG_VA_NGHI_DINH_QUY: hasValuationTheoGiaThiTruongVaNghiDinhQuy,
+        DANH_SACH_DINH_GIA: valuationsList,
       },
       QUY_TIN_DUNG: {
         TEN_QUY: nested.fund.name,
@@ -1484,6 +2003,7 @@ export class WordTemplateDataDictionaryService {
       isBorrowerAndHeirOwner: isBothBorrowerAndHeirOwner,
       DANH_SACH_CHU_SO_HUU: uniqueOwnersList,
       DANH_SACH_TAI_SAN: collateralsList,
+      DANH_SACH_DINH_GIA: valuationsList,
       DANH_SACH_NGUOI_LIEN_QUAN: relatedPersonsList,
       DANH_SACH_NGUOI_THUA_KE: heirsList,
       PHUONG_AN: nested.PHUONG_AN,
@@ -1502,6 +2022,9 @@ export class WordTemplateDataDictionaryService {
       lists: {
         collaterals: collateralsList,
         DANH_SACH_TAI_SAN: collateralsList,
+        valuations: valuationsList,
+        DANH_SACH_DINH_GIA: valuationsList,
+        'KHOAN_VAY.DANH_SACH_DINH_GIA': valuationsList,
         uniqueOwners: uniqueOwnersList,
         DANH_SACH_CHU_SO_HUU: uniqueOwnersList,
         relatedPersons: relatedPersonsList,
@@ -1515,12 +2038,17 @@ export class WordTemplateDataDictionaryService {
         'PHUONG_AN.DANH_SACH_CHI_PHI': expensesList,
         'PHUONG_AN.CHI_PHI': expensesList,
         revenues: revenuesList,
-        incomes: revenuesList,
         DANH_SACH_NGUON_THU: revenuesList,
         NGUON_THU: revenuesList,
         DANH_SACH_NGUON_THU_PHUONG_AN: revenuesList,
         'PHUONG_AN.DANH_SACH_NGUON_THU': revenuesList,
         'PHUONG_AN.NGUON_THU': revenuesList,
+        incomes: incomesList,
+        DANH_SACH_THU_NHAP: incomesList,
+        THU_NHAP: incomesList,
+        DANH_SACH_THU_NHAP_PHUONG_AN: incomesList,
+        'PHUONG_AN.DANH_SACH_THU_NHAP': incomesList,
+        'PHUONG_AN.THU_NHAP': incomesList,
       },
     };
   }
