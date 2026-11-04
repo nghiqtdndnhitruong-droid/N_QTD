@@ -17,6 +17,7 @@ import {
   resolveEffectiveCollateralArea,
 } from '../../shared/utils/identity-document.util';
 import { LoanType, CollateralOwnerType } from '@prisma/client';
+import { loanValuationService } from '../loan-valuation/loan-valuation.service';
 
 function normalizeThirdPartyInfo(info?: ThirdPartyInfoDto | null) {
   if (!info) return null;
@@ -151,7 +152,7 @@ export class CollateralService {
         ? normalizeThirdPartyInfo(dto.thirdPartyInfo)
         : null;
 
-    return this.repo.create(
+    const created = await this.repo.create(
       {
         ...dto,
         assetCode: normalizedAssetCode,
@@ -163,6 +164,9 @@ export class CollateralService {
       },
       location
     );
+
+    await loanValuationService.syncCollateralsValuation(loanId);
+    return (await this.repo.findById(created.id)) || created;
   }
 
   async getById(id: string) {

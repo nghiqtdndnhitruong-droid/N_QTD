@@ -3,6 +3,7 @@ import PizZip from 'pizzip';
 import Docxtemplater from 'docxtemplater';
 import { wordTemplateDataDictionaryService } from '../word-template-data-dictionary.service';
 import { wordTemplateCompiler } from '../engine/word-template-compiler';
+import { wordTemplateGeneratorService } from '../word-template-generator.service';
 
 function createMockDocxZip(documentXml: string): PizZip {
   const zip = new PizZip();
@@ -175,7 +176,7 @@ describe('Loan Valuation Engine & Word Template Keywords', () => {
     expect(resolvedContext['KHOAN_VAY.CO_DINH_GIA_THEO_GIA_THI_TRUONG']).toBe(false);
   });
 
-  it('4. Khi các dòng định giá khác ngày nhau, KHOAN_VAY.NGAY_DINH_GIA trả về rỗng', () => {
+  it('4. Khi các dòng định giá khác ngày nhau, KHOAN_VAY.NGAY_DINH_GIA nối các ngày lại', () => {
     const multiDateLoan = {
       ...mockLoan,
       valuations: [
@@ -185,7 +186,29 @@ describe('Loan Valuation Engine & Word Template Keywords', () => {
     };
 
     const { resolvedContext } = wordTemplateDataDictionaryService.resolveLoanData(multiDateLoan as any, []);
-    expect(resolvedContext['KHOAN_VAY.NGAY_DINH_GIA']).toBe('');
+    expect(resolvedContext['KHOAN_VAY.NGAY_DINH_GIA']).toBe('15/05/2026, 20/05/2026');
+  });
+
+  it('5. Kiểm tra phân rã ngày định giá thành ngày, tháng, năm', () => {
+    const { resolvedContext } = wordTemplateDataDictionaryService.resolveLoanData(mockLoan as any, []);
+    expect(resolvedContext['KHOAN_VAY.NGAY_DINH_GIA']).toBe('15/05/2026');
+    expect(resolvedContext['KHOAN_VAY.NGAY_DINH_GIA_NGAY']).toBe('15');
+    expect(resolvedContext['KHOAN_VAY.NGAY_DINH_GIA_THANG']).toBe('05');
+    expect(resolvedContext['KHOAN_VAY.NGAY_DINH_GIA_NAM']).toBe('2026');
+  });
+
+  it('6. Lấy được KHOAN_VAY.NGAY_DINH_GIA khi có cấu hình mapping dataPath loan.valuationDate', () => {
+    const mappings = [
+      {
+        keyword: 'KHOAN_VAY.NGAY_DINH_GIA',
+        displayName: 'Ngày định giá',
+        dataPath: 'loan.valuationDate',
+        dataType: 'DATE',
+      },
+    ];
+    const { resolvedContext } = wordTemplateDataDictionaryService.resolveLoanData(mockLoan as any, mappings as any);
+    expect(resolvedContext['KHOAN_VAY.NGAY_DINH_GIA']).toBe('15/05/2026');
+    expect(resolvedContext.KHOAN_VAY.NGAY_DINH_GIA).toBe('15/05/2026');
   });
 
   it('5. Render thực tế file Word với vòng lặp FOR KHOAN_VAY.DANH_SACH_DINH_GIA và nhân bản dòng', () => {
@@ -268,5 +291,23 @@ describe('Loan Valuation Engine & Word Template Keywords', () => {
     expect(renderedXml).toContain('Dòng: 01 - ĐỊNH GIÁ QUỸ');
     expect(renderedXml).toContain('Dòng: 05 - THỊ TRƯỜNG');
     expect(renderedXml).toContain('Dòng: 09 - KẾT HỢP');
+  });
+
+  it('9. wordTemplateGeneratorService render thành công thẻ {{KHOAN_VAY.NGAY_DINH_GIA}}', () => {
+    const rawWordXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:p><w:t>Biên bản định giá TSTC ngày {{KHOAN_VAY.NGAY_DINH_GIA}}</w:t></w:p>
+  </w:body>
+</w:document>`;
+
+    const { resolvedContext } = wordTemplateDataDictionaryService.resolveLoanData(mockLoan as any, []);
+    const zip = createMockDocxZip(rawWordXml);
+    const buffer = zip.generate({ type: 'nodebuffer' });
+    const outputBuffer = wordTemplateGeneratorService.generateDocx(buffer, resolvedContext);
+
+    const resultZip = new PizZip(outputBuffer);
+    const renderedXml = resultZip.file('word/document.xml')?.asText() || '';
+    expect(renderedXml).toContain('Biên bản định giá TSTC ngày 15/05/2026');
   });
 });

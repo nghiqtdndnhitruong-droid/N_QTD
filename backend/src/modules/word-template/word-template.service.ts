@@ -545,7 +545,22 @@ export class WordTemplateService {
     if (k.includes('HD_THE_CHAP') || k.includes('MORTGAGE_CONTRACT'))
       return { path: 'mortgage.contractNumber', dataType: 'TEXT' };
 
-    // Định giá tài sản
+    // Định giá tài sản & Định giá khoản vay
+    if (k.includes('NGAY_DINH_GIA') || k.includes('VALUATION_DATE')) {
+      if (k.includes('NGAY') && !k.endsWith('NGAY_DINH_GIA') && k !== 'NGAY_DINH_GIA') return { path: 'KHOAN_VAY.NGAY_DINH_GIA_NGAY', dataType: 'TEXT' };
+      if (k.includes('THANG')) return { path: 'KHOAN_VAY.NGAY_DINH_GIA_THANG', dataType: 'TEXT' };
+      if (k.includes('NAM')) return { path: 'KHOAN_VAY.NGAY_DINH_GIA_NAM', dataType: 'TEXT' };
+      return { path: 'KHOAN_VAY.NGAY_DINH_GIA', dataType: 'DATE' };
+    }
+    if (k.includes('LOAI_DINH_GIA') || k.includes('VALUATION_TYPE')) {
+      return { path: 'KHOAN_VAY.LOAI_DINH_GIA', dataType: 'TEXT' };
+    }
+    if (k.includes('TONG_GIA_TIEN_DINH_GIA') || k.includes('TONG_TIEN_DINH_GIA')) {
+      if (k.includes('CHU') || k.includes('WORDS')) {
+        return { path: 'KHOAN_VAY.TONG_GIA_TIEN_DINH_GIA_CHU', dataType: 'CURRENCY_WORDS' };
+      }
+      return { path: 'KHOAN_VAY.TONG_GIA_TIEN_DINH_GIA', dataType: 'CURRENCY' };
+    }
     if (k.includes('TONG_GIA_TRI_DINH_GIA_CHU'))
       return { path: 'collaterals_summary.totalValuationAmountWords', dataType: 'CURRENCY_WORDS' };
     if (k.includes('TONG_GIA_TRI_DINH_GIA') || k.includes('VALUATION_AMOUNT'))

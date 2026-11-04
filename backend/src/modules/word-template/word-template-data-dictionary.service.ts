@@ -562,7 +562,14 @@ export class WordTemplateDataDictionaryService {
       }
 
       // Lấy giá trị thô theo dataPath
-      const rawVal = this.getValueByPath(rawData.nested, dataPath);
+      let rawVal = this.getValueByPath(rawData.nested, dataPath);
+      if ((rawVal === null || rawVal === undefined || rawVal === '') && rawData.flatVariables) {
+        if ((rawData.flatVariables as any)[dataPath] !== undefined) {
+          rawVal = (rawData.flatVariables as any)[dataPath];
+        } else if ((rawData.flatVariables as any)[keyword] !== undefined) {
+          rawVal = (rawData.flatVariables as any)[keyword];
+        }
+      }
 
       if (rawVal === null || rawVal === undefined || rawVal === '') {
         if (mapping.isRequired) {
@@ -592,6 +599,16 @@ export class WordTemplateDataDictionaryService {
           mapping.dataType || 'TEXT',
           mapping.formatPattern,
         );
+      }
+
+      // Đồng thời cập nhật vào đối tượng lồng nhau nếu keyword chứa dấu chấm (vd: KHOAN_VAY.NGAY_DINH_GIA -> resolvedContext.KHOAN_VAY.NGAY_DINH_GIA)
+      const dotIndex = keyword.indexOf('.');
+      if (dotIndex !== -1) {
+        const root = keyword.slice(0, dotIndex);
+        const sub = keyword.slice(dotIndex + 1);
+        if (resolvedContext[root] && typeof resolvedContext[root] === 'object' && !Array.isArray(resolvedContext[root])) {
+          resolvedContext[root][sub] = resolvedContext[keyword];
+        }
       }
     }
 
@@ -936,8 +953,22 @@ export class WordTemplateDataDictionaryService {
 
     const valuationCount = valuationsList.length;
     const hasValuations = valuationCount > 0;
-    const uniqueValuationDates = Array.from(new Set(valuationsList.map((v: any) => v.NGAY_DINH_GIA).filter(Boolean)));
-    const loanValuationDate = uniqueValuationDates.length === 1 ? uniqueValuationDates[0] : '';
+    const uniqueValuationDates: string[] = Array.from(new Set(valuationsList.map((v: any) => String(v.NGAY_DINH_GIA || '')).filter(Boolean)));
+    const loanValuationDate: string = uniqueValuationDates.length > 0
+      ? (uniqueValuationDates.length === 1 ? uniqueValuationDates[0] : uniqueValuationDates.join(', '))
+      : (loan.valuationDate ? dayjs(loan.valuationDate).format('DD/MM/YYYY') : '');
+
+    let valuationDay = '';
+    let valuationMonth = '';
+    let valuationYear = '';
+    if (loanValuationDate && loanValuationDate.includes('/')) {
+      const parts = loanValuationDate.split('/');
+      if (parts.length >= 3) {
+        valuationDay = parts[0].trim();
+        valuationMonth = parts[1].trim();
+        valuationYear = parts[2].split(',')[0].trim();
+      }
+    }
 
     const uniqueValuationTypes = Array.from(new Set(valuationsList.map((v: any) => v.LOAI_DINH_GIA).filter(Boolean)));
     const loanValuationType = uniqueValuationTypes.length === 1 ? uniqueValuationTypes[0] : '';
@@ -1340,6 +1371,21 @@ export class WordTemplateDataDictionaryService {
         SO_HOP_DONG_THE_CHAP: mortgage?.contractNumber || '',
         isSoKheUocGiongSoHdTheChap,
         IS_SO_KHE_UOC_GIONG_SO_HD_THE_CHAP: isSoKheUocGiongSoHdTheChap,
+        valuationDate: loanValuationDate,
+        NGAY_DINH_GIA: loanValuationDate,
+        NGAY_DINH_GIA_NGAY: valuationDay,
+        NGAY_DINH_GIA_THANG: valuationMonth,
+        NGAY_DINH_GIA_NAM: valuationYear,
+        valuationType: loanValuationType,
+        LOAI_DINH_GIA: loanValuationType,
+        totalValuationPrice: totalValuationPriceFormatted,
+        totalValuationPriceRaw: totalValuationPrice,
+        totalValuationPriceWords: totalValuationPriceWords,
+        hasValuations,
+        hasValuationTheoNghiDinhQuy,
+        hasValuationTheoNghiDinhQuyCu,
+        hasValuationTheoGiaThiTruong,
+        hasValuationTheoGiaThiTruongVaNghiDinhQuy,
       },
       mortgage: {
         contractNumber: mortgage?.contractNumber || '',
@@ -1726,6 +1772,9 @@ export class WordTemplateDataDictionaryService {
       'KHOAN_VAY.SO_LUONG_DINH_GIA': valuationCount,
       'KHOAN_VAY.CO_DINH_GIA': hasValuations,
       'KHOAN_VAY.NGAY_DINH_GIA': loanValuationDate,
+      'KHOAN_VAY.NGAY_DINH_GIA_NGAY': valuationDay,
+      'KHOAN_VAY.NGAY_DINH_GIA_THANG': valuationMonth,
+      'KHOAN_VAY.NGAY_DINH_GIA_NAM': valuationYear,
       'KHOAN_VAY.LOAI_DINH_GIA': loanValuationType,
       'KHOAN_VAY.TONG_GIA_TIEN_DINH_GIA': totalValuationPriceFormatted,
       'KHOAN_VAY.TONG_GIA_TIEN_DINH_GIA_SO': totalValuationPrice,
@@ -1736,6 +1785,19 @@ export class WordTemplateDataDictionaryService {
       'KHOAN_VAY.CO_DINH_GIA_THEO_GIA_THI_TRUONG_VA_NGHI_DINH_QUY': hasValuationTheoGiaThiTruongVaNghiDinhQuy,
       'KHOAN_VAY.DANH_SACH_DINH_GIA': valuationsList,
       'DANH_SACH_DINH_GIA': valuationsList,
+      NGAY_DINH_GIA: loanValuationDate,
+      NGAY_DINH_GIA_TSTC: loanValuationDate,
+      NGAY_DINH_GIA_NGAY: valuationDay,
+      NGAY_DINH_GIA_THANG: valuationMonth,
+      NGAY_DINH_GIA_NAM: valuationYear,
+      LOAI_DINH_GIA: loanValuationType,
+      'loan.valuationDate': loanValuationDate,
+      'loan.NGAY_DINH_GIA': loanValuationDate,
+      'loan.valuationType': loanValuationType,
+      'loan.LOAI_DINH_GIA': loanValuationType,
+      'loan.totalValuationPrice': totalValuationPriceFormatted,
+      'loan.totalValuationPriceWords': totalValuationPriceWords,
+      'loan.hasValuations': hasValuations,
       'TAI_SAN.CO_KHAC_DIA_CHI': isKhacDiaChi,
       IS_KHAC_DIA_CHI: isKhacDiaChi,
       LA_KHAC_DIA_CHI: isKhacDiaChi,
@@ -1940,7 +2002,12 @@ export class WordTemplateDataDictionaryService {
         SO_LUONG_DINH_GIA: valuationCount,
         CO_DINH_GIA: hasValuations,
         NGAY_DINH_GIA: loanValuationDate,
+        valuationDate: loanValuationDate,
+        NGAY_DINH_GIA_NGAY: valuationDay,
+        NGAY_DINH_GIA_THANG: valuationMonth,
+        NGAY_DINH_GIA_NAM: valuationYear,
         LOAI_DINH_GIA: loanValuationType,
+        valuationType: loanValuationType,
         TONG_GIA_TIEN_DINH_GIA: totalValuationPriceFormatted,
         TONG_GIA_TIEN_DINH_GIA_SO: totalValuationPrice,
         TONG_GIA_TIEN_DINH_GIA_CHU: totalValuationPriceWords,
@@ -2079,6 +2146,9 @@ export class WordTemplateDataDictionaryService {
         }
         return String(value);
       case 'DATE':
+        if (typeof value === 'string' && /^\d{2}\/\d{2}\/\d{4}/.test(value)) {
+          return value;
+        }
         if (dayjs(value).isValid()) {
           const pattern = formatPattern || 'DD/MM/YYYY';
           return dayjs(value).format(pattern);

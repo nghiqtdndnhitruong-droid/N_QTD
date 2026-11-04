@@ -3,6 +3,7 @@ import Docxtemplater from 'docxtemplater';
 import { AppError } from '../../shared/errors';
 import type { ExportResultFile } from './word-template.types';
 import { wordTemplateCompiler } from './engine/word-template-compiler';
+import { safeExpressionEvaluator } from './engine/safe-evaluator';
 
 export class WordTemplateGeneratorService {
   /**
@@ -51,6 +52,18 @@ export class WordTemplateGeneratorService {
         linebreaks: true,
         delimiters: { start: '{{', end: '}}' },
         nullGetter: () => '...................',
+        parser: (tag: string) => ({
+          get: (scope: any, contextObj?: any) => {
+            if (tag === '.') return scope;
+            if (scope && tag in scope && scope[tag] !== undefined) return scope[tag];
+            const val = safeExpressionEvaluator.resolveIdentifier(
+              tag,
+              activeData,
+              contextObj && contextObj.scopePathItem ? [scope] : []
+            );
+            return val !== undefined ? val : null;
+          },
+        }),
       });
     } catch (err: any) {
       throw AppError.internal(

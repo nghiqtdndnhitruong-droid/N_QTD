@@ -27,6 +27,7 @@ import {
   requireValidCitizenIdInfo,
 } from '../../shared/utils/identity-document.util';
 import { relatedPersonService } from '../related-person/related-person.service';
+import { loanValuationService } from '../loan-valuation/loan-valuation.service';
 
 export class LoanService {
   constructor(
@@ -450,7 +451,14 @@ export class LoanService {
           );
         }
 
-        const totalCollateralValue = await collateralRepository.calculateTotalValuationByLoanId(id);
+        // Tự động đồng bộ các dòng định giá với tài sản trước khi thẩm định hồ sơ
+        await loanValuationService.syncCollateralsValuation(id);
+
+        const totalCollateralFromCollaterals = await collateralRepository.calculateTotalValuationByLoanId(id);
+        const valuations = await prisma.loanValuation.findMany({ where: { loanId: id } });
+        const totalValuations = valuations.reduce((sum, v) => sum + (Number(v.totalPrice) || 0), 0);
+        const totalCollateralValue = Math.max(totalCollateralFromCollaterals, totalValuations);
+
         if (totalCollateralValue <= 0) {
           throw AppError.badRequest(
             'Khoản vay thế chấp bắt buộc phải định giá tài sản thế chấp (> 0 VNĐ) trước khi hoàn thành hồ sơ.',

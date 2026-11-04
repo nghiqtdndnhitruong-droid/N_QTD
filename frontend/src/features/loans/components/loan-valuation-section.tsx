@@ -146,6 +146,7 @@ export function LoanValuationSection({
   const watchedArea = useWatch({ control, name: 'area' });
   const watchedActualArea = useWatch({ control, name: 'actualArea' });
   const watchedPricePerSqMeter = useWatch({ control, name: 'pricePerSqMeter' });
+  const watchedCollateralId = useWatch({ control, name: 'collateralId' });
 
   // Tự động tính giá tiền khi diện tích hoặc đơn giá thay đổi
   useEffect(() => {
@@ -180,16 +181,25 @@ export function LoanValuationSection({
   const handleOpenCreate = () => {
     setEditingItem(null);
     setSelectedLandCategory('');
+    const targetCollateral = collaterals.length === 1 ? collaterals[0] : null;
+    const initialSheet = targetCollateral ? String(targetCollateral.sheetNumber ?? '') : '';
+    const initialPlot = targetCollateral ? String(targetCollateral.plotNumber ?? '') : '';
+    const initialArea = targetCollateral ? targetCollateral.area : 0;
+    const initialActualArea = targetCollateral?.actualArea ?? null;
+    const initialPrice = targetCollateral?.pricePerSqMeter ?? 0;
+    const effArea = initialActualArea && initialActualArea > 0 ? initialActualArea : initialArea;
+    const initialTotalPrice = initialPrice > 0 ? Math.round(effArea * initialPrice) : 0;
+
     reset({
-      collateralId: '',
+      collateralId: targetCollateral?.id || '',
       valuationType: commonValuationType,
       valuationDate: commonValuationDate || null,
-      sheetNumber: '',
-      plotNumber: '',
-      area: 0,
-      actualArea: null,
-      pricePerSqMeter: 0,
-      totalPrice: 0,
+      sheetNumber: initialSheet,
+      plotNumber: initialPlot,
+      area: initialArea,
+      actualArea: initialActualArea,
+      pricePerSqMeter: initialPrice,
+      totalPrice: initialTotalPrice,
       notes: '',
     });
     setIsDrawerOpen(true);
@@ -216,19 +226,19 @@ export function LoanValuationSection({
 
   // Khi người dùng chọn tài sản -> tự động điền gợi ý thông số tài sản đó
   const handleCollateralChange = (selectedId: string) => {
-    setValue('collateralId', selectedId);
+    setValue('collateralId', selectedId, { shouldDirty: true, shouldValidate: true });
     if (!selectedId) return;
 
     const matched = collaterals.find((c) => c.id === selectedId);
     if (matched) {
-      if (matched.sheetNumber) setValue('sheetNumber', String(matched.sheetNumber));
-      if (matched.plotNumber) setValue('plotNumber', String(matched.plotNumber));
-      if (matched.area) setValue('area', matched.area);
-      if (matched.actualArea) setValue('actualArea', matched.actualArea);
+      if (matched.sheetNumber) setValue('sheetNumber', String(matched.sheetNumber), { shouldDirty: true });
+      if (matched.plotNumber) setValue('plotNumber', String(matched.plotNumber), { shouldDirty: true });
+      if (matched.area) setValue('area', matched.area, { shouldDirty: true });
+      if (matched.actualArea) setValue('actualArea', matched.actualArea, { shouldDirty: true });
       if (matched.pricePerSqMeter && matched.pricePerSqMeter > 0) {
-        setValue('pricePerSqMeter', matched.pricePerSqMeter);
+        setValue('pricePerSqMeter', matched.pricePerSqMeter, { shouldDirty: true });
         const effArea = matched.actualArea || matched.area;
-        setValue('totalPrice', Math.round(effArea * matched.pricePerSqMeter));
+        setValue('totalPrice', Math.round(effArea * matched.pricePerSqMeter), { shouldDirty: true });
       }
     }
   };
@@ -552,7 +562,7 @@ export function LoanValuationSection({
               {/* Lựa chọn liên kết tài sản */}
               <SelectInput
                 label="Tài sản liên kết (tùy chọn)"
-                value={control._formValues.collateralId || ''}
+                value={watchedCollateralId || ''}
                 onChange={(e) => handleCollateralChange(e.target.value)}
                 options={collateralOptions}
                 hint="Chọn để tự động điền gợi ý Số tờ, Số thửa, Diện tích"
