@@ -24,11 +24,6 @@ export class LoanRepository {
         repayments: {
           orderBy: { repaymentDate: 'asc' },
         },
-        valuations: {
-          orderBy: { createdAt: 'asc' },
-        },
-          orderBy: { repaymentDate: 'asc' },
-        },
       },
     });
     if (!loan || loan.isDeleted) return null;
@@ -92,12 +87,10 @@ export class LoanRepository {
             orderBy: { disbursementDate: 'asc' },
           },
           repayments: {
-          orderBy: { repaymentDate: 'asc' },
-        },
-        valuations: {
-          orderBy: { createdAt: 'asc' },
-        },
             orderBy: { repaymentDate: 'asc' },
+          },
+          valuations: {
+            orderBy: { createdAt: 'asc' },
           },
           _count: {
             select: {
