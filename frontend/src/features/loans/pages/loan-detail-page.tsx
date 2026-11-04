@@ -60,6 +60,7 @@ import {
   useDeleteLoan,
   useLoanDetail,
   useLoanSummary,
+  useLoanValuations,
   useUpdateLoanStatus,
 } from '../hooks/use-loans';
 
@@ -71,6 +72,7 @@ export function LoanDetailPage() {
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
 
   const { data: loan, isLoading, error, refetch } = useLoanDetail(id);
+  const { data: valuations = [] } = useLoanValuations(id);
   const { data: summary, isLoading: isSummaryLoading } = useLoanSummary(id);
   const statusMutation = useUpdateLoanStatus(id ?? '');
   const deleteLoanMutation = useDeleteLoan();
@@ -80,6 +82,7 @@ export function LoanDetailPage() {
 
   const isEditable = loan.status === LoanStatus.DANG_TAO;
   const isRelatedPersonEligible = isLoanEligibleForRelatedPerson(loan.loanType, loan.loanAmount);
+  const valuationsCount = loan.valuations?.length ?? valuations.length;
   const activeDisbursements = (loan.disbursements ?? []).filter((d) => !d.isDeleted);
   const activeRepayments = (loan.repayments ?? []).filter((r) => !r.isDeleted);
   const hasFinancialTransactions =
@@ -276,15 +279,7 @@ export function LoanDetailPage() {
             {loan.collaterals?.length ?? 0})
           </TabsTrigger>
           <TabsTrigger value="valuations">
-            Định giá ({loan.valuations?.length ?? 0})
-          </TabsTrigger>
-          <TabsTrigger value="valuations">
-            Định giá ({loan.valuations?.length ?? 0})
-          </TabsTrigger>
-          {/* placeholder */}
-          <TabsTrigger value="_collaterals_old">
-            {loan.loanType === LoanType.TIN_CHAP ? 'Tài sản kê khai' : 'Tài sản thế chấp'} (
-            {loan.collaterals?.length ?? 0})
+            Định giá ({valuationsCount})
           </TabsTrigger>
           <TabsTrigger value="disbursements">
             Giải ngân ({activeDisbursements.length})

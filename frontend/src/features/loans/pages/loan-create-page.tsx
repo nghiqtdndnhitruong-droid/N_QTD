@@ -53,6 +53,10 @@ import {
   DescriptionItem,
   DescriptionList,
   Stepper,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
   type StepItem,
 } from '@/components/ui';
 import {
@@ -76,10 +80,12 @@ import { MemberLookupField } from '@/features/members/components/member-lookup-f
 import { useMemberDetail } from '@/features/members/hooks/use-members';
 import { useCurrentInterestRate } from '@/features/interest-rates/hooks/use-interest-rates';
 import { CollateralsSection } from '../components/collaterals-section';
+import { LoanValuationSection } from '../components/loan-valuation-section';
 import { RelatedPersonsSection } from '../components/related-persons-section';
 import {
   useCreateLoan,
   useLoanDetail,
+  useLoanValuations,
   useUpdateLoan,
   useUpdateLoanStatus,
 } from '../hooks/use-loans';
@@ -167,6 +173,7 @@ export function LoanCreatePage() {
   const [isTemplateManuallyEdited, setIsTemplateManuallyEdited] = useState(false);
 
   const { data: draftLoan } = useLoanDetail(draftLoanId);
+  const { data: valuations = [] } = useLoanValuations(draftLoanId);
   const { data: selectedMember } = useMemberDetail(memberId || draftLoan?.memberId);
   const createLoanMutation = useCreateLoan();
   const updateLoanMutation = useUpdateLoan(draftLoanId ?? '');
@@ -604,10 +611,12 @@ export function LoanCreatePage() {
   // Kiểm tra các điều kiện tiên quyết trước khi hoàn thành hồ sơ (Mục 3.7)
   const collaterals = draftLoan?.collaterals ?? [];
   const hasRequiredAssets = collaterals.length > 0;
-  const totalCollateralValuation = collaterals.reduce(
-    (s, c) => s + (Number(c.valuationAmount) || 0),
-    0,
-  );
+  const valuationsList =
+    draftLoan?.valuations && draftLoan.valuations.length > 0 ? draftLoan.valuations : valuations;
+  const totalCollateralValuation =
+    valuationsList.length > 0
+      ? valuationsList.reduce((s, v) => s + (Number(v.totalPrice) || 0), 0)
+      : collaterals.reduce((s, c) => s + (Number(c.valuationAmount) || 0), 0);
   const minRequiredValuation = draftLoan
     ? Math.ceil(draftLoan.loanAmount / BUSINESS_LIMITS.MAX_LTV_RATIO)
     : 0;
@@ -1217,102 +1226,151 @@ export function LoanCreatePage() {
         </Card>
       )}
 
-      {/* BƯỚC 5: KÊ KHAI TÀI SẢN & HỢP ĐỒNG THẾ CHẤP (Mục 3.5 & 3.7) */}
+      {/* BƯỚC 5: KÊ KHAI TÀI SẢN, ĐỊNH GIÁ & HỢP ĐỒNG THẾ CHẤP (Mục 3.5 & 3.7) */}
       {stepIndex === 4 && draftLoan && (
         <div className="space-y-6">
-          <CollateralsSection
-            loanId={draftLoan.id}
-            loanType={draftLoan.loanType}
-            loanAmount={draftLoan.loanAmount}
-            collaterals={draftLoan.collaterals ?? []}
-            hasHeir={Boolean(draftLoan.heir?.fullName?.trim())}
-          />
+          <Tabs defaultValue="collaterals" className="space-y-6">
+            <TabsList>
+              <TabsTrigger value="collaterals">
+                {draftLoan.loanType === LoanType.TIN_CHAP ? '1. Tài sản kê khai' : '1. Tài sản thế chấp'} (
+                {draftLoan.collaterals?.length ?? 0})
+              </TabsTrigger>
+              {draftLoan.loanType === LoanType.THE_CHAP && (
+                <TabsTrigger value="valuations">
+                  2. Định giá ({valuationsList.length})
+                </TabsTrigger>
+              )}
+              {isLoanEligibleForRelatedPerson(draftLoan.loanType, draftLoan.loanAmount) && (
+                <TabsTrigger value="related-persons">
+                  {draftLoan.loanType === LoanType.THE_CHAP ? '3. Người liên quan' : '2. Người liên quan'} (
+                  {draftLoan.relatedPersons?.length ?? 0})
+                </TabsTrigger>
+              )}
+              {draftLoan.loanType === LoanType.THE_CHAP && (
+                <TabsTrigger value="mortgage">
+                  {isLoanEligibleForRelatedPerson(draftLoan.loanType, draftLoan.loanAmount)
+                    ? '4. Hợp đồng thế chấp'
+                    : '3. Hợp đồng thế chấp'}{' '}
+                  {draftLoan.mortgageContract ? '✓' : ''}
+                </TabsTrigger>
+              )}
+            </TabsList>
 
-          {isLoanEligibleForRelatedPerson(draftLoan.loanType, draftLoan.loanAmount) && (
-            <RelatedPersonsSection
-              loanId={draftLoan.id}
-              loanType={draftLoan.loanType}
-              loanAmount={draftLoan.loanAmount}
-              borrowerAddress={draftLoan.member?.address}
-            />
-          )}
+            <TabsContent value="collaterals">
+              <CollateralsSection
+                loanId={draftLoan.id}
+                loanType={draftLoan.loanType}
+                loanAmount={draftLoan.loanAmount}
+                collaterals={draftLoan.collaterals ?? []}
+                hasHeir={Boolean(draftLoan.heir?.fullName?.trim())}
+              />
+            </TabsContent>
 
-          {draftLoan.loanType === LoanType.THE_CHAP ? (
-            <Card>
-              <form onSubmit={mortgageForm.handleSubmit(handleStep5Submit)} noValidate>
-                <CardHeader>
-                  <div>
-                    <CardTitle>Thông tin Hợp đồng thế chấp</CardTitle>
-                    <CardDescription>
-                      Bắt buộc phải có thông tin Hợp đồng thế chấp trước khi hoàn thành hồ sơ vay
-                      thế chấp
-                    </CardDescription>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                    <FormTextField
-                      control={mortgageForm.control}
-                      name="contractNumber"
-                      label="Số hợp đồng thế chấp"
-                      required
-                      placeholder="VD: HĐTC-2026/001"
-                    />
-                    <FormDateField
-                      control={mortgageForm.control}
-                      name="contractExpiryDate"
-                      label="Ngày hết hạn HĐTC"
-                    />
-                    <FormDateField
-                      control={mortgageForm.control}
-                      name="committeeAuthDate"
-                      label="Ngày chứng thực UBND"
-                    />
-                  </div>
+            {draftLoan.loanType === LoanType.THE_CHAP && (
+              <TabsContent value="valuations">
+                <LoanValuationSection
+                  loanId={draftLoan.id}
+                  collaterals={draftLoan.collaterals ?? []}
+                />
+              </TabsContent>
+            )}
 
-                  {isMortgageExpiryShort && expectedMaturityDate && (
-                    <Alert
-                      tone="warning"
-                      title="Thời hạn hợp đồng thế chấp ngắn hơn thời hạn vay dự kiến"
-                    >
-                      Hợp đồng thế chấp hết hạn ngày{' '}
-                      <strong>{formatDateVN(watchedMortgageExpiry)}</strong>, ngắn hơn thời hạn vay
-                      dự kiến ({draftLoan.termMonths} tháng — đến ngày{' '}
-                      <strong>{formatDateVN(expectedMaturityDate)}</strong>). Ngày đáo hạn thực tế
-                      của khoản vay sẽ được điều chỉnh theo ngày hết hạn HĐ thế chấp. Hồ sơ vẫn được
-                      phép lưu và tiếp tục bình thường.
-                    </Alert>
-                  )}
-                </CardContent>
-                <CardFooter className="justify-between">
-                  <Button variant="outline" onClick={() => setStepIndex(3)}>
-                    Quay lại
-                  </Button>
-                  <Button
-                    type="submit"
-                    isLoading={updateLoanMutation.isPending}
-                    rightIcon={<ArrowRight className="h-4 w-4" />}
-                  >
-                    Lưu HĐ thế chấp & Sang bước Xác nhận
-                  </Button>
-                </CardFooter>
-              </form>
-            </Card>
-          ) : (
-            <Card>
-              <CardFooter className="justify-between">
-                <Button variant="outline" onClick={() => setStepIndex(3)}>
-                  Quay lại
-                </Button>
-                <Button
-                  rightIcon={<ArrowRight className="h-4 w-4" />}
-                  onClick={() => setStepIndex(5)}
-                >
-                  Tiếp tục: Kiểm tra & Xác nhận hồ sơ
-                </Button>
-              </CardFooter>
-            </Card>
-          )}
+            {isLoanEligibleForRelatedPerson(draftLoan.loanType, draftLoan.loanAmount) && (
+              <TabsContent value="related-persons">
+                <RelatedPersonsSection
+                  loanId={draftLoan.id}
+                  loanType={draftLoan.loanType}
+                  loanAmount={draftLoan.loanAmount}
+                  borrowerAddress={draftLoan.member?.address}
+                />
+              </TabsContent>
+            )}
+
+            {draftLoan.loanType === LoanType.THE_CHAP && (
+              <TabsContent value="mortgage">
+                <Card>
+                  <form onSubmit={mortgageForm.handleSubmit(handleStep5Submit)} noValidate>
+                    <CardHeader>
+                      <div>
+                        <CardTitle>Thông tin Hợp đồng thế chấp</CardTitle>
+                        <CardDescription>
+                          Bắt buộc phải có thông tin Hợp đồng thế chấp trước khi hoàn thành hồ sơ vay
+                          thế chấp
+                        </CardDescription>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                        <FormTextField
+                          control={mortgageForm.control}
+                          name="contractNumber"
+                          label="Số hợp đồng thế chấp"
+                          required
+                          placeholder="VD: HĐTC-2026/001"
+                        />
+                        <FormDateField
+                          control={mortgageForm.control}
+                          name="contractExpiryDate"
+                          label="Ngày hết hạn HĐTC"
+                        />
+                        <FormDateField
+                          control={mortgageForm.control}
+                          name="committeeAuthDate"
+                          label="Ngày chứng thực UBND"
+                        />
+                      </div>
+
+                      {isMortgageExpiryShort && expectedMaturityDate && (
+                        <Alert
+                          tone="warning"
+                          title="Thời hạn hợp đồng thế chấp ngắn hơn thời hạn vay dự kiến"
+                        >
+                          Hợp đồng thế chấp hết hạn ngày{' '}
+                          <strong>{formatDateVN(watchedMortgageExpiry)}</strong>, ngắn hơn thời hạn vay
+                          dự kiến ({draftLoan.termMonths} tháng — đến ngày{' '}
+                          <strong>{formatDateVN(expectedMaturityDate)}</strong>). Ngày đáo hạn thực tế
+                          của khoản vay sẽ được điều chỉnh theo ngày hết hạn HĐ thế chấp. Hồ sơ vẫn được
+                          phép lưu và tiếp tục bình thường.
+                        </Alert>
+                      )}
+                    </CardContent>
+                    <CardFooter className="justify-between">
+                      <Button variant="outline" onClick={() => setStepIndex(3)}>
+                        Quay lại
+                      </Button>
+                      <Button
+                        type="submit"
+                        isLoading={updateLoanMutation.isPending}
+                        rightIcon={<ArrowRight className="h-4 w-4" />}
+                      >
+                        Lưu HĐ thế chấp & Sang bước Xác nhận
+                      </Button>
+                    </CardFooter>
+                  </form>
+                </Card>
+              </TabsContent>
+            )}
+          </Tabs>
+
+          <Card>
+            <CardFooter className="justify-between">
+              <Button variant="outline" onClick={() => setStepIndex(3)}>
+                Quay lại (Bước 4)
+              </Button>
+              <Button
+                rightIcon={<ArrowRight className="h-4 w-4" />}
+                onClick={() => {
+                  if (draftLoan.loanType === LoanType.THE_CHAP && !draftLoan.mortgageContract) {
+                    mortgageForm.handleSubmit(handleStep5Submit)();
+                  } else {
+                    setStepIndex(5);
+                  }
+                }}
+              >
+                Tiếp tục: Kiểm tra & Xác nhận hồ sơ (Bước 6)
+              </Button>
+            </CardFooter>
+          </Card>
         </div>
       )}
 
@@ -1398,8 +1456,8 @@ export function LoanCreatePage() {
                       }`}
                     />
                     <span>
-                      Tổng định giá TSTC: <strong>{formatVND(totalCollateralValuation)}</strong> /
-                      Yêu cầu tối thiểu:{' '}
+                      Tổng định giá TSTC ({valuationsList.length} lượt định giá):{' '}
+                      <strong>{formatVND(totalCollateralValuation)}</strong> / Yêu cầu tối thiểu:{' '}
                       <strong>{formatVND(minRequiredValuation)}</strong> (tỷ lệ vay ≤ 70%).
                     </span>
                   </div>
