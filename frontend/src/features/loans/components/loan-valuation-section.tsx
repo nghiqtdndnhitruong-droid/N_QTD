@@ -17,10 +17,9 @@ import {
   DrawerHeader,
 } from '@/components/ui';
 import {
+  DateInput,
   FormCurrencyField,
-  FormDateField,
   FormNumberField,
-  FormSelectField,
   FormTextField,
   FormTextareaField,
   SelectInput,
@@ -32,6 +31,7 @@ import {
   useAddLoanValuation,
   useDeleteLoanValuation,
   useLoanValuations,
+  useUpdateCommonValuation,
   useUpdateLoanValuation,
 } from '../hooks/use-loans';
 import {
@@ -77,6 +77,42 @@ export function LoanValuationSection({
   const addValuationMutation = useAddLoanValuation(loanId);
   const updateValuationMutation = useUpdateLoanValuation(loanId);
   const deleteValuationMutation = useDeleteLoanValuation(loanId);
+  const updateCommonMutation = useUpdateCommonValuation(loanId);
+
+  // Thông tin chung của biên bản định giá (dùng chung cho tất cả các dòng định giá)
+  const [commonValuationType, setCommonValuationType] = useState<ValuationType>(
+    valuations[0]?.valuationType ?? ValuationType.THEO_NGHI_DINH_QUY,
+  );
+  const [commonValuationDate, setCommonValuationDate] = useState<string>(
+    valuations[0]?.valuationDate ? valuations[0].valuationDate.slice(0, 10) : '',
+  );
+
+  useEffect(() => {
+    if (valuations.length > 0) {
+      if (valuations[0]?.valuationType) {
+        setCommonValuationType(valuations[0].valuationType);
+      }
+      if (valuations[0]?.valuationDate) {
+        setCommonValuationDate(valuations[0].valuationDate.slice(0, 10));
+      }
+    }
+  }, [valuations]);
+
+  const handleUpdateCommon = async (nextType: ValuationType, nextDate: string) => {
+    setCommonValuationType(nextType);
+    setCommonValuationDate(nextDate);
+    if (valuations.length > 0) {
+      try {
+        await updateCommonMutation.mutateAsync({
+          valuationType: nextType,
+          valuationDate: nextDate || null,
+        });
+        notifySuccess('Đã cập nhật Loại & Ngày định giá chung cho tất cả các dòng');
+      } catch (err: any) {
+        notifyApiError(err);
+      }
+    }
+  };
 
   // Tra cứu bảng giá đất của Quỹ để áp nhanh
   const { data: pricingRules } = useAssetPricingList({ page: 1, limit: 100, isActive: true });
@@ -146,8 +182,8 @@ export function LoanValuationSection({
     setSelectedLandCategory('');
     reset({
       collateralId: '',
-      valuationType: ValuationType.THEO_NGHI_DINH_QUY,
-      valuationDate: null,
+      valuationType: commonValuationType,
+      valuationDate: commonValuationDate || null,
       sheetNumber: '',
       plotNumber: '',
       area: 0,
@@ -165,8 +201,8 @@ export function LoanValuationSection({
     setSelectedLandCategory('');
     reset({
       collateralId: item.collateralId || '',
-      valuationType: item.valuationType,
-      valuationDate: item.valuationDate ? item.valuationDate.slice(0, 10) : null,
+      valuationType: item.valuationType || commonValuationType,
+      valuationDate: item.valuationDate ? item.valuationDate.slice(0, 10) : (commonValuationDate || null),
       sheetNumber: String(item.sheetNumber ?? ''),
       plotNumber: String(item.plotNumber ?? ''),
       area: item.area,
@@ -233,8 +269,8 @@ export function LoanValuationSection({
 
     const payload: CreateLoanValuationPayload = {
       collateralId: values.collateralId || null,
-      valuationType: values.valuationType,
-      valuationDate: values.valuationDate || null,
+      valuationType: commonValuationType,
+      valuationDate: commonValuationDate || null,
       sheetNumber: String(values.sheetNumber).trim(),
       plotNumber: String(values.plotNumber).trim(),
       area: Number(values.area),
@@ -275,23 +311,53 @@ export function LoanValuationSection({
     }
   };
 
-  const getValuationBadge = (type: ValuationType) => {
-    switch (type) {
-      case ValuationType.THEO_NGHI_DINH_QUY:
-        return <Badge tone="primary">{VALUATION_TYPE_LABELS[type]}</Badge>;
-      case ValuationType.THEO_NGHI_DINH_QUY_CU:
-        return <Badge tone="neutral">{VALUATION_TYPE_LABELS[type]}</Badge>;
-      case ValuationType.THEO_GIA_THI_TRUONG:
-        return <Badge tone="success">{VALUATION_TYPE_LABELS[type]}</Badge>;
-      case ValuationType.THEO_GIA_THI_TRUONG_VA_NGHI_DINH_QUY:
-        return <Badge tone="warning">{VALUATION_TYPE_LABELS[type]}</Badge>;
-      default:
-        return <Badge tone="neutral">{type}</Badge>;
-    }
-  };
-
   return (
     <div className="space-y-6">
+      {/* Thông tin chung Biên bản định giá (Loại định giá & Ngày định giá dùng chung cho toàn bộ dòng) */}
+      <Card className="border-primary-200 bg-primary-50/25">
+        <CardHeader className="pb-3">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <CardTitle className="text-base font-semibold text-primary-950">
+                Thông tin chung Biên bản định giá
+              </CardTitle>
+              <CardDescription className="text-xs text-primary-800">
+                Áp dụng đồng bộ cho tất cả các dòng định giá của hồ sơ vay (cùng một ngày và loại định giá)
+              </CardDescription>
+            </div>
+            <Badge tone="primary">
+              {VALUATION_TYPE_LABELS[commonValuationType]}
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="pt-0">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <SelectInput
+              label="Loại định giá (Áp dụng chung)"
+              value={commonValuationType}
+              disabled={readOnly || updateCommonMutation.isPending}
+              onChange={(e) =>
+                handleUpdateCommon(
+                  e.target.value as ValuationType,
+                  commonValuationDate,
+                )
+              }
+              options={VALUATION_TYPE_OPTIONS}
+            />
+
+            <DateInput
+              label="Ngày định giá (Áp dụng chung)"
+              value={commonValuationDate}
+              disabled={readOnly || updateCommonMutation.isPending}
+              onValueChange={(date) =>
+                handleUpdateCommon(commonValuationType, date)
+              }
+              hint="Dùng chung cho tất cả các dòng định giá trong hồ sơ"
+            />
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Thanh thông tin tóm tắt & nút thao tác */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Card className="border-primary-100 bg-primary-50/30">
@@ -342,9 +408,9 @@ export function LoanValuationSection({
       <Card>
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <div>
-            <CardTitle className="text-base font-semibold">Danh sách các lần định giá tài sản</CardTitle>
+            <CardTitle className="text-base font-semibold">Danh sách các thửa đất / tài sản định giá</CardTitle>
             <CardDescription className="text-xs">
-              Quản lý độc lập nhiều dòng định giá, nhiều loại định giá và các thời điểm khác nhau của hồ sơ vay
+              Các dòng định giá thuộc Biên bản định giá ({VALUATION_TYPE_LABELS[commonValuationType]}) ngày {commonValuationDate ? formatDateVN(commonValuationDate) : '—'}
             </CardDescription>
           </div>
         </CardHeader>
@@ -354,8 +420,7 @@ export function LoanValuationSection({
               <thead className="border-b border-slate-200 bg-slate-50/80 text-xs font-semibold text-slate-600">
                 <tr>
                   <th className="px-3.5 py-3 text-center">STT</th>
-                  <th className="px-3.5 py-3">Loại định giá</th>
-                  <th className="px-3.5 py-3">Ngày định giá</th>
+                  <th className="px-3.5 py-3">Tài sản liên kết</th>
                   <th className="px-3.5 py-3">Số tờ / thửa</th>
                   <th className="px-3.5 py-3 text-right">Diện tích (m²)</th>
                   <th className="px-3.5 py-3 text-right">Đơn giá (VNĐ/m²)</th>
@@ -367,13 +432,13 @@ export function LoanValuationSection({
               <tbody className="divide-y divide-slate-100">
                 {isLoading ? (
                   <tr>
-                    <td colSpan={readOnly ? 8 : 9} className="p-8 text-center text-slate-400">
+                    <td colSpan={readOnly ? 7 : 8} className="p-8 text-center text-slate-400">
                       Đang tải danh sách định giá...
                     </td>
                   </tr>
                 ) : valuations.length === 0 ? (
                   <tr>
-                    <td colSpan={readOnly ? 8 : 9} className="p-8 text-center text-slate-400">
+                    <td colSpan={readOnly ? 7 : 8} className="p-8 text-center text-slate-400">
                       Chưa có dòng định giá nào cho hồ sơ vay này.
                       {!readOnly && (
                         <div className="mt-2">
@@ -390,16 +455,17 @@ export function LoanValuationSection({
                       <td className="px-3.5 py-3 text-center font-medium text-slate-500 tabular-nums">
                         {idx + 1}
                       </td>
-                      <td className="px-3.5 py-3 font-medium">
-                        {getValuationBadge(item.valuationType)}
-                        {item.collateral && (
-                          <div className="mt-1 text-xs text-slate-500">
-                            Liên kết: <span className="font-semibold text-slate-700">{item.collateral.assetCode}</span>
+                      <td className="px-3.5 py-3">
+                        {item.collateral ? (
+                          <div className="text-xs font-semibold text-primary-700">
+                            {item.collateral.assetCode}
+                            <span className="ml-1 text-[11px] font-normal text-slate-500">
+                              (GCN: {item.collateral.certificateNumber})
+                            </span>
                           </div>
+                        ) : (
+                          <span className="text-xs text-slate-400">—</span>
                         )}
-                      </td>
-                      <td className="px-3.5 py-3 text-slate-700 tabular-nums">
-                        {item.valuationDate ? formatDateVN(item.valuationDate) : <span className="text-slate-400">—</span>}
                       </td>
                       <td className="px-3.5 py-3 font-medium text-slate-900 tabular-nums">
                         Tờ: <span className="font-bold">{item.sheetNumber}</span> | Thửa: <span className="font-bold">{item.plotNumber}</span>
@@ -472,34 +538,25 @@ export function LoanValuationSection({
             />
 
             <DrawerBody className="space-y-4">
-              {/* Lựa chọn loại định giá & Liên kết tài sản */}
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <FormSelectField
-                  control={control}
-                  name="valuationType"
-                  label="Loại định giá"
-                  required
-                  options={VALUATION_TYPE_OPTIONS}
-                />
-
-                <SelectInput
-                  label="Tài sản liên kết (tùy chọn)"
-                  value={control._formValues.collateralId || ''}
-                  onChange={(e) => handleCollateralChange(e.target.value)}
-                  options={collateralOptions}
-                  hint="Chọn để tự động điền gợi ý Số tờ, Số thửa, Diện tích"
-                />
+              {/* Hiển thị thông tin chung loại và ngày định giá */}
+              <div className="rounded-lg border border-primary-200 bg-primary-50/50 p-3 text-xs text-primary-950 flex flex-wrap items-center justify-between gap-2">
+                <span>
+                  Loại định giá: <strong>{VALUATION_TYPE_LABELS[commonValuationType]}</strong>
+                </span>
+                <span>
+                  Ngày định giá:{' '}
+                  <strong>{commonValuationDate ? formatDateVN(commonValuationDate) : 'Chưa chọn'}</strong>
+                </span>
               </div>
 
-              {/* Ngày định giá */}
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <FormDateField
-                  control={control}
-                  name="valuationDate"
-                  label="Ngày định giá (tùy chọn)"
-                  hint="Không tự động gán ngày hiện tại nếu chưa nhập"
-                />
-              </div>
+              {/* Lựa chọn liên kết tài sản */}
+              <SelectInput
+                label="Tài sản liên kết (tùy chọn)"
+                value={control._formValues.collateralId || ''}
+                onChange={(e) => handleCollateralChange(e.target.value)}
+                options={collateralOptions}
+                hint="Chọn để tự động điền gợi ý Số tờ, Số thửa, Diện tích"
+              />
 
               {/* Số tờ & Số thửa */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -528,15 +585,17 @@ export function LoanValuationSection({
                   name="area"
                   label="Diện tích trên giấy (m²)"
                   required
+                  allowDecimal
+                  step="any"
                   min={0.01}
-                  step={0.01}
                 />
                 <FormNumberField
                   control={control}
                   name="actualArea"
                   label="Diện tích thực tế thẩm định (m²)"
+                  allowDecimal
+                  step="any"
                   min={0.01}
-                  step={0.01}
                   placeholder="Để trống nếu trùng với diện tích trên giấy"
                 />
               </div>

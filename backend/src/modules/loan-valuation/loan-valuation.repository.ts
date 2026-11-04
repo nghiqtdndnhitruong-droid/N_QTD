@@ -128,6 +128,24 @@ export class LoanValuationRepository {
     });
   }
 
+  async updateCommonSettings(
+    loanId: string,
+    data: { valuationType?: any; valuationDate?: string | Date | null }
+  ): Promise<{ count: number }> {
+    const updateData: Prisma.LoanValuationUpdateManyMutationInput = {};
+    if (data.valuationType) {
+      updateData.valuationType = data.valuationType;
+    }
+    if (data.valuationDate !== undefined) {
+      updateData.valuationDate = data.valuationDate ? new Date(data.valuationDate) : null;
+    }
+    const result = await prisma.loanValuation.updateMany({
+      where: { loanId },
+      data: updateData,
+    });
+    return { count: result.count };
+  }
+
   async deleteManyByLoanId(loanId: string): Promise<number> {
     const result = await prisma.loanValuation.deleteMany({
       where: { loanId },

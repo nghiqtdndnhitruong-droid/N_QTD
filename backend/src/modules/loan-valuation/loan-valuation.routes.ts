@@ -17,6 +17,8 @@ router.post(
 
 router.get('/', asyncHandler(loanValuationController.findByLoanId));
 
+router.put('/common', asyncHandler(loanValuationController.updateCommonSettings));
+
 router.get('/:id', asyncHandler(loanValuationController.getById));
 
 router.put(

@@ -66,6 +66,18 @@ export class LoanValuationController {
     };
     res.status(200).json(response);
   };
+
+  updateCommonSettings = async (req: Request, res: Response): Promise<void> => {
+    const loanId = String(req.params.loanId);
+    const result = await loanValuationService.updateCommonSettings(loanId, req.body);
+    const response: ApiResponse<{ count: number }> = {
+      success: true,
+      message: 'Cập nhật thông tin chung định giá thành công',
+      data: result,
+      timestamp: new Date().toISOString(),
+    };
+    res.status(200).json(response);
+  };
 }
 
 export const loanValuationController = new LoanValuationController();

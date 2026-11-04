@@ -74,6 +74,14 @@ export class LoanValuationService {
     await this.getById(loanId, id);
     return this.repo.delete(id);
   }
+
+  async updateCommonSettings(
+    loanId: string,
+    data: { valuationType?: any; valuationDate?: string | Date | null }
+  ) {
+    await this.ensureLoanExists(loanId);
+    return this.repo.updateCommonSettings(loanId, data);
+  }
 }
 
 export const loanValuationService = new LoanValuationService();

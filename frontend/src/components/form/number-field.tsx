@@ -41,10 +41,16 @@ export const NumberInput = memo(
       readOnly,
       className,
       wrapperClassName,
+      step,
       ...rest
     },
     ref,
   ) {
+    const isDecimal =
+      allowDecimal ||
+      (step !== undefined && step !== 1 && step !== '1' && step !== 0 && step !== '0');
+    const resolvedStep = step !== undefined ? step : isDecimal ? 'any' : 1;
+
     return (
       <FieldWrapper
         id={id}
@@ -61,8 +67,8 @@ export const NumberInput = memo(
               ref={ref}
               id={inputId}
               type="number"
-              step={allowDecimal ? 'any' : 1}
-              inputMode={allowDecimal ? 'decimal' : 'numeric'}
+              step={resolvedStep}
+              inputMode={isDecimal ? 'decimal' : 'numeric'}
               disabled={disabled}
               readOnly={readOnly}
               value={value ?? ''}
@@ -75,7 +81,7 @@ export const NumberInput = memo(
                   onValueChange(null);
                   return;
                 }
-                const num = allowDecimal ? parseFloat(raw) : parseInt(raw, 10);
+                const num = isDecimal ? parseFloat(raw) : parseInt(raw, 10);
                 onValueChange(Number.isNaN(num) ? null : num);
               }}
               className={getInputControlClasses({

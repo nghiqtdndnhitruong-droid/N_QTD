@@ -110,6 +110,13 @@ export const loansApi = {
     );
   },
 
+  updateCommonValuationSettings(
+    loanId: string,
+    payload: { valuationType?: string; valuationDate?: string | null }
+  ): Promise<{ count: number }> {
+    return apiPut<{ count: number }>(`/loans/${loanId}/valuations/common`, payload);
+  },
+
   deleteValuation(loanId: string, valuationId: string): Promise<void> {
     return apiDelete(`/loans/${loanId}/valuations/${valuationId}`);
   },

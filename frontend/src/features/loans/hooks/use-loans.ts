@@ -257,3 +257,12 @@ export function useDeleteLoanValuation(loanId: string) {
     onSuccess: () => invalidateLoanEverything(qc, loanId),
   });
 }
+
+export function useUpdateCommonValuation(loanId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: { valuationType?: string; valuationDate?: string | null }) =>
+      loansApi.updateCommonValuationSettings(loanId, payload),
+    onSuccess: () => invalidateLoanEverything(qc, loanId),
+  });
+}
