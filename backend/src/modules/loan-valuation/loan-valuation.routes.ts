@@ -4,6 +4,8 @@ import { validate } from '../../shared/middlewares/validate.middleware';
 import { asyncHandler } from '../../shared/middlewares/async-handler.middleware';
 import {
   createLoanValuationSchema,
+  previewGroupValuationSchema,
+  updateCommonValuationSchema,
   updateLoanValuationSchema,
 } from './loan-valuation.validator';
 
@@ -15,9 +17,19 @@ router.post(
   asyncHandler(loanValuationController.create)
 );
 
+router.post(
+  '/preview',
+  validate({ body: previewGroupValuationSchema }),
+  asyncHandler(loanValuationController.preview)
+);
+
 router.get('/', asyncHandler(loanValuationController.findByLoanId));
 
-router.put('/common', asyncHandler(loanValuationController.updateCommonSettings));
+router.put(
+  '/common',
+  validate({ body: updateCommonValuationSchema }),
+  asyncHandler(loanValuationController.updateCommonSettings)
+);
 
 router.get('/:id', asyncHandler(loanValuationController.getById));
 
@@ -30,4 +42,3 @@ router.put(
 router.delete('/:id', asyncHandler(loanValuationController.delete));
 
 export const loanValuationRoutes = router;
-

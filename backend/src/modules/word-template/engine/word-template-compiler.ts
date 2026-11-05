@@ -25,7 +25,7 @@ export class WordTemplateCompiler {
 
     // 2. Tiền xử lý các vòng lặp {{#FOR item IN DANH_SACH}} ... {{/FOR}}
     // Cần làm giàu dữ liệu danh sách trước: thêm @index, @number, @first, @last, @length, và alias `item`
-    const forRegex = /\{\{#FOR\s+([a-zA-Z0-9_]+)\s+IN\s+([a-zA-Z0-9_.[\]]+)\}\}/gi;
+    const forRegex = /\{\{\s*#FOR\s+([a-zA-Z0-9_]+)\s+IN\s+([a-zA-Z0-9_.[\]]+)\s*\}\}/gi;
     let forMatch: RegExpExecArray | null;
 
     const loopConfigs: { iterator: string; collectionPath: string }[] = [];
@@ -47,11 +47,19 @@ export class WordTemplateCompiler {
     // d. Chuyển đổi {{@index}} -> {{_index}}, {{@number}} -> {{_number}}, {{@first}} -> {{_first}}, {{@last}} -> {{_last}}, {{@length}} -> {{_length}}
     let compiled = reconciledXml;
 
-    // Thay thế FOR tags
+    // Thay thế FOR tags: nếu collection là sub-collection dạng `dinh_gia.DANH_SACH_TAI_SAN`,
+    // chuyển thành scoped tag của docxtemplater: `{{#DANH_SACH_TAI_SAN}}`
+    const iterators = new Set(loopConfigs.map((l) => l.iterator));
     compiled = compiled.replace(
-      /\{\{#FOR\s+([a-zA-Z0-9_]+)\s+IN\s+([a-zA-Z0-9_.[\]]+)\}\}/gi,
+      /\{\{\s*#FOR\s+([a-zA-Z0-9_]+)\s+IN\s+([a-zA-Z0-9_.[\]]+)\s*\}\}/gi,
       (_match, _iterator, collection) => {
-        const cleanColl = collection.trim();
+        let cleanColl = collection.trim();
+        if (cleanColl.includes('.')) {
+          const parts = cleanColl.split('.');
+          if (iterators.has(parts[0])) {
+            cleanColl = parts.slice(1).join('.');
+          }
+        }
         return `{{#${cleanColl}}}`;
       }
     );
@@ -59,14 +67,14 @@ export class WordTemplateCompiler {
     // Cần khớp đóng /FOR với collection tương ứng nếu lồng nhau
     // Để docxtemplater không nhầm lẫn, dùng stack tên collection
     const forCollStack: string[] = [];
-    const forCollRegex = /\{\{#([a-zA-Z0-9_.[\]]+)\}\}|\{\{\/FOR\}\}/gi;
+    const forCollRegex = /\{\{\s*#([a-zA-Z0-9_.[\]]+)\s*\}\}|\{\{\s*\/FOR\s*\}\}/gi;
 
     compiled = compiled.replace(forCollRegex, (match, collName) => {
       if (collName) {
-        forCollStack.push(collName);
-        return match;
+        forCollStack.push(collName.trim());
+        return `{{#${collName.trim()}}}`;
       }
-      if (match.toUpperCase() === '{{/FOR}}') {
+      if (/^\{\{\s*\/FOR\s*\}\}$/i.test(match)) {
         const closingColl = forCollStack.pop() || 'DANH_SACH';
         return `{{/${closingColl}}}`;
       }
@@ -80,9 +88,9 @@ export class WordTemplateCompiler {
     compiled = compiled.replace(/\{\{@last\}\}/gi, '{{_last}}');
     compiled = compiled.replace(/\{\{@length\}\}/gi, '{{_length}}');
 
-    // Thay thế biến lặp: {{ts.MA_TAI_SAN}} -> {{MA_TAI_SAN}} khi nằm trong loop
+    // Thay thế biến lặp: {{ts.MA_TAI_SAN}} -> {{MA_TAI_SAN}} khi nằm trong loop (chấp nhận khoảng trắng)
     for (const loop of loopConfigs) {
-      const iterPrefixRegex = new RegExp(`\\{\\{${loop.iterator}\\.([a-zA-Z0-9_]+)\\}\\}`, 'gi');
+      const iterPrefixRegex = new RegExp(`\\{\\{\\s*${loop.iterator}\\.\\s*([a-zA-Z0-9_]+)\\s*\\}\\}`, 'gi');
       compiled = compiled.replace(iterPrefixRegex, '{{$1}}');
     }
 

@@ -42,6 +42,7 @@ export interface RelatedPerson {
   relationship?: string | null;
   borrowerRelationship?: string | null;
   relatedPersonRelationship?: string | null;
+  creditFundLoan?: string | null;
   provinceId?: string | null;
   provinceName?: string | null;
   communeId?: string | null;
@@ -68,6 +69,7 @@ export interface CreateRelatedPersonPayload {
   relationship?: string | null;
   borrowerRelationship?: string | null;
   relatedPersonRelationship?: string | null;
+  creditFundLoan?: string | null;
   provinceId?: string | null;
   communeId?: string | null;
   hamletId?: string | null;
@@ -384,6 +386,8 @@ export interface LoanValuation {
   id: string;
   loanId: string;
   collateralId?: string | null;
+  collateralIds?: string[];
+  collaterals?: Collateral[];
   collateral?: {
     id: string;
     assetCode: string;
@@ -398,6 +402,7 @@ export interface LoanValuation {
   area: number;
   actualArea?: number | null;
   pricePerSqMeter: number;
+  totalPriceBeforeRound?: number | null;
   totalPrice: number;
   notes?: string | null;
   createdAt: string;
@@ -405,16 +410,35 @@ export interface LoanValuation {
 }
 
 export interface CreateLoanValuationPayload {
+  collateralIds?: string[];
   collateralId?: string | null;
   valuationType: ValuationType;
   valuationDate?: string | null;
-  sheetNumber: string;
-  plotNumber: string;
-  area: number;
+  sheetNumber?: string;
+  plotNumber?: string;
+  area?: number;
   actualArea?: number | null;
   pricePerSqMeter: number;
+  totalPriceBeforeRound?: number;
   totalPrice?: number;
   notes?: string | null;
 }
 
 export interface UpdateLoanValuationPayload extends Partial<CreateLoanValuationPayload> {}
+
+export interface PreviewGroupValuationPayload {
+  collateralIds: string[];
+  pricePerSqMeter: number;
+}
+
+export interface GroupValuationPreviewResult {
+  sheetNumber: string;
+  plotNumber: string;
+  area: number;
+  actualArea: number | null;
+  effectiveArea: number;
+  pricePerSqMeter: number;
+  totalPriceBeforeRound: number;
+  totalPrice: number;
+  collateralCount: number;
+}

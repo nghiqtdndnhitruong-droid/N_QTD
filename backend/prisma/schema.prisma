@@ -315,6 +315,7 @@ model RelatedPerson {
   phoneNumber   String?
   relationship  String?        // Quan hệ với người vay (tùy chọn)
   relatedPersonRelationship String? // Quan hệ người liên quan (Cha, Mẹ, Con, Anh, Chị, Em, Cô, Cậu, Dì)
+  creditFundLoan String?       @default("Không") // Vốn vay Quỹ tín dụng ("Không" hoặc chi tiết)
 
   // Địa bàn người liên quan (Tỉnh -> Xã -> Ấp + Snapshot)
   provinceId    String?        @db.ObjectId
@@ -420,6 +421,7 @@ model LoanValuation {
   loan            Loan           @relation(fields: [loanId], references: [id])
   collateralId    String?        @db.ObjectId
   collateral      Collateral?    @relation(fields: [collateralId], references: [id])
+  collateralIds   String[]       @db.ObjectId
 
   // 4 loại định giá chuẩn hóa
   valuationType   ValuationType
@@ -433,6 +435,7 @@ model LoanValuation {
   area            Float
   actualArea      Float?
   pricePerSqMeter Float
+  totalPriceBeforeRound Float?
   totalPrice      Float
   notes           String?
 

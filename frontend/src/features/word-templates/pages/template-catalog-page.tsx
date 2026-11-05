@@ -13,6 +13,7 @@ import {
   Sparkles,
   Trash2,
   AlertTriangle,
+  Users,
 } from 'lucide-react';
 import {
   Badge,
@@ -314,7 +315,7 @@ export function TemplateCatalogPage() {
                           {kw.isList && kw.itemProperties && typeof kw.itemProperties === 'object' && (
                             <div className="mt-1 flex flex-wrap gap-1">
                               <span className="text-[11px] text-slate-500 font-medium">Trường con:</span>
-                              {Object.keys(kw.itemProperties).slice(0, 10).map((prop) => (
+                              {Object.keys(kw.itemProperties).map((prop) => (
                                 <button
                                   key={prop}
                                   type="button"
@@ -377,6 +378,94 @@ export function TemplateCatalogPage() {
                   )}
                 </tbody>
               </table>
+            </div>
+          </Card>
+
+          {/* Card 7: BẢNG ĐỊNH GIÁ TÀI SẢN (DANH_SACH_DINH_GIA) */}
+          <Card className="p-5 border border-slate-200 bg-white space-y-4 lg:col-span-2">
+            <div className="flex items-center gap-2 font-bold text-slate-900 border-b border-slate-100 pb-3">
+              <Database className="h-5 w-5 text-indigo-600" />
+              <span>7. Bảng lặp Định giá tài sản (DANH_SACH_DINH_GIA / KHOAN_VAY.DANH_SACH_DINH_GIA)</span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+              <div className="space-y-2">
+                <span className="font-semibold text-slate-700">Cú pháp dòng lặp bảng định giá:</span>
+                <div className="relative rounded bg-slate-900 p-3 font-mono text-emerald-400 whitespace-pre-wrap">
+{`{{#FOR dg IN DANH_SACH_DINH_GIA}}
+STT: {{@number}} | Thửa: {{dg.SO_THUA}} | Tờ: {{dg.SO_TO}}
+DT: {{dg.DIEN_TICH}} | Đơn giá: {{dg.DON_GIA}} | Thành tiền: {{dg.GIA_TIEN}}
+Ghi chú: {{dg.GHI_CHU}}
+{{/FOR}}`}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleCopy(`{{#FOR dg IN DANH_SACH_DINH_GIA}}\n{{@number}} | {{dg.SO_THUA}} | {{dg.SO_TO}} | {{dg.DIEN_TICH}} | {{dg.DON_GIA}} | {{dg.GIA_TIEN}} | {{dg.GHI_CHU}}\n{{/FOR}}`)
+                    }
+                    className="absolute right-2 top-2 rounded bg-slate-800 p-1 text-slate-400 hover:text-white"
+                    title="Sao chép"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <span className="font-semibold text-slate-700">Các trường con trong mỗi dòng định giá:</span>
+                <div className="space-y-1 text-[11px] text-slate-600">
+                  <p>• <code>dg.SO_THUA</code> / <code>dg.SO_TO</code>: Số thửa, số tờ gộp</p>
+                  <p>• <code>dg.DIEN_TICH</code>: Tổng diện tích (m²)</p>
+                  <p>• <code>dg.DON_GIA</code>: Đơn giá áp dụng (VNĐ/m²)</p>
+                  <p>• <code>dg.GIA_TIEN</code> / <code>dg.GIA_TIEN_SO</code>: Thành tiền đã làm tròn xuống hàng triệu</p>
+                  <p>• <code>dg.GHI_CHU</code>: Cột ghi chú của từng dòng định giá</p>
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          {/* Card 8: DANH SÁCH NGƯỜI LIÊN QUAN (DANH_SACH_NGUOI_LIEN_QUAN) */}
+          <Card className="p-5 border border-slate-200 bg-white space-y-4 lg:col-span-2">
+            <div className="flex items-center gap-2 font-bold text-slate-900 border-b border-slate-100 pb-3">
+              <Users className="h-5 w-5 text-sky-600" />
+              <span>8. Bảng lặp Người liên quan (DANH_SACH_NGUOI_LIEN_QUAN / KHOAN_VAY.DANH_SACH_NGUOI_LIEN_QUAN)</span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+              <div className="space-y-2">
+                <span className="font-semibold text-slate-700">Cú pháp dòng lặp bảng người liên quan:</span>
+                <div className="relative rounded bg-slate-900 p-3 font-mono text-emerald-400 whitespace-pre-wrap">
+{`{{#FOR nlq IN DANH_SACH_NGUOI_LIEN_QUAN}}
+STT: {{@number}} | Họ tên: {{nlq.HO_TEN}}
+CCCD: {{nlq.SO_CCCD}} | Ngày cấp: {{nlq.NGAY_CAP}} | Nơi cấp: {{nlq.NOI_CAP}}
+Quan hệ người vay: {{nlq.QUAN_HE}} | Vốn vay QTD: {{nlq.VON_VAY_QTD}}
+{{/FOR}}`}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleCopy(`{{#FOR nlq IN DANH_SACH_NGUOI_LIEN_QUAN}}\n{{@number}} | {{nlq.HO_TEN}} | {{nlq.SO_CCCD}} | {{nlq.NGAY_CAP}} | {{nlq.NOI_CAP}} | {{nlq.QUAN_HE}} | {{nlq.VON_VAY_QTD}}\n{{/FOR}}`)
+                    }
+                    className="absolute right-2 top-2 rounded bg-slate-800 p-1 text-slate-400 hover:text-white"
+                    title="Sao chép"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </button>
+                </div>
+                <p className="text-[11px] text-slate-500">
+                  Hỗ trợ cả cú pháp bảng biểu docxtemplater truyền thống: <code>{`{{#nguoi_lien_quan}} {{index}} {{ho_ten}} {{so_giay_to}} {{ngay_cap}} {{noi_cap}} {{quan_he}} {{von_vay}} {{/nguoi_lien_quan}}`}</code>.
+                </p>
+              </div>
+              <div className="space-y-2">
+                <span className="font-semibold text-slate-700">Các trường con trong mỗi người liên quan:</span>
+                <div className="space-y-1 text-[11px] text-slate-600">
+                  <p>• <code>nlq.HO_TEN</code> / <code>nlq.ho_ten</code>: Họ và tên người liên quan</p>
+                  <p>• <code>nlq.DANH_XUNG</code> / <code>nlq.XUNG_HO</code>: Danh xưng (Ông/Bà)</p>
+                  <p>• <code>nlq.GIOI_TINH</code>: Giới tính (Nam/Nữ)</p>
+                  <p>• <code>nlq.NAM_SINH</code>: Năm sinh</p>
+                  <p>• <code>nlq.SO_CCCD</code> / <code>nlq.so_giay_to</code>: Số thẻ CCCD / Căn cước</p>
+                  <p>• <code>nlq.NGAY_CAP</code>: Ngày cấp CCCD</p>
+                  <p>• <code>nlq.NOI_CAP</code>: Nơi cấp CCCD</p>
+                  <p>• <code>nlq.QUAN_HE</code> / <code>nlq.QUAN_HE_NGUOI_VAY</code>: Quan hệ với người vay (Vợ/Chồng/Con/Mẹ/Cha)</p>
+                  <p>• <code>nlq.VON_VAY_QTD</code> / <code>nlq.VON_VAY</code> / <code>nlq.von_vay</code>: Vốn vay Quỹ tín dụng (mặc định: Không)</p>
+                  <p>• <code>nlq.SO_DIEN_THOAI</code> / <code>nlq.DIA_CHI</code>: Số điện thoại và địa chỉ thường trú</p>
+                </div>
+              </div>
             </div>
           </Card>
 

@@ -115,12 +115,13 @@ export interface FormTextFieldProps<
   control: Control<TFieldValues>;
   name: TName;
   digitsOnly?: boolean;
+  formatValue?: (val: string, prev: string) => string;
 }
 
 export function FormTextField<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
->({ control, name, digitsOnly = false, ...rest }: FormTextFieldProps<TFieldValues, TName>) {
+>({ control, name, digitsOnly = false, formatValue, ...rest }: FormTextFieldProps<TFieldValues, TName>) {
   const {
     field,
     fieldState: { error },
@@ -135,7 +136,11 @@ export function FormTextField<
       onBlur={field.onBlur}
       inputMode={digitsOnly ? 'numeric' : rest.inputMode}
       onChange={(e) => {
-        const next = digitsOnly ? e.target.value.replace(/\D/g, '') : e.target.value;
+        const cur = (field.value as string | undefined) ?? '';
+        let next = digitsOnly ? e.target.value.replace(/\D/g, '') : e.target.value;
+        if (formatValue) {
+          next = formatValue(next, cur);
+        }
         field.onChange(next);
       }}
       error={error?.message}

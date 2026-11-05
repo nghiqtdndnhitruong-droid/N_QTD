@@ -41,45 +41,74 @@ describe('Loan Valuation Engine & Word Template Keywords', () => {
     address: 'Ấp 1, Xã Nhị Trường, Cầu Ngang, Trà Vinh',
   };
 
+  const sampleCollaterals = [
+    {
+      id: 'c-1',
+      assetCode: 'TS-001',
+      certificateNumber: 'GCN-001',
+      sheetNumber: '12',
+      plotNumber: '100',
+      area: 100,
+      actualArea: null,
+      address: 'Xã Nhị Trường',
+      ownerName: 'Lê Văn Cường',
+    },
+    {
+      id: 'c-2',
+      assetCode: 'TS-002',
+      certificateNumber: 'GCN-002',
+      sheetNumber: '12',
+      plotNumber: '101',
+      area: 150,
+      actualArea: null,
+      address: 'Xã Nhị Trường',
+      ownerName: 'Lê Văn Cường',
+    },
+    {
+      id: 'c-3',
+      assetCode: 'TS-003',
+      certificateNumber: 'GCN-003',
+      sheetNumber: '13',
+      plotNumber: '200',
+      area: 200,
+      actualArea: 200,
+      address: 'Xã Nhị Trường',
+      ownerName: 'Lê Văn Cường',
+    },
+  ];
+
   const sampleValuations = [
     {
-      id: 'val-1',
+      id: 'val-group-1',
       loanId: 'loan-1',
+      collateralIds: ['c-1', 'c-2', 'c-3'],
+      collaterals: sampleCollaterals,
       valuationType: 'THEO_NGHI_DINH_QUY',
       valuationDate: new Date('2026-05-15T00:00:00.000Z'),
-      sheetNumber: '01',
-      plotNumber: '008',
-      area: 500,
-      actualArea: 480,
-      pricePerSqMeter: 1200000,
-      totalPrice: 576000000,
-      notes: 'Thửa đất mặt tiền đường nhựa',
+      sheetNumber: '12, 13',
+      plotNumber: '100, 101, 200',
+      area: 450,
+      actualArea: 200,
+      pricePerSqMeter: 1000000,
+      totalPriceBeforeRound: 450000000,
+      totalPrice: 450000000,
+      notes: 'Gộp 3 tài sản cùng mức giá 1 triệu',
     },
     {
-      id: 'val-2',
+      id: 'val-group-2',
       loanId: 'loan-1',
+      collateralIds: ['c-3'],
+      collaterals: [sampleCollaterals[2]],
       valuationType: 'THEO_GIA_THI_TRUONG',
       valuationDate: new Date('2026-05-15T00:00:00.000Z'),
-      sheetNumber: '05',
-      plotNumber: '025',
-      area: 1200,
-      actualArea: 1200,
-      pricePerSqMeter: 800000,
-      totalPrice: 960000000,
-      notes: 'Đất trồng cây lâu năm',
-    },
-    {
-      id: 'val-3',
-      loanId: 'loan-1',
-      valuationType: 'THEO_GIA_THI_TRUONG_VA_NGHI_DINH_QUY',
-      valuationDate: new Date('2026-05-15T00:00:00.000Z'),
-      sheetNumber: '09',
-      plotNumber: '100',
-      area: 350,
-      actualArea: 350,
-      pricePerSqMeter: 2000000,
-      totalPrice: 700000000,
-      notes: '',
+      sheetNumber: '13',
+      plotNumber: '200',
+      area: 200,
+      actualArea: 200,
+      pricePerSqMeter: 1250500,
+      totalPriceBeforeRound: 250100000, // 200 * 1.250.500 = 250.100.000
+      totalPrice: 250000000,            // Làm tròn xuống 250.000.000
+      notes: 'Định giá thị trường cho TS-003',
     },
   ];
 
@@ -93,190 +122,80 @@ describe('Loan Valuation Engine & Word Template Keywords', () => {
     loanAmount: 800000000,
     interestRate: 10.5,
     member: mockMember,
-    collaterals: [],
+    collaterals: sampleCollaterals,
     valuations: sampleValuations,
   };
 
-  it('1. resolveLoanData sinh ra mảng KHOAN_VAY.DANH_SACH_DINH_GIA với 3 bản ghi độc lập', () => {
+  it('1. resolveLoanData sinh ra mảng KHOAN_VAY.DANH_SACH_DINH_GIA theo nhóm tài sản với quy tắc làm tròn FLOOR', () => {
     const { resolvedContext } = wordTemplateDataDictionaryService.resolveLoanData(mockLoan as any, []);
 
     const list = resolvedContext['KHOAN_VAY.DANH_SACH_DINH_GIA'];
     expect(Array.isArray(list)).toBe(true);
-    expect(list.length).toBe(3);
+    expect(list.length).toBe(2);
 
-    // Dòng 1: THEO_NGHI_DINH_QUY
-    const row1 = list[0];
-    expect(row1.LOAI_DINH_GIA).toBe('Theo nghị định Quỹ');
-    expect(row1.NGAY_DINH_GIA).toBe('15/05/2026');
-    expect(row1.SO_TO).toBe('01'); // Bảo toàn số 0 ở đầu
-    expect(row1.SO_THUA).toBe('008'); // Bảo toàn 2 số 0 ở đầu
-    expect(row1.DIEN_TICH).toBe('500');
-    expect(row1.DIEN_TICH_THUC_TE).toBe('480');
-    expect(row1.DON_GIA).toBe('1.200.000');
-    expect(row1.GIA_TIEN).toBe('576.000.000');
-    expect(row1.GHI_CHU).toBe('Thửa đất mặt tiền đường nhựa');
-    expect(row1.LA_NGHI_DINH_QUY).toBe(true);
-    expect(row1.LA_GIA_THI_TRUONG).toBe(false);
-    expect(row1.LA_NGHI_DINH_QUY_CU).toBe(false);
-    expect(row1.LA_GIA_THI_TRUONG_VA_NGHI_DINH_QUY).toBe(false);
+    // Nhóm 1: Gộp 3 tài sản
+    const g1 = list[0];
+    expect(g1.LOAI_DINH_GIA).toBe('Theo nghị định Quỹ');
+    expect(g1.NGAY_DINH_GIA).toBe('15/05/2026');
+    expect(g1.SO_TO).toBe('12, 13'); // Deduplicate
+    expect(g1.SO_THUA).toBe('100, 101, 200'); // Preserve order
+    expect(g1.DIEN_TICH).toBe('450');
+    expect(g1.DON_GIA).toBe('1.000.000');
+    expect(g1.GIA_TIEN).toBe('450.000.000');
+    expect(g1.SO_LUONG_TAI_SAN).toBe(3);
+    expect(Array.isArray(g1.DANH_SACH_TAI_SAN)).toBe(true);
+    expect(g1.DANH_SACH_TAI_SAN.length).toBe(3);
+    expect(g1.DANH_SACH_TAI_SAN[0].MA_TAI_SAN).toBe('TS-001');
+    expect(g1.DANH_SACH_TAI_SAN[1].MA_TAI_SAN).toBe('TS-002');
+    expect(g1.DANH_SACH_TAI_SAN[2].MA_TAI_SAN).toBe('TS-003');
 
-    // Dòng 2: THEO_GIA_THI_TRUONG
-    const row2 = list[1];
-    expect(row2.LOAI_DINH_GIA).toBe('Theo giá thị trường');
-    expect(row2.SO_TO).toBe('05');
-    expect(row2.SO_THUA).toBe('025');
-    expect(row2.GIA_TIEN).toBe('960.000.000');
-    expect(row2.LA_GIA_THI_TRUONG).toBe(true);
-    expect(row2.LA_NGHI_DINH_QUY).toBe(false);
-
-    // Dòng 3: THEO_GIA_THI_TRUONG_VA_NGHI_DINH_QUY
-    const row3 = list[2];
-    expect(row3.LOAI_DINH_GIA).toBe('Theo giá thị trường và theo nghị định Quỹ');
-    expect(row3.SO_TO).toBe('09');
-    expect(row3.SO_THUA).toBe('100');
-    expect(row3.GIA_TIEN).toBe('700.000.000');
-    expect(row3.LA_GIA_THI_TRUONG_VA_NGHI_DINH_QUY).toBe(true);
+    // Nhóm 2: TS lẻ có làm tròn xuống hàng triệu
+    const g2 = list[1];
+    expect(g2.LOAI_DINH_GIA).toBe('Theo giá thị trường');
+    expect(g2.GIA_TIEN_TRUOC_LAM_TRON).toBe('250.100.000');
+    expect(g2.GIA_TIEN).toBe('250.000.000'); // Đã làm tròn xuống từ 250.100.000
+    expect(g2.SO_LUONG_TAI_SAN).toBe(1);
+    expect(g2.LA_GIA_THI_TRUONG).toBe(true);
   });
 
-  it('2. Kiểm tra các keyword tổng hợp cấp khoản vay KHOAN_VAY.*', () => {
+  it('2. Kiểm tra các keyword tổng hợp cấp khoản vay KHOAN_VAY.* và TAI_SAN.*', () => {
     const { resolvedContext } = wordTemplateDataDictionaryService.resolveLoanData(mockLoan as any, []);
 
-    expect(resolvedContext['KHOAN_VAY.SO_LUONG_DINH_GIA']).toBe(3);
+    expect(resolvedContext['KHOAN_VAY.SO_LUONG_DINH_GIA']).toBe(2);
     expect(resolvedContext['KHOAN_VAY.CO_DINH_GIA']).toBe(true);
-
-    // Cả 3 bản ghi đều ngày 15/05/2026 -> trả về ngày duy nhất
     expect(resolvedContext['KHOAN_VAY.NGAY_DINH_GIA']).toBe('15/05/2026');
 
-    // 3 bản ghi có loại khác nhau -> trả về chuỗi rỗng
-    expect(resolvedContext['KHOAN_VAY.LOAI_DINH_GIA']).toBe('');
-
-    // Tổng giá tiền: 576tr + 960tr + 700tr = 2.236.000.000
-    expect(resolvedContext['KHOAN_VAY.TONG_GIA_TIEN_DINH_GIA']).toBe('2.236.000.000');
-    expect(resolvedContext['KHOAN_VAY.TONG_GIA_TIEN_DINH_GIA_CHU']).toContain('tỷ');
-
-    // Các cờ boolean cấp khoản vay
+    // Tổng tiền 450tr + 250tr = 700.000.000
+    expect(resolvedContext['KHOAN_VAY.TONG_GIA_TRI_DINH_GIA']).toBe('700.000.000');
+    expect(resolvedContext['TAI_SAN.TONG_GIA_TRI_DINH_GIA']).toBe('700.000.000');
     expect(resolvedContext['KHOAN_VAY.CO_DINH_GIA_THEO_NGHI_DINH_QUY']).toBe(true);
     expect(resolvedContext['KHOAN_VAY.CO_DINH_GIA_THEO_GIA_THI_TRUONG']).toBe(true);
-    expect(resolvedContext['KHOAN_VAY.CO_DINH_GIA_THEO_GIA_THI_TRUONG_VA_NGHI_DINH_QUY']).toBe(true);
-    expect(resolvedContext['KHOAN_VAY.CO_DINH_GIA_THEO_NGHI_DINH_QUY_CU']).toBe(false);
   });
 
-  it('3. Khi toàn bộ các dòng định giá cùng một loại, KHOAN_VAY.LOAI_DINH_GIA trả về tên loại đó', () => {
-    const singleTypeLoan = {
-      ...mockLoan,
-      valuations: [
-        { ...sampleValuations[0], valuationType: 'THEO_NGHI_DINH_QUY' },
-        { ...sampleValuations[1], valuationType: 'THEO_NGHI_DINH_QUY' },
-      ],
-    };
-
-    const { resolvedContext } = wordTemplateDataDictionaryService.resolveLoanData(singleTypeLoan as any, []);
-    expect(resolvedContext['KHOAN_VAY.LOAI_DINH_GIA']).toBe('Theo nghị định Quỹ');
-    expect(resolvedContext['KHOAN_VAY.CO_DINH_GIA_THEO_NGHI_DINH_QUY']).toBe(true);
-    expect(resolvedContext['KHOAN_VAY.CO_DINH_GIA_THEO_GIA_THI_TRUONG']).toBe(false);
-  });
-
-  it('4. Khi các dòng định giá khác ngày nhau, KHOAN_VAY.NGAY_DINH_GIA nối các ngày lại', () => {
-    const multiDateLoan = {
-      ...mockLoan,
-      valuations: [
-        { ...sampleValuations[0], valuationDate: new Date('2026-05-15') },
-        { ...sampleValuations[1], valuationDate: new Date('2026-05-20') },
-      ],
-    };
-
-    const { resolvedContext } = wordTemplateDataDictionaryService.resolveLoanData(multiDateLoan as any, []);
-    expect(resolvedContext['KHOAN_VAY.NGAY_DINH_GIA']).toBe('15/05/2026, 20/05/2026');
-  });
-
-  it('5. Kiểm tra phân rã ngày định giá thành ngày, tháng, năm', () => {
-    const { resolvedContext } = wordTemplateDataDictionaryService.resolveLoanData(mockLoan as any, []);
-    expect(resolvedContext['KHOAN_VAY.NGAY_DINH_GIA']).toBe('15/05/2026');
-    expect(resolvedContext['KHOAN_VAY.NGAY_DINH_GIA_NGAY']).toBe('15');
-    expect(resolvedContext['KHOAN_VAY.NGAY_DINH_GIA_THANG']).toBe('05');
-    expect(resolvedContext['KHOAN_VAY.NGAY_DINH_GIA_NAM']).toBe('2026');
-  });
-
-  it('6. Lấy được KHOAN_VAY.NGAY_DINH_GIA khi có cấu hình mapping dataPath loan.valuationDate', () => {
-    const mappings = [
-      {
-        keyword: 'KHOAN_VAY.NGAY_DINH_GIA',
-        displayName: 'Ngày định giá',
-        dataPath: 'loan.valuationDate',
-        dataType: 'DATE',
-      },
-    ];
-    const { resolvedContext } = wordTemplateDataDictionaryService.resolveLoanData(mockLoan as any, mappings as any);
-    expect(resolvedContext['KHOAN_VAY.NGAY_DINH_GIA']).toBe('15/05/2026');
-    expect(resolvedContext.KHOAN_VAY.NGAY_DINH_GIA).toBe('15/05/2026');
-  });
-
-  it('5. Render thực tế file Word với vòng lặp FOR KHOAN_VAY.DANH_SACH_DINH_GIA và nhân bản dòng', () => {
-    // Giả lập XML bảng biểu Word chứa {{#FOR dinh_gia IN KHOAN_VAY.DANH_SACH_DINH_GIA}}
+  it('3. Render file Word với vòng lặp ngoài KHOAN_VAY.DANH_SACH_DINH_GIA', () => {
     const rawWordXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
   <w:body>
-    <w:p><w:t>DANH SÁCH ĐỊNH GIÁ TÀI SẢN</w:t></w:p>
+    <w:p><w:t>DANH SÁCH NHÓM ĐỊNH GIÁ</w:t></w:p>
     <w:tbl>
       <w:tr>
-        <w:tc><w:p><w:t>STT</w:t></w:p></w:tc>
-        <w:tc><w:p><w:t>Loại</w:t></w:p></w:tc>
-        <w:tc><w:p><w:t>Số tờ/thửa</w:t></w:p></w:tc>
-        <w:tc><w:p><w:t>Giá tiền</w:t></w:p></w:tc>
+        <w:tc><w:p><w:t>Nhóm</w:t></w:p></w:tc>
+        <w:tc><w:p><w:t>Số tờ gộp</w:t></w:p></w:tc>
+        <w:tc><w:p><w:t>Số thửa gộp</w:t></w:p></w:tc>
+        <w:tc><w:p><w:t>Tổng tiền</w:t></w:p></w:tc>
       </w:tr>
       <w:tr>
-        <w:tc><w:p><w:t>{{#FOR dinh_gia IN KHOAN_VAY.DANH_SACH_DINH_GIA}}{{@number}}</w:t></w:p></w:tc>
-        <w:tc><w:p><w:t>{{dinh_gia.LOAI_DINH_GIA}}</w:t></w:p></w:tc>
-        <w:tc><w:p><w:t>Tờ {{dinh_gia.SO_TO}} Thửa {{dinh_gia.SO_THUA}}</w:t></w:p></w:tc>
-        <w:tc><w:p><w:t>{{dinh_gia.GIA_TIEN}} đ{{/FOR}}</w:t></w:p></w:tc>
+        <w:tc><w:p><w:t>{{#FOR dg IN KHOAN_VAY.DANH_SACH_DINH_GIA}}Nhóm {{@number}}</w:t></w:p></w:tc>
+        <w:tc><w:p><w:t>{{dg.SO_TO}}</w:t></w:p></w:tc>
+        <w:tc><w:p><w:t>{{dg.SO_THUA}}</w:t></w:p></w:tc>
+        <w:tc><w:p><w:t>{{dg.GIA_TIEN}} đ{{/FOR}}</w:t></w:p></w:tc>
       </w:tr>
     </w:tbl>
   </w:body>
 </w:document>`;
 
     const { resolvedContext } = wordTemplateDataDictionaryService.resolveLoanData(mockLoan as any, []);
-
-    // Biên dịch qua wordTemplateCompiler
     const compileResult = wordTemplateCompiler.compile(rawWordXml, resolvedContext);
-
-    // Tạo file zip docx hợp lệ
-    const zip = createMockDocxZip(compileResult.compiledXml);
-
-    const doc = new Docxtemplater(zip, {
-      paragraphLoop: true,
-      linebreaks: true,
-      delimiters: { start: '{{', end: '}}' },
-    });
-
-    doc.render(compileResult.enrichedData);
-
-    const renderedXml = doc.getZip().file('word/document.xml')?.asText() || '';
-
-    // Kiểm tra dòng bảng được lặp 3 lần với đúng dữ liệu từng dòng
-    expect(renderedXml).toContain('Theo nghị định Quỹ');
-    expect(renderedXml).toContain('Tờ 01 Thửa 008');
-    expect(renderedXml).toContain('576.000.000 đ');
-
-    expect(renderedXml).toContain('Theo giá thị trường');
-    expect(renderedXml).toContain('Tờ 05 Thửa 025');
-    expect(renderedXml).toContain('960.000.000 đ');
-
-    expect(renderedXml).toContain('Theo giá thị trường và theo nghị định Quỹ');
-    expect(renderedXml).toContain('Tờ 09 Thửa 100');
-    expect(renderedXml).toContain('700.000.000 đ');
-  });
-
-  it('6. Khối IF trong vòng lặp FOR hoạt động chính xác theo 4 loại định giá', () => {
-    const rawWordXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
-  <w:body>
-    <w:p><w:t>{{#FOR dg IN KHOAN_VAY.DANH_SACH_DINH_GIA}}Dòng: {{dg.SO_TO}} - {{#IF dg.LA_NGHI_DINH_QUY}}ĐỊNH GIÁ QUỸ{{/IF}}{{#IF dg.LA_GIA_THI_TRUONG}}THỊ TRƯỜNG{{/IF}}{{#IF dg.LA_GIA_THI_TRUONG_VA_NGHI_DINH_QUY}}KẾT HỢP{{/IF}}{{/FOR}}</w:t></w:p>
-  </w:body>
-</w:document>`;
-
-    const { resolvedContext } = wordTemplateDataDictionaryService.resolveLoanData(mockLoan as any, []);
-    const compileResult = wordTemplateCompiler.compile(rawWordXml, resolvedContext);
-
     const zip = createMockDocxZip(compileResult.compiledXml);
 
     const doc = new Docxtemplater(zip, {
@@ -288,26 +207,68 @@ describe('Loan Valuation Engine & Word Template Keywords', () => {
     doc.render(compileResult.enrichedData);
     const renderedXml = doc.getZip().file('word/document.xml')?.asText() || '';
 
-    expect(renderedXml).toContain('Dòng: 01 - ĐỊNH GIÁ QUỸ');
-    expect(renderedXml).toContain('Dòng: 05 - THỊ TRƯỜNG');
-    expect(renderedXml).toContain('Dòng: 09 - KẾT HỢP');
+    expect(renderedXml).toContain('12, 13');
+    expect(renderedXml).toContain('100, 101, 200');
+    expect(renderedXml).toContain('450.000.000 đ');
+    expect(renderedXml).toContain('250.000.000 đ');
   });
 
-  it('9. wordTemplateGeneratorService render thành công thẻ {{KHOAN_VAY.NGAY_DINH_GIA}}', () => {
+  it('4. Render file Word với vòng lặp lồng nhau: FOR dinh_gia lồng FOR tai_san IN dinh_gia.DANH_SACH_TAI_SAN', () => {
     const rawWordXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
   <w:body>
-    <w:p><w:t>Biên bản định giá TSTC ngày {{KHOAN_VAY.NGAY_DINH_GIA}}</w:t></w:p>
+    <w:p><w:t>{{#FOR dg IN KHOAN_VAY.DANH_SACH_DINH_GIA}}NHÓM [{{dg.SO_TO}}]: {{#FOR ts IN dg.DANH_SACH_TAI_SAN}}({{@number}}.{{ts.MA_TAI_SAN}}-{{ts.SO_THUA}}){{/FOR}} - TIỀN: {{dg.GIA_TIEN}} / {{/FOR}}</w:t></w:p>
   </w:body>
 </w:document>`;
 
     const { resolvedContext } = wordTemplateDataDictionaryService.resolveLoanData(mockLoan as any, []);
-    const zip = createMockDocxZip(rawWordXml);
-    const buffer = zip.generate({ type: 'nodebuffer' });
-    const outputBuffer = wordTemplateGeneratorService.generateDocx(buffer, resolvedContext);
+    const compileResult = wordTemplateCompiler.compile(rawWordXml, resolvedContext);
+    const zip = createMockDocxZip(compileResult.compiledXml);
 
-    const resultZip = new PizZip(outputBuffer);
-    const renderedXml = resultZip.file('word/document.xml')?.asText() || '';
-    expect(renderedXml).toContain('Biên bản định giá TSTC ngày 15/05/2026');
+    const doc = new Docxtemplater(zip, {
+      paragraphLoop: true,
+      linebreaks: true,
+      delimiters: { start: '{{', end: '}}' },
+    });
+
+    doc.render(compileResult.enrichedData);
+    const renderedXml = doc.getZip().file('word/document.xml')?.asText() || '';
+
+    // Nhóm 1 có 3 tài sản
+    expect(renderedXml).toContain('NHÓM [12, 13]:');
+    expect(renderedXml).toContain('(1.TS-001-100)');
+    expect(renderedXml).toContain('(2.TS-002-101)');
+    expect(renderedXml).toContain('(3.TS-003-200)');
+    expect(renderedXml).toContain('TIỀN: 450.000.000');
+
+    // Nhóm 2 có 1 tài sản
+    expect(renderedXml).toContain('NHÓM [13]:');
+    expect(renderedXml).toContain('(1.TS-003-200)');
+    expect(renderedXml).toContain('TIỀN: 250.000.000');
+  });
+
+  it('5. Khối IF trong vòng lặp lồng nhau hoạt động chính xác', () => {
+    const rawWordXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:p><w:t>{{#FOR dg IN KHOAN_VAY.DANH_SACH_DINH_GIA}}{{#IF dg.LA_NGHI_DINH_QUY}}LOAI_QUY{{/IF}}{{#IF dg.LA_GIA_THI_TRUONG}}LOAI_THI_TRUONG{{/IF}} - {{/FOR}}</w:t></w:p>
+  </w:body>
+</w:document>`;
+
+    const { resolvedContext } = wordTemplateDataDictionaryService.resolveLoanData(mockLoan as any, []);
+    const compileResult = wordTemplateCompiler.compile(rawWordXml, resolvedContext);
+    const zip = createMockDocxZip(compileResult.compiledXml);
+
+    const doc = new Docxtemplater(zip, {
+      paragraphLoop: true,
+      linebreaks: true,
+      delimiters: { start: '{{', end: '}}' },
+    });
+
+    doc.render(compileResult.enrichedData);
+    const renderedXml = doc.getZip().file('word/document.xml')?.asText() || '';
+
+    expect(renderedXml).toContain('LOAI_QUY');
+    expect(renderedXml).toContain('LOAI_THI_TRUONG');
   });
 });

@@ -93,6 +93,7 @@ export const relatedPersonFormSchema = z.object({
   relationship: z.string().trim().optional(),
   borrowerRelationship: z.string().trim().optional(),
   relatedPersonRelationship: z.string().trim().optional(),
+  creditFundLoan: z.string().trim().optional(),
   provinceId: z.string().trim().optional(),
   communeId: z.string().trim().optional(),
   hamletId: z.string().trim().optional(),

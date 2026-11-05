@@ -1,93 +1,130 @@
 import { prisma } from '../../config/database';
-import { LoanValuation, Prisma } from '@prisma/client';
-import { CreateLoanValuationDto, UpdateLoanValuationDto } from './loan-valuation.types';
+import { Collateral, LoanValuation, Prisma } from '@prisma/client';
+import {
+  CreateLoanValuationDto,
+  LoanValuationWithCollaterals,
+  UpdateLoanValuationDto,
+} from './loan-valuation.types';
 
 export class LoanValuationRepository {
-  async findByLoanId(loanId: string): Promise<LoanValuation[]> {
-    return prisma.loanValuation.findMany({
+  /**
+   * Đính kèm danh sách tài sản cấu thành vào từng bản ghi định giá
+   */
+  private async attachCollateralsToValuations(
+    valuations: LoanValuation[],
+    loanId: string
+  ): Promise<LoanValuationWithCollaterals[]> {
+    if (valuations.length === 0) return [];
+
+    // Lấy tất cả tài sản của khoản vay để map nhanh trong bộ nhớ
+    const allLoanCollaterals = await prisma.collateral.findMany({
       where: { loanId },
-      include: {
-        collateral: {
-          select: {
-            id: true,
-            assetCode: true,
-            certificateNumber: true,
-            sheetNumber: true,
-            plotNumber: true,
-          },
-        },
-      },
-      orderBy: { createdAt: 'asc' },
+    });
+
+    const collateralMap = new Map<string, Collateral>();
+    for (const c of allLoanCollaterals) {
+      collateralMap.set(c.id, c);
+    }
+
+    return valuations.map((v) => {
+      const ids: string[] = [];
+      if (Array.isArray(v.collateralIds) && v.collateralIds.length > 0) {
+        ids.push(...v.collateralIds);
+      } else if (v.collateralId) {
+        ids.push(v.collateralId);
+      }
+
+      // Giữ đúng thứ tự và không trùng
+      const uniqueIds = Array.from(new Set(ids));
+      const matchedCollaterals = uniqueIds
+        .map((id) => collateralMap.get(id))
+        .filter((c): c is Collateral => Boolean(c));
+
+      return {
+        ...v,
+        collaterals: matchedCollaterals,
+      };
     });
   }
 
-  async findById(id: string): Promise<LoanValuation | null> {
-    return prisma.loanValuation.findUnique({
+  async findByLoanId(loanId: string): Promise<LoanValuationWithCollaterals[]> {
+    const list = await prisma.loanValuation.findMany({
+      where: { loanId },
+      include: {
+        collateral: true,
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    return this.attachCollateralsToValuations(list, loanId);
+  }
+
+  async findById(id: string): Promise<LoanValuationWithCollaterals | null> {
+    const valuation = await prisma.loanValuation.findUnique({
       where: { id },
       include: {
         collateral: true,
       },
     });
+
+    if (!valuation) return null;
+
+    const [attached] = await this.attachCollateralsToValuations([valuation], valuation.loanId);
+    return attached || valuation;
   }
 
-  async create(loanId: string, data: CreateLoanValuationDto): Promise<LoanValuation> {
-    // Tự động tính totalPrice nếu không truyền
-    const effectiveArea = data.actualArea && data.actualArea > 0 ? data.actualArea : data.area;
-    const totalPrice =
-      typeof data.totalPrice === 'number'
-        ? data.totalPrice
-        : Math.round(effectiveArea * data.pricePerSqMeter);
+  async create(loanId: string, data: CreateLoanValuationDto): Promise<LoanValuationWithCollaterals> {
+    const collateralIds = Array.isArray(data.collateralIds) ? data.collateralIds : [];
+    if (collateralIds.length === 0 && data.collateralId) {
+      collateralIds.push(data.collateralId);
+    }
+    const primaryCollateralId = collateralIds[0] || data.collateralId || null;
 
     const createInput: Prisma.LoanValuationCreateInput = {
       loan: { connect: { id: loanId } },
+      collateralIds,
       valuationType: data.valuationType,
       valuationDate: data.valuationDate ? new Date(data.valuationDate) : null,
-      sheetNumber: String(data.sheetNumber).trim(),
-      plotNumber: String(data.plotNumber).trim(),
-      area: Number(data.area),
+      sheetNumber: String(data.sheetNumber ?? '').trim(),
+      plotNumber: String(data.plotNumber ?? '').trim(),
+      area: Number(data.area || 0),
       actualArea: data.actualArea !== undefined && data.actualArea !== null ? Number(data.actualArea) : null,
-      pricePerSqMeter: Number(data.pricePerSqMeter),
-      totalPrice: Number(totalPrice),
+      pricePerSqMeter: Number(data.pricePerSqMeter || 0),
+      totalPriceBeforeRound:
+        data.totalPriceBeforeRound !== undefined && data.totalPriceBeforeRound !== null
+          ? Number(data.totalPriceBeforeRound)
+          : null,
+      totalPrice: Number(data.totalPrice || 0),
       notes: data.notes ? data.notes.trim() : null,
     };
 
-    if (data.collateralId) {
-      createInput.collateral = { connect: { id: data.collateralId } };
+    if (primaryCollateralId) {
+      createInput.collateral = { connect: { id: primaryCollateralId } };
     }
 
-    return prisma.loanValuation.create({
+    const created = await prisma.loanValuation.create({
       data: createInput,
       include: {
         collateral: true,
       },
     });
+
+    const [attached] = await this.attachCollateralsToValuations([created], loanId);
+    return attached || created;
   }
 
-  async update(id: string, data: UpdateLoanValuationDto): Promise<LoanValuation> {
+  async update(id: string, data: UpdateLoanValuationDto): Promise<LoanValuationWithCollaterals> {
     const existing = await this.findById(id);
     if (!existing) {
       throw new Error('Không tìm thấy bản ghi định giá');
     }
 
-    const area = data.area !== undefined ? Number(data.area) : existing.area;
-    const actualArea =
-      data.actualArea !== undefined
-        ? data.actualArea !== null
-          ? Number(data.actualArea)
-          : null
-        : existing.actualArea;
-    const pricePerSqMeter =
-      data.pricePerSqMeter !== undefined
-        ? Number(data.pricePerSqMeter)
-        : existing.pricePerSqMeter;
-
-    let totalPrice = existing.totalPrice;
-    if (data.totalPrice !== undefined) {
-      totalPrice = Number(data.totalPrice);
-    } else if (data.area !== undefined || data.actualArea !== undefined || data.pricePerSqMeter !== undefined) {
-      const effectiveArea = actualArea && actualArea > 0 ? actualArea : area;
-      totalPrice = Math.round(effectiveArea * pricePerSqMeter);
+    let collateralIds = existing.collateralIds;
+    if (data.collateralIds !== undefined) {
+      collateralIds = Array.isArray(data.collateralIds) ? data.collateralIds : [];
     }
+
+    const primaryCollateralId = collateralIds[0] || data.collateralId || null;
 
     const updateInput: Prisma.LoanValuationUpdateInput = {
       ...(data.valuationType && { valuationType: data.valuationType }),
@@ -101,25 +138,30 @@ export class LoanValuationRepository {
         actualArea: data.actualArea !== null ? Number(data.actualArea) : null,
       }),
       ...(data.pricePerSqMeter !== undefined && { pricePerSqMeter: Number(data.pricePerSqMeter) }),
-      totalPrice,
+      ...(data.totalPriceBeforeRound !== undefined && {
+        totalPriceBeforeRound: data.totalPriceBeforeRound !== null ? Number(data.totalPriceBeforeRound) : null,
+      }),
+      ...(data.totalPrice !== undefined && { totalPrice: Number(data.totalPrice) }),
       ...(data.notes !== undefined && { notes: data.notes ? data.notes.trim() : null }),
+      collateralIds,
     };
 
-    if (data.collateralId !== undefined) {
-      if (data.collateralId) {
-        updateInput.collateral = { connect: { id: data.collateralId } };
-      } else {
-        updateInput.collateral = { disconnect: true };
-      }
+    if (primaryCollateralId) {
+      updateInput.collateral = { connect: { id: primaryCollateralId } };
+    } else if (data.collateralId === null) {
+      updateInput.collateral = { disconnect: true };
     }
 
-    return prisma.loanValuation.update({
+    const updated = await prisma.loanValuation.update({
       where: { id },
       data: updateInput,
       include: {
         collateral: true,
       },
     });
+
+    const [attached] = await this.attachCollateralsToValuations([updated], existing.loanId);
+    return attached || updated;
   }
 
   async delete(id: string): Promise<LoanValuation> {
@@ -155,4 +197,3 @@ export class LoanValuationRepository {
 }
 
 export const loanValuationRepository = new LoanValuationRepository();
-

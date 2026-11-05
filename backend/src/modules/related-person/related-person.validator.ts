@@ -98,6 +98,13 @@ export const baseRelatedPersonFields = {
   relationship: borrowerRelationshipSchema,
   borrowerRelationship: borrowerRelationshipSchema,
   relatedPersonRelationship: relatedPersonRelationshipSchema,
+  creditFundLoan: z
+    .string()
+    .trim()
+    .max(255)
+    .nullable()
+    .optional()
+    .transform((val) => (val && val.length > 0 ? val : 'Không')),
   provinceId: optionalObjectIdField,
   communeId: optionalObjectIdField,
   hamletId: optionalObjectIdField,

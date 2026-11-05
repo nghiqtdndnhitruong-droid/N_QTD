@@ -49,26 +49,13 @@ import {
 } from '../schemas/loan.schema';
 import type { RelatedPerson } from '../types/loan.types';
 
-// Danh sách lựa chọn cố định theo Task A: Quan hệ người vay (5 lựa chọn)
+// Danh sách lựa chọn cố định: Quan hệ với người vay (5 lựa chọn)
 export const BORROWER_RELATIONSHIP_OPTIONS = [
   { value: 'Chồng', label: 'Chồng' },
   { value: 'Vợ', label: 'Vợ' },
   { value: 'Con', label: 'Con' },
   { value: 'Mẹ', label: 'Mẹ' },
   { value: 'Cha', label: 'Cha' },
-];
-
-// Danh sách lựa chọn cố định theo Task B: Quan hệ người liên quan (9 lựa chọn)
-export const RELATED_PERSON_RELATIONSHIP_OPTIONS = [
-  { value: 'Cha', label: 'Cha' },
-  { value: 'Mẹ', label: 'Mẹ' },
-  { value: 'Con', label: 'Con' },
-  { value: 'Anh', label: 'Anh' },
-  { value: 'Chị', label: 'Chị' },
-  { value: 'Em', label: 'Em' },
-  { value: 'Cô', label: 'Cô' },
-  { value: 'Cậu', label: 'Cậu' },
-  { value: 'Dì', label: 'Dì' },
 ];
 
 export interface RelatedPersonsSectionProps {
@@ -112,6 +99,7 @@ export function RelatedPersonsSection({
       relationship: '',
       borrowerRelationship: '',
       relatedPersonRelationship: '',
+      creditFundLoan: 'Không',
       phoneNumber: '',
       yearOfBirth: 1990,
       gender: Gender.NAM,
@@ -159,14 +147,6 @@ export function RelatedPersonsSection({
     return BORROWER_RELATIONSHIP_OPTIONS;
   }, [editingItem]);
 
-  const relatedPersonOptions = useMemo(() => {
-    const currentVal = editingItem?.relatedPersonRelationship;
-    if (currentVal && !RELATED_PERSON_RELATIONSHIP_OPTIONS.some((o) => o.value === currentVal)) {
-      return [{ value: currentVal, label: `${currentVal} (Cũ)` }, ...RELATED_PERSON_RELATIONSHIP_OPTIONS];
-    }
-    return RELATED_PERSON_RELATIONSHIP_OPTIONS;
-  }, [editingItem]);
-
   if (!isEligible) {
     return null;
   }
@@ -190,6 +170,7 @@ export function RelatedPersonsSection({
       relationship: '',
       borrowerRelationship: '',
       relatedPersonRelationship: '',
+      creditFundLoan: 'Không',
       phoneNumber: '',
       yearOfBirth: 1990,
       gender: Gender.NAM,
@@ -217,6 +198,7 @@ export function RelatedPersonsSection({
       relationship: existingBorrowerRel,
       borrowerRelationship: existingBorrowerRel,
       relatedPersonRelationship: existingRelatedRel,
+      creditFundLoan: item.creditFundLoan || 'Không',
       phoneNumber: item.phoneNumber ?? '',
       yearOfBirth: item.yearOfBirth,
       gender: item.gender,
@@ -241,6 +223,7 @@ export function RelatedPersonsSection({
         relationship: values.borrowerRelationship || values.relationship || undefined,
         borrowerRelationship: values.borrowerRelationship || values.relationship || undefined,
         relatedPersonRelationship: values.relatedPersonRelationship || undefined,
+        creditFundLoan: values.creditFundLoan || 'Không',
       };
 
       if (editingItem) {
@@ -316,8 +299,8 @@ export function RelatedPersonsSection({
               <thead className="border-b border-slate-200 bg-slate-50 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
                 <tr>
                   <th className="px-3.5 py-2.5">Họ và tên</th>
-                  <th className="px-3.5 py-2.5">Quan hệ người vay</th>
-                  <th className="px-3.5 py-2.5">Quan hệ người liên quan</th>
+                  <th className="px-3.5 py-2.5">Quan hệ với người vay</th>
+                  <th className="px-3.5 py-2.5">Vốn vay QTD</th>
                   <th className="px-3.5 py-2.5">Năm sinh / Giới tính</th>
                   <th className="px-3.5 py-2.5">Số CCCD / Nơi cấp</th>
                   <th className="px-3.5 py-2.5">Số điện thoại</th>
@@ -328,7 +311,6 @@ export function RelatedPersonsSection({
               <tbody className="divide-y divide-slate-100 bg-white">
                 {relatedPersons.map((person) => {
                   const borrowerRel = person.borrowerRelationship || person.relationship;
-                  const relatedRel = person.relatedPersonRelationship;
                   return (
                     <tr key={person.id} className="hover:bg-slate-50/70">
                       <td className="px-3.5 py-3 font-medium text-slate-900">
@@ -344,13 +326,9 @@ export function RelatedPersonsSection({
                         )}
                       </td>
                       <td className="px-3.5 py-3">
-                        {relatedRel ? (
-                          <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-800 border border-blue-200">
-                            {relatedRel}
-                          </span>
-                        ) : (
-                          <span className="text-slate-400">—</span>
-                        )}
+                        <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-800 border border-blue-200">
+                          {person.creditFundLoan || 'Không'}
+                        </span>
                       </td>
                       <td className="px-3.5 py-3">
                         <div className="tabular-nums font-medium text-slate-800">
@@ -451,16 +429,15 @@ export function RelatedPersonsSection({
                 <FormSelectField
                   control={control}
                   name="borrowerRelationship"
-                  label="Quan hệ người vay"
+                  label="Quan hệ với người vay"
                   options={borrowerOptions}
-                  placeholder="-- Chọn quan hệ người vay --"
+                  placeholder="-- Chọn quan hệ với người vay --"
                 />
-                <FormSelectField
+                <FormTextField
                   control={control}
-                  name="relatedPersonRelationship"
-                  label="Quan hệ người liên quan"
-                  options={relatedPersonOptions}
-                  placeholder="-- Chọn quan hệ người liên quan --"
+                  name="creditFundLoan"
+                  label="Vốn vay Quỹ tín dụng"
+                  placeholder="Không"
                 />
                 <div className="grid grid-cols-2 gap-2 sm:col-span-2">
                   <FormNumberField

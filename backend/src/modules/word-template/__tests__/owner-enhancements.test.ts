@@ -1156,4 +1156,106 @@ describe('Word Template Owner Enhancements (TAI_SAN.CHU_SO_HUU & DANH_SACH_CHU_S
     expect(res3['KHOAN_VAY.SO_HOP_DONG_THE_CHAP']).toBe('');
     expect(res3['KHOAN_VAY.IS_SO_KHE_UOC_GIONG_SO_HD_THE_CHAP']).toBe(false);
   });
+
+  it('20. Kiểm tra câu điều kiện CO_NGUO_THUA_KE và CO_NGUOI_THUA_KE trong khoản vay THẾ CHẤP', () => {
+    // Case 1: Vay thế chấp CÓ người thừa kế được khai báo
+    const loanWithHeir = {
+      loanType: 'THE_CHAP',
+      member: baseMember,
+      heir: baseHeir,
+      collaterals: [
+        { assetCode: 'TS-01', area: 500, ownerType: 'NGUOI_VAY_CA_NHAN' },
+      ],
+    };
+
+    const res1 = wordTemplateDataDictionaryService.resolveLoanData(loanWithHeir as any, []).resolvedContext;
+    expect(res1.CO_NGUOI_THUA_KE).toBe(true);
+    expect(res1.CO_NGUO_THUA_KE).toBe(true);
+    expect(res1['KHOAN_VAY.CO_NGUOI_THUA_KE']).toBe(true);
+    expect(res1['KHOAN_VAY.CO_NGUO_THUA_KE']).toBe(true);
+    expect(res1.KHOAN_VAY.CO_NGUOI_THUA_KE).toBe(true);
+    expect(res1.KHOAN_VAY.CO_NGUO_THUA_KE).toBe(true);
+
+    // Case 2: Vay thế chấp KHÔNG khai báo bước 3 nhưng CÓ tài sản đứng tên Người thừa kế
+    const loanWithHeirCollateral = {
+      loanType: 'THE_CHAP',
+      member: baseMember,
+      heir: null,
+      collaterals: [
+        { assetCode: 'TS-01', area: 500, ownerType: 'NGUOI_THUA_KE_CA_NHAN' },
+      ],
+    };
+
+    const res2 = wordTemplateDataDictionaryService.resolveLoanData(loanWithHeirCollateral as any, []).resolvedContext;
+    expect(res2.CO_NGUOI_THUA_KE).toBe(true);
+    expect(res2.CO_NGUO_THUA_KE).toBe(true);
+    expect(res2['KHOAN_VAY.CO_NGUOI_THUA_KE']).toBe(true);
+    expect(res2['KHOAN_VAY.CO_NGUO_THUA_KE']).toBe(true);
+    expect(res2['TAI_SAN.CO_NGUOI_THUA_KE']).toBe(true);
+    expect(res2['TAI_SAN.CO_NGUO_THUA_KE']).toBe(true);
+
+    // Case 3: Vay thế chấp KHÔNG có người thừa kế (chỉ có người vay và bảo lãnh)
+    const loanWithoutHeir = {
+      loanType: 'THE_CHAP',
+      member: baseMember,
+      heir: null,
+      collaterals: [
+        { assetCode: 'TS-01', area: 500, ownerType: 'NGUOI_VAY_CA_NHAN' },
+        { assetCode: 'TS-02', area: 300, ownerType: 'BAO_LANH', thirdPartyInfo: { fullName: 'Trần Văn C' } },
+      ],
+    };
+
+    const res3 = wordTemplateDataDictionaryService.resolveLoanData(loanWithoutHeir as any, []).resolvedContext;
+    expect(res3.CO_NGUOI_THUA_KE).toBe(false);
+    expect(res3.CO_NGUO_THUA_KE).toBe(false);
+    expect(res3['KHOAN_VAY.CO_NGUOI_THUA_KE']).toBe(false);
+    expect(res3['KHOAN_VAY.CO_NGUO_THUA_KE']).toBe(false);
+    expect(res3['TAI_SAN.CO_NGUOI_THUA_KE']).toBe(false);
+    expect(res3['TAI_SAN.CO_NGUO_THUA_KE']).toBe(false);
+
+    // Case 4: Kiểm tra render docx với thẻ {{#IF CO_NGUO_THUA_KE}}
+    const templateXml = `
+      <w:p><w:t>{{#IF CO_NGUO_THUA_KE}}Có người thừa kế trong hồ sơ{{#ELSE}}Không có người thừa kế{{/IF}}</w:t></w:p>
+      <w:p><w:t>{{#IF CO_NGUOI_THUA_KE}}Xác nhận có người thừa kế{{/IF}}</w:t></w:p>
+    `;
+    const makeDocx = (body: string) => {
+      const z = new PizZip();
+      z.file(
+        '[Content_Types].xml',
+        `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+        <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+          <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+          <Default Extension="xml" ContentType="application/xml"/>
+          <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+        </Types>`
+      );
+      z.file(
+        '_rels/.rels',
+        `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+        <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+          <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
+        </Relationships>`
+      );
+      z.file(
+        'word/document.xml',
+        `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+        <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+          <w:body>${body}</w:body>
+        </w:document>`
+      );
+      return z.generate({ type: 'nodebuffer' });
+    };
+
+    const templateBuf = makeDocx(templateXml);
+
+    const outBuf1 = wordTemplateGeneratorService.generateDocx(templateBuf, res1);
+    const xml1 = new PizZip(outBuf1).file('word/document.xml')?.asText() || '';
+    expect(xml1).toContain('Có người thừa kế trong hồ sơ');
+    expect(xml1).toContain('Xác nhận có người thừa kế');
+
+    const outBuf3 = wordTemplateGeneratorService.generateDocx(templateBuf, res3);
+    const xml3 = new PizZip(outBuf3).file('word/document.xml')?.asText() || '';
+    expect(xml3).toContain('Không có người thừa kế');
+    expect(xml3).not.toContain('Xác nhận có người thừa kế');
+  });
 });

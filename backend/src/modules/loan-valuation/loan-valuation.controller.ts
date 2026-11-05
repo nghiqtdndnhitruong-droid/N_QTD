@@ -1,15 +1,15 @@
 import { Request, Response } from 'express';
 import { loanValuationService } from './loan-valuation.service';
 import { ApiResponse } from '../../shared/types';
-import { LoanValuation } from '@prisma/client';
+import { GroupValuationPreviewResult, LoanValuationWithCollaterals } from './loan-valuation.types';
 
 export class LoanValuationController {
   create = async (req: Request, res: Response): Promise<void> => {
     const loanId = String(req.params.loanId);
     const result = await loanValuationService.create(loanId, req.body);
-    const response: ApiResponse<LoanValuation> = {
+    const response: ApiResponse<LoanValuationWithCollaterals> = {
       success: true,
-      message: 'Thêm dòng định giá thành công',
+      message: 'Tạo nhóm định giá thành công',
       data: result,
       timestamp: new Date().toISOString(),
     };
@@ -19,9 +19,9 @@ export class LoanValuationController {
   findByLoanId = async (req: Request, res: Response): Promise<void> => {
     const loanId = String(req.params.loanId);
     const result = await loanValuationService.findByLoanId(loanId);
-    const response: ApiResponse<LoanValuation[]> = {
+    const response: ApiResponse<LoanValuationWithCollaterals[]> = {
       success: true,
-      message: 'Lấy danh sách định giá thành công',
+      message: 'Lấy danh sách nhóm định giá thành công',
       data: result,
       timestamp: new Date().toISOString(),
     };
@@ -32,9 +32,21 @@ export class LoanValuationController {
     const loanId = String(req.params.loanId);
     const id = String(req.params.id);
     const result = await loanValuationService.getById(loanId, id);
-    const response: ApiResponse<LoanValuation> = {
+    const response: ApiResponse<LoanValuationWithCollaterals> = {
       success: true,
-      message: 'Lấy thông tin định giá thành công',
+      message: 'Lấy thông tin nhóm định giá thành công',
+      data: result,
+      timestamp: new Date().toISOString(),
+    };
+    res.status(200).json(response);
+  };
+
+  preview = async (req: Request, res: Response): Promise<void> => {
+    const loanId = String(req.params.loanId);
+    const result = await loanValuationService.previewGroupValuation(loanId, req.body);
+    const response: ApiResponse<GroupValuationPreviewResult> = {
+      success: true,
+      message: 'Tổng hợp xem trước thông tin nhóm định giá thành công',
       data: result,
       timestamp: new Date().toISOString(),
     };
@@ -45,9 +57,9 @@ export class LoanValuationController {
     const loanId = String(req.params.loanId);
     const id = String(req.params.id);
     const result = await loanValuationService.update(loanId, id, req.body);
-    const response: ApiResponse<LoanValuation> = {
+    const response: ApiResponse<LoanValuationWithCollaterals> = {
       success: true,
-      message: 'Cập nhật dòng định giá thành công',
+      message: 'Cập nhật nhóm định giá thành công',
       data: result,
       timestamp: new Date().toISOString(),
     };
@@ -60,7 +72,7 @@ export class LoanValuationController {
     await loanValuationService.delete(loanId, id);
     const response: ApiResponse<null> = {
       success: true,
-      message: 'Xóa dòng định giá thành công',
+      message: 'Xóa nhóm định giá thành công',
       data: null,
       timestamp: new Date().toISOString(),
     };
@@ -81,4 +93,3 @@ export class LoanValuationController {
 }
 
 export const loanValuationController = new LoanValuationController();
-

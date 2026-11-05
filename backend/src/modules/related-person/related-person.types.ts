@@ -14,6 +14,7 @@ export interface CreateRelatedPersonDto {
   relationship?: string | null;
   borrowerRelationship?: string | null;
   relatedPersonRelationship?: string | null;
+  creditFundLoan?: string | null;
   provinceId?: string | null;
   communeId?: string | null;
   hamletId?: string | null;

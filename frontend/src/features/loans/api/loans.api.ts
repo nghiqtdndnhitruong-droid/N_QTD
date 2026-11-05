@@ -11,6 +11,8 @@ import type {
   Collateral,
   CreateCollateralPayload,
   CreateLoanValuationPayload,
+  GroupValuationPreviewResult,
+  PreviewGroupValuationPayload,
   CreateDisbursementPayload,
   CreateLoanPayload,
   CreateRelatedPersonPayload,
@@ -88,6 +90,16 @@ export const loansApi = {
   },
 
   // Định giá tài sản khoản vay
+  previewValuation(
+    loanId: string,
+    payload: PreviewGroupValuationPayload
+  ): Promise<GroupValuationPreviewResult> {
+    return apiPost<GroupValuationPreviewResult, PreviewGroupValuationPayload>(
+      `/loans/${loanId}/valuations/preview`,
+      payload
+    );
+  },
+
   listValuations(loanId: string): Promise<LoanValuation[]> {
     return apiGet<LoanValuation[]>(`/loans/${loanId}/valuations`);
   },

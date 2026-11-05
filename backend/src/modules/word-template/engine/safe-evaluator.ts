@@ -344,6 +344,32 @@ export class SafeExpressionEvaluator {
       return context[cleanPath];
     }
 
+    // Hỗ trợ alias linh hoạt giữa CO_NGUOI_THUA_KE và lỗi chính tả CO_NGUO_THUA_KE
+    if (cleanPath === 'CO_NGUO_THUA_KE' || cleanPath === 'CO_NGUOI_THUA_KE') {
+      if ('CO_NGUOI_THUA_KE' in context) return context['CO_NGUOI_THUA_KE'];
+      if ('CO_NGUO_THUA_KE' in context) return context['CO_NGUO_THUA_KE'];
+      if ('hasHeir' in context) return context['hasHeir'];
+    }
+    if (cleanPath === 'KHOAN_VAY.CO_NGUO_THUA_KE' || cleanPath === 'KHOAN_VAY.CO_NGUOI_THUA_KE') {
+      const kv = context['KHOAN_VAY'];
+      if (kv && typeof kv === 'object') {
+        if ('CO_NGUOI_THUA_KE' in kv) return kv['CO_NGUOI_THUA_KE'];
+        if ('CO_NGUO_THUA_KE' in kv) return kv['CO_NGUO_THUA_KE'];
+        if ('hasHeir' in kv) return kv['hasHeir'];
+      }
+      if ('CO_NGUOI_THUA_KE' in context) return context['CO_NGUOI_THUA_KE'];
+      if ('CO_NGUO_THUA_KE' in context) return context['CO_NGUO_THUA_KE'];
+    }
+    if (cleanPath === 'TAI_SAN.CO_NGUO_THUA_KE' || cleanPath === 'TAI_SAN.CO_NGUOI_THUA_KE') {
+      const ts = context['TAI_SAN'];
+      if (ts && typeof ts === 'object') {
+        if ('CO_NGUOI_THUA_KE' in ts) return ts['CO_NGUOI_THUA_KE'];
+        if ('CO_NGUO_THUA_KE' in ts) return ts['CO_NGUO_THUA_KE'];
+      }
+      if ('TAI_SAN.CO_NGUOI_THUA_KE' in context) return context['TAI_SAN.CO_NGUOI_THUA_KE'];
+      if ('TAI_SAN.CO_NGUO_THUA_KE' in context) return context['TAI_SAN.CO_NGUO_THUA_KE'];
+    }
+
     // Hỗ trợ dot notation hoặc array access
     return this.getByPath(context, cleanPath);
   }
@@ -373,16 +399,54 @@ export class SafeExpressionEvaluator {
    * - string rỗng hoặc chỉ có khoảng trắng -> false
    * - number 0 -> false
    * - array rỗng ([]) -> false
-   * - object không có key -> false
+   * - object rỗng hoặc chỉ chứa các giá trị rỗng -> false
    * - mọi thứ khác -> true
    */
   public isTruthy(val: any): boolean {
     if (val === null || val === undefined) return false;
     if (typeof val === 'boolean') return val;
     if (typeof val === 'number') return val !== 0 && !isNaN(val);
-    if (typeof val === 'string') return val.trim().length > 0;
+    if (typeof val === 'string') {
+      const trimmed = val.trim().toLowerCase();
+      if (
+        trimmed === 'false' ||
+        trimmed === '0' ||
+        trimmed === 'null' ||
+        trimmed === 'undefined' ||
+        trimmed === 'no' ||
+        trimmed === ''
+      ) {
+        return false;
+      }
+      return trimmed.length > 0;
+    }
     if (Array.isArray(val)) return val.length > 0;
-    if (typeof val === 'object') return Object.keys(val).length > 0;
+    if (typeof val === 'object') {
+      const values = Object.values(val);
+      if (values.length === 0) return false;
+      return values.some((v) => {
+        if (v === null || v === undefined) return false;
+        if (typeof v === 'boolean') return v;
+        if (typeof v === 'number') return v !== 0 && !isNaN(v);
+        if (typeof v === 'string') {
+          const t = v.trim().toLowerCase();
+          if (
+            t === 'false' ||
+            t === '0' ||
+            t === 'null' ||
+            t === 'undefined' ||
+            t === 'no' ||
+            t === ''
+          ) {
+            return false;
+          }
+          return t.length > 0;
+        }
+        if (Array.isArray(v)) return v.length > 0;
+        if (typeof v === 'object') return this.isTruthy(v);
+        return Boolean(v);
+      });
+    }
     return Boolean(val);
   }
 
@@ -399,6 +463,12 @@ export class SafeExpressionEvaluator {
     if (a === b) return true;
     if (a == null && b == null) return true;
     if (a == null || b == null) return false;
+
+    if (typeof a === 'boolean' || typeof b === 'boolean') {
+      const aBool = typeof a === 'boolean' ? a : this.isTruthy(a);
+      const bBool = typeof b === 'boolean' ? b : this.isTruthy(b);
+      return aBool === bBool;
+    }
 
     // So sánh chuỗi không phân biệt hoa thường nếu là enum
     if (typeof a === 'string' && typeof b === 'string') {

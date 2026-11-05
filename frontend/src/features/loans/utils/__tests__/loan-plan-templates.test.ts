@@ -4,7 +4,6 @@ import {
   CollateralOwnerType,
   LoanTermType,
   LoanType,
-  ValuationMethod,
 } from '@/shared/types';
 import { calculateLoanPlanTemplate } from '../loan-plan-templates';
 import {
@@ -119,15 +118,9 @@ describe('loan schemas', () => {
     const tinChapSchema = createCollateralFormSchema(LoanType.TIN_CHAP);
     const theChapSchema = createCollateralFormSchema(LoanType.THE_CHAP);
 
+    // Định giá đã được tách khỏi tạo tài sản thành tab Định giá độc lập
     expect(tinChapSchema.safeParse(baseCollateral).success).toBe(true);
-    expect(theChapSchema.safeParse(baseCollateral).success).toBe(false);
-    expect(
-      theChapSchema.safeParse({
-        ...baseCollateral,
-        valuationMethod: ValuationMethod.BANG_GIA_QUY,
-        valuationAmount: 200_000_000,
-      }).success,
-    ).toBe(true);
+    expect(theChapSchema.safeParse(baseCollateral).success).toBe(true);
   });
 });
 

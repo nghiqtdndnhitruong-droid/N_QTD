@@ -96,6 +96,7 @@ import {
   type LoanTermsStepValues,
   type MortgageContractFormValues,
 } from '../schemas/loan.schema';
+import { formatContractNumber, generateDefaultContractNumber } from '../utils/contract-number';
 import {
   calculateLoanPlanTemplate,
   buildInterestExpenseItemName,
@@ -183,7 +184,7 @@ export function LoanCreatePage() {
       loanType: LoanType.THE_CHAP,
       termType: LoanTermType.NGAN_HAN,
       loanAmount: 100_000_000,
-      contractNumber: `KU-${new Date().getFullYear()}-${String(Date.now()).slice(-4)}`,
+      contractNumber: generateDefaultContractNumber(),
       contractDate: toApiDate(new Date()),
     },
   });
@@ -275,7 +276,7 @@ export function LoanCreatePage() {
     resolver: zodResolver(mortgageContractFormSchema),
     mode: 'onTouched',
     defaultValues: {
-      contractNumber: `HĐTC-${new Date().getFullYear()}-${String(Date.now()).slice(-4)}`,
+      contractNumber: generateDefaultContractNumber(),
       contractDuration: '',
       contractExpiryDate: '',
       committeeAuthDate: '',
@@ -778,8 +779,9 @@ export function LoanCreatePage() {
                   control={termsForm.control}
                   name="contractNumber"
                   label="Số khế ước nhận nợ (Duy nhất)"
-                  placeholder="VD: 26.11.021"
-                  hint="Mỗi hồ sơ vay bắt buộc có Số khế ước không trùng lặp"
+                  placeholder="VD: 26.11.020"
+                  hint="Định dạng Năm.Tháng.Số ngẫu nhiên (VD: 26.11.020)"
+                  formatValue={formatContractNumber}
                 />
                 <FormDateField
                   control={termsForm.control}
@@ -1272,7 +1274,9 @@ export function LoanCreatePage() {
                       name="contractNumber"
                       label="Số hợp đồng thế chấp"
                       required
-                      placeholder="VD: HĐTC-2026/001"
+                      placeholder="VD: 26.11.020"
+                      hint="Định dạng Năm.Tháng.Số ngẫu nhiên (VD: 26.11.020)"
+                      formatValue={formatContractNumber}
                     />
                     <FormDateField
                       control={mortgageForm.control}

@@ -1,4 +1,4 @@
-import { LoanValuation, ValuationType } from '@prisma/client';
+import { Collateral, LoanValuation, ValuationType } from '@prisma/client';
 
 export { ValuationType };
 
@@ -10,19 +10,41 @@ export const VALUATION_TYPE_LABELS: Record<ValuationType, string> = {
 };
 
 export interface CreateLoanValuationDto {
-  collateralId?: string | null;
-  valuationType: ValuationType;
+  collateralIds?: string[];      // Danh sách ID tài sản thuộc nhóm (ít nhất 1 tài sản)
+  collateralId?: string | null;  // Hỗ trợ tương thích ngược
+  valuationType: ValuationType;  // 1 trong 4 loại định giá quy chuẩn
   valuationDate?: string | Date | null;
-  sheetNumber: string; // Số tờ - chuỗi để giữ nguyên số 0 ở đầu (vd: "01", "005")
-  plotNumber: string;  // Số thửa - chuỗi để giữ nguyên số 0 ở đầu
-  area: number;        // Diện tích (m²)
-  actualArea?: number | null; // Diện tích thực tế thẩm định (m²)
-  pricePerSqMeter: number;    // Đơn giá (VNĐ/m²)
-  totalPrice?: number;        // Giá tiền (nếu không truyền sẽ tự động tính = (actualArea || area) * pricePerSqMeter)
-  notes?: string | null;      // Ghi chú
+  sheetNumber?: string;          // Số tờ gộp (vd: "12, 13") - hệ thống tự động tổng hợp nếu không truyền
+  plotNumber?: string;           // Số thửa gộp (vd: "100, 101, 200") - hệ thống tự động tổng hợp nếu không truyền
+  area?: number;                 // Tổng diện tích (m²) - hệ thống tự động tổng hợp nếu không truyền
+  actualArea?: number | null;    // Tổng diện tích thực tế (m²)
+  pricePerSqMeter: number;       // Đơn giá áp dụng cho nhóm (VNĐ/m²)
+  totalPriceBeforeRound?: number;// Giá tiền trước làm tròn
+  totalPrice?: number;           // Giá tiền sau làm tròn xuống hàng triệu (VNĐ)
+  notes?: string | null;         // Ghi chú
 }
 
 export interface UpdateLoanValuationDto extends Partial<CreateLoanValuationDto> {}
 
-export type LoanValuationEntity = LoanValuation;
+export interface PreviewGroupValuationDto {
+  collateralIds: string[];
+  pricePerSqMeter: number;
+}
 
+export interface GroupValuationPreviewResult {
+  sheetNumber: string;
+  plotNumber: string;
+  area: number;
+  actualArea: number | null;
+  effectiveArea: number;
+  pricePerSqMeter: number;
+  totalPriceBeforeRound: number;
+  totalPrice: number;
+  collateralCount: number;
+}
+
+export interface LoanValuationWithCollaterals extends LoanValuation {
+  collaterals?: Collateral[];
+}
+
+export type LoanValuationEntity = LoanValuation;

@@ -42,6 +42,7 @@ export class RelatedPersonRepository {
         phoneNumber: data.phoneNumber ?? null,
         relationship: borrowerRel?.trim() || null,
         relatedPersonRelationship: data.relatedPersonRelationship?.trim() || null,
+        creditFundLoan: data.creditFundLoan?.trim() || 'Không',
         provinceId: location?.provinceId ?? data.provinceId ?? null,
         provinceName: location?.provinceName ?? null,
         communeId: location?.communeId ?? data.communeId ?? null,
@@ -83,6 +84,10 @@ export class RelatedPersonRepository {
       updateData.relatedPersonRelationship = data.relatedPersonRelationship
         ? data.relatedPersonRelationship.trim()
         : null;
+    }
+
+    if (data.creditFundLoan !== undefined) {
+      updateData.creditFundLoan = data.creditFundLoan ? data.creditFundLoan.trim() : 'Không';
     }
 
     if (location) {
