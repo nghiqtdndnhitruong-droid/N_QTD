@@ -169,6 +169,7 @@ export class CollateralRepository {
         valuationMethod: data.valuationMethod ?? null,
         ownerType: data.ownerType,
         thirdPartyInfo: data.thirdPartyInfo ?? null,
+        householdMembers: (data.householdMembers as any) ?? [],
       },
     });
   }
@@ -217,6 +218,9 @@ export class CollateralRepository {
     if (data.valuationMethod !== undefined) updateData.valuationMethod = data.valuationMethod;
     if (data.ownerType !== undefined) updateData.ownerType = data.ownerType;
     if (data.thirdPartyInfo !== undefined) updateData.thirdPartyInfo = data.thirdPartyInfo;
+    if (data.householdMembers !== undefined) {
+      updateData.householdMembers = (data.householdMembers as any) ?? [];
+    }
 
     if (location) {
       updateData.provinceId = location.provinceId;

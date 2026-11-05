@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { LandPlot, MapPin, Pencil, Plus, Search, Trash2 } from 'lucide-react';
+import { LandPlot, MapPin, Pencil, Plus, Search, Trash2, Users } from 'lucide-react';
 import {
   CollateralAssetType,
   CollateralCertificateType,
@@ -189,6 +189,7 @@ export function CollateralsSection({
       valuationMethod: isUnsecured ? null : ValuationMethod.BANG_GIA_QUY,
       valuationAmount: 0,
       ownerType: CollateralOwnerType.NGUOI_VAY_CA_NHAN,
+      householdMembers: [],
     },
   });
 
@@ -196,6 +197,9 @@ export function CollateralsSection({
   const watchedThirdPartyIdNumber = useWatch({ control, name: 'thirdPartyInfo.idNumber' });
   const watchedThirdPartyIdType = useWatch({ control, name: 'thirdPartyInfo.idType' });
   const isThirdParty = watchedOwnerType === CollateralOwnerType.BAO_LANH;
+  const isHousehold =
+    watchedOwnerType === CollateralOwnerType.NGUOI_VAY_HO ||
+    watchedOwnerType === CollateralOwnerType.NGUOI_THUA_KE_HO;
 
   // Tự động nhận diện giới tính và năm sinh từ số CCCD người bảo lãnh (Mục 3.1)
   useEffect(() => {
@@ -263,6 +267,7 @@ export function CollateralsSection({
       valuationMethod: isUnsecured ? null : ValuationMethod.BANG_GIA_QUY,
       valuationAmount: 0,
       ownerType: CollateralOwnerType.NGUOI_VAY_CA_NHAN,
+      householdMembers: [],
     });
     setDrawerOpen(true);
   };
@@ -299,8 +304,6 @@ export function CollateralsSection({
     });
     setDrawerOpen(true);
   };
-
-
 
   const onSubmit = async (values: CollateralFormValues) => {
     const payload = {
@@ -560,6 +563,14 @@ export function CollateralsSection({
                       {item.thirdPartyInfo && (
                         <div className="mt-1 text-xs text-slate-500">
                           BL: {item.thirdPartyInfo.fullName} ({item.thirdPartyInfo.idNumber})
+                        </div>
+                      )}
+                      {(item.ownerType === CollateralOwnerType.NGUOI_VAY_HO ||
+                        item.ownerType === CollateralOwnerType.NGUOI_THUA_KE_HO) && (
+                        <div className="mt-1">
+                          <span className="inline-flex items-center rounded-md bg-sky-50 px-2 py-0.5 text-[11px] font-medium text-sky-700 ring-1 ring-inset ring-sky-600/20">
+                            Đất hộ gia đình
+                          </span>
                         </div>
                       )}
                     </td>
@@ -832,6 +843,18 @@ export function CollateralsSection({
                         label="Địa chỉ thường trú"
                         required
                       />
+                    </div>
+                  </div>
+                )}
+
+                {isHousehold && (
+                  <div className="rounded-lg border border-sky-300 bg-sky-50/50 p-3.5 text-xs text-sky-900 flex items-start gap-2.5">
+                    <Users className="h-4 w-4 text-sky-600 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="font-semibold">Tài sản thuộc diện đất hộ gia đình</p>
+                      <p className="mt-0.5 text-slate-600">
+                        Danh sách các thành viên trong hộ được kê khai tập trung tại mục <strong>&ldquo;Thành viên trong hộ gia đình&rdquo;</strong> ở giao diện chính của hồ sơ vay vốn.
+                      </p>
                     </div>
                   </div>
                 )}

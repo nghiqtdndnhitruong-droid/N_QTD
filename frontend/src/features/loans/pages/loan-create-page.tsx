@@ -76,8 +76,10 @@ import { MemberLookupField } from '@/features/members/components/member-lookup-f
 import { useMemberDetail } from '@/features/members/hooks/use-members';
 import { useCurrentInterestRate } from '@/features/interest-rates/hooks/use-interest-rates';
 import { CollateralsSection } from '../components/collaterals-section';
+import { HouseholdMembersSection } from '../components/household-members-section';
 import { LoanValuationSection } from '../components/loan-valuation-section';
 import { RelatedPersonsSection } from '../components/related-persons-section';
+import { CollateralOwnerType } from '../types/loan.types';
 import {
   useCreateLoan,
   useLoanDetail,
@@ -173,6 +175,15 @@ export function LoanCreatePage() {
   const { data: valuations = [] } = useLoanValuations(draftLoanId);
   const { data: selectedMember } = useMemberDetail(memberId || draftLoan?.memberId);
   const createLoanMutation = useCreateLoan();
+
+  const hasHouseholdCollateral = useMemo(() => {
+    const collaterals = draftLoan?.collaterals ?? [];
+    return collaterals.some(
+      (c) =>
+        c.ownerType === CollateralOwnerType.NGUOI_VAY_HO ||
+        c.ownerType === CollateralOwnerType.NGUOI_THUA_KE_HO
+    );
+  }, [draftLoan?.collaterals]);
   const updateLoanMutation = useUpdateLoan(draftLoanId ?? '');
   const updateStatusMutation = useUpdateLoanStatus(draftLoanId ?? '');
 
@@ -1244,7 +1255,16 @@ export function LoanCreatePage() {
             />
           )}
 
-          {/* 3. Người liên quan (vay thế chấp >= 140 triệu) */}
+          {/* 3. Thành viên trong hộ gia đình (Khoản vay thế chấp + có ít nhất 1 tài sản thuộc loại đất hộ) */}
+          {draftLoan.loanType === LoanType.THE_CHAP && hasHouseholdCollateral && (
+            <HouseholdMembersSection
+              loanId={draftLoan.id}
+              householdMembers={draftLoan.householdMembers ?? []}
+              borrowerAddress={selectedMember?.address || draftLoan.member?.address || ''}
+            />
+          )}
+
+          {/* 4. Người liên quan (vay thế chấp >= 140 triệu) */}
           {isLoanEligibleForRelatedPerson(draftLoan.loanType, draftLoan.loanAmount) && (
             <RelatedPersonsSection
               loanId={draftLoan.id}

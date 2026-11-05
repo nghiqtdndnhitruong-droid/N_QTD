@@ -144,6 +144,22 @@ export const thirdPartyInfoFormSchema = z.object({
   address: z.string().trim().optional(),
 });
 
+export const householdMemberFormSchema = z.object({
+  fullName: z.string().trim().min(2, 'Họ tên thành viên hộ tối thiểu 2 ký tự'),
+  yearOfBirth: z.number().int().min(1900).max(new Date().getFullYear()).optional(),
+  gender: z.nativeEnum(Gender).optional(),
+  idType: z.nativeEnum(IdDocumentType).optional(),
+  idNumber: z
+    .string()
+    .trim()
+    .regex(/^\d{12}$/, 'Số CCCD / Thẻ căn cước phải gồm 12 chữ số'),
+  idIssueDate: optionalApiDateStringSchema('Ngày cấp'),
+  idIssuePlace: z.string().trim().optional(),
+  address: z.string().trim().optional(),
+});
+
+export type HouseholdMemberFormValues = z.infer<typeof householdMemberFormSchema>;
+
 const baseCollateralObjectSchema = z.object({
   assetType: z.nativeEnum(CollateralAssetType, {
     errorMap: () => ({ message: 'Vui lòng chọn loại tài sản hợp lệ' }),
@@ -196,6 +212,7 @@ const baseCollateralObjectSchema = z.object({
   valuationAmount: z.number().nonnegative('Giá trị định giá không được âm').nullable().optional(),
   ownerType: z.nativeEnum(CollateralOwnerType),
   thirdPartyInfo: thirdPartyInfoFormSchema.nullable().optional(),
+  householdMembers: z.array(householdMemberFormSchema).optional(),
 });
 
 export function createCollateralFormSchema(_loanType: LoanType = LoanType.THE_CHAP) {

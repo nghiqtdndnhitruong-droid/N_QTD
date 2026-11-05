@@ -536,6 +536,48 @@ export class WordTemplateDataDictionaryService {
           },
         ],
       },
+      {
+        id: 'household_members',
+        label: '13. Thành viên hộ gia đình (THANH_VIEN_HO.* & DANH_SACH_THANH_VIEN_HO)',
+        description: 'Thông tin thành viên trong hộ gia đình khi tài sản thuộc diện Hộ và bảng lặp',
+        fields: [
+          { path: 'THANH_VIEN_HO.HO_TEN', label: 'Họ tên thành viên hộ (người đầu tiên)', dataType: 'TEXT', sampleValue: 'Nguyễn Văn An' },
+          { path: 'THANH_VIEN_HO.DANH_XUNG', label: 'Danh xưng (Ông/Bà)', dataType: 'TEXT', sampleValue: 'Ông' },
+          { path: 'THANH_VIEN_HO.NAM_SINH', label: 'Năm sinh', dataType: 'TEXT', sampleValue: '1985' },
+          { path: 'THANH_VIEN_HO.GIOI_TINH', label: 'Giới tính (Nam/Nữ)', dataType: 'TEXT', sampleValue: 'Nam' },
+          { path: 'THANH_VIEN_HO.SO_GIAY_TO', label: 'Số giấy tờ (CCCD/Căn cước)', dataType: 'TEXT', sampleValue: '084085001234' },
+          { path: 'THANH_VIEN_HO.SO_CCCD', label: 'Số CCCD (alias)', dataType: 'TEXT', sampleValue: '084085001234' },
+          { path: 'THANH_VIEN_HO.LOAI_GIAY_TO', label: 'Loại giấy tờ', dataType: 'TEXT', sampleValue: 'Căn cước công dân' },
+          { path: 'THANH_VIEN_HO.NGAY_CAP', label: 'Ngày cấp (DD/MM/YYYY)', dataType: 'DATE', sampleValue: '15/05/2021' },
+          { path: 'THANH_VIEN_HO.NOI_CAP', label: 'Nơi cấp giấy tờ', dataType: 'TEXT', sampleValue: 'Cục Cảnh sát QLHC về TTXH' },
+          { path: 'THANH_VIEN_HO.DIA_CHI', label: 'Địa chỉ thường trú (người đầu tiên)', dataType: 'TEXT', sampleValue: 'Ấp Nô Lựa, Xã Nhị Trường' },
+          { path: 'THANH_VIEN_HO.HO_TEN_GOP', label: 'Họ tên các thành viên gộp (nối dấu ;)', dataType: 'TEXT', sampleValue: 'Nguyễn Văn An; Trần Thị Bình' },
+          { path: 'THANH_VIEN_HO.SO_GIAY_TO_GOP', label: 'Số CCCD các thành viên gộp (nối dấu ;)', dataType: 'TEXT', sampleValue: '084085001234; 084187005678' },
+          { path: 'THANH_VIEN_HO.DANH_XUNG_HO_TEN_GOP', label: 'Danh xưng + Họ tên các thành viên gộp', dataType: 'TEXT', sampleValue: 'Ông: Nguyễn Văn An; Bà: Trần Thị Bình' },
+          { path: 'THANH_VIEN_HO.DIA_CHI_GOP', label: 'Địa chỉ các thành viên gộp (nối dấu ;)', dataType: 'TEXT', sampleValue: 'Ấp Nô Lựa, Xã Nhị Trường; Ấp Ba Se, Xã Lương Hòa' },
+          { path: 'THANH_VIEN_HO.THONG_TIN_CHI_TIET_GOP', label: 'Thông tin chi tiết pháp lý các thành viên gộp', dataType: 'TEXT', sampleValue: 'Ông: Nguyễn Văn An - CCCD số: 084085001234; Bà: Trần Thị Bình - CCCD số: 084187005678' },
+          { path: 'KHOAN_VAY.CO_THANH_VIEN_HO', label: 'Khoản vay có thành viên hộ gia đình (True/False)', dataType: 'BOOLEAN', sampleValue: true },
+          {
+            path: 'DANH_SACH_THANH_VIEN_HO',
+            label: 'Danh sách thành viên hộ gia đình (Khối lặp FOR/Bảng)',
+            dataType: 'LIST',
+            isList: true,
+            itemFields: [
+              { path: 'STT', label: 'Số thứ tự (1, 2, 3...)', dataType: 'NUMBER', sampleValue: 1 },
+              { path: 'HO_TEN', label: 'Họ và tên thành viên hộ', dataType: 'TEXT', sampleValue: 'Nguyễn Văn An' },
+              { path: 'DANH_XUNG', label: 'Danh xưng (Ông/Bà)', dataType: 'TEXT', sampleValue: 'Ông' },
+              { path: 'NAM_SINH', label: 'Năm sinh', dataType: 'TEXT', sampleValue: '1985' },
+              { path: 'GIOI_TINH', label: 'Giới tính (Nam/Nữ)', dataType: 'TEXT', sampleValue: 'Nam' },
+              { path: 'SO_GIAY_TO', label: 'Số giấy tờ (CCCD/Căn cước)', dataType: 'TEXT', sampleValue: '084085001234' },
+              { path: 'SO_CCCD', label: 'Số CCCD (alias)', dataType: 'TEXT', sampleValue: '084085001234' },
+              { path: 'LOAI_GIAY_TO', label: 'Loại giấy tờ', dataType: 'TEXT', sampleValue: 'Căn cước công dân' },
+              { path: 'NGAY_CAP', label: 'Ngày cấp (DD/MM/YYYY)', dataType: 'DATE', sampleValue: '15/05/2021' },
+              { path: 'NOI_CAP', label: 'Nơi cấp giấy tờ', dataType: 'TEXT', sampleValue: 'Cục Cảnh sát QLHC về TTXH' },
+              { path: 'DIA_CHI', label: 'Địa chỉ thường trú', dataType: 'TEXT', sampleValue: 'Ấp Nô Lựa, Xã Nhị Trường' },
+            ],
+          },
+        ],
+      },
     ];
   }
 
@@ -1188,6 +1230,62 @@ export class WordTemplateDataDictionaryService {
       const certType = this.formatCertificateType(c.certificateType);
       const certClause = this.formatCertificateClause(c);
       const restrictions = c.useRestrictions?.trim() || '...................';
+
+      const cMembersRaw = Array.isArray(c.householdMembers) ? c.householdMembers : [];
+      const cHouseholdMembers = cMembersRaw.map((hm: any, hIdx: number) => {
+        const hIdxNum = hIdx + 1;
+        const hFullName = (hm.fullName || '').trim();
+        const hIsNam = hm.gender === 'NAM';
+        const hGender = hIsNam ? 'Nam' : 'Nữ';
+        const hGenderTitle = hIsNam ? 'Ông' : 'Bà';
+        const hYearOfBirth = hm.yearOfBirth ? String(hm.yearOfBirth) : '';
+        const hIdType = this.formatIdType(hm.idType);
+        const hIdNumber = (hm.idNumber || '').trim();
+        const hIdIssueDate = hm.idIssueDate ? dayjs(hm.idIssueDate).format('DD/MM/YYYY') : '';
+        const hIdIssuePlace = (hm.idIssuePlace || '').trim();
+        const hDetail = `${hGenderTitle}: ${hFullName}${hYearOfBirth ? ` (sinh năm: ${hYearOfBirth})` : ''} - ${hIdType} số: ${hIdNumber}${hIdIssueDate ? `, cấp ngày: ${hIdIssueDate}` : ''}${hIdIssuePlace ? ` tại ${hIdIssuePlace}` : ''}`;
+        return {
+          index: hIdxNum,
+          _index: hIdxNum,
+          _number: hIdxNum,
+          STT: hIdxNum,
+          stt: hIdxNum,
+          fullName: hFullName,
+          ho_ten: hFullName,
+          HO_TEN: hFullName,
+          TEN: hFullName,
+          ten: hFullName,
+          gender: hGender,
+          gioi_tinh: hGender,
+          GIOI_TINH: hGender,
+          genderTitle: hGenderTitle,
+          danh_xung: hGenderTitle,
+          DANH_XUNG: hGenderTitle,
+          xung_ho: hGenderTitle,
+          XUNG_HO: hGenderTitle,
+          yearOfBirth: hYearOfBirth,
+          nam_sinh: hYearOfBirth,
+          NAM_SINH: hYearOfBirth,
+          idType: hIdType,
+          loai_giay_to: hIdType,
+          LOAI_GIAY_TO: hIdType,
+          idNumber: hIdNumber,
+          so_giay_to: hIdNumber,
+          SO_GIAY_TO: hIdNumber,
+          so_cccd: hIdNumber,
+          SO_CCCD: hIdNumber,
+          idIssueDate: hIdIssueDate,
+          ngay_cap: hIdIssueDate,
+          NGAY_CAP: hIdIssueDate,
+          idIssuePlace: hIdIssuePlace,
+          noi_cap: hIdIssuePlace,
+          NOI_CAP: hIdIssuePlace,
+          thong_tin_chi_tiet: hDetail,
+          THONG_TIN_CHI_TIET: hDetail,
+        };
+      });
+      const hasCHouseholdMembers = cHouseholdMembers.length > 0;
+
       return {
         index: idx + 1,
         assetCode: c.assetCode || '',
@@ -1229,6 +1327,12 @@ export class WordTemplateDataDictionaryService {
         CHU_SO_HUU_DIA_CHI: owner.address,
         CHU_SO_HUU_NAM_SINH: owner.yearOfBirth,
         CHU_SO_HUU_QUAN_HE: owner.relationship,
+        householdMembers: cHouseholdMembers,
+        DANH_SACH_THANH_VIEN_HO: cHouseholdMembers,
+        danh_sach_thanh_vien_ho: cHouseholdMembers,
+        CO_THANH_VIEN_HO: hasCHouseholdMembers,
+        co_thanh_vien_ho: hasCHouseholdMembers,
+        'TAI_SAN.CO_THANH_VIEN_HO': hasCHouseholdMembers,
       };
     });
 
@@ -1308,6 +1412,88 @@ export class WordTemplateDataDictionaryService {
         DIA_CHI: address,
       };
     });
+
+    // Chuẩn bị danh sách thành viên hộ gia đình toàn cục
+    const allHouseholdMembersRaw: any[] = [];
+    if (Array.isArray((loan as any).householdMembers) && (loan as any).householdMembers.length > 0) {
+      (loan as any).householdMembers.forEach((hm: any) => {
+        allHouseholdMembersRaw.push(hm);
+      });
+    } else {
+      collaterals.forEach((c: any) => {
+        if (Array.isArray(c.householdMembers) && c.householdMembers.length > 0) {
+          c.householdMembers.forEach((hm: any) => {
+            allHouseholdMembersRaw.push(hm);
+          });
+        }
+      });
+    }
+
+    const householdMembersList = allHouseholdMembersRaw.map((hm: any, idx: number) => {
+      const idxNum = idx + 1;
+      const fullName = (hm.fullName || '').trim();
+      const isNam = hm.gender === 'NAM';
+      const gender = isNam ? 'Nam' : 'Nữ';
+      const genderTitle = isNam ? 'Ông' : 'Bà';
+      const yearOfBirth = hm.yearOfBirth ? String(hm.yearOfBirth) : '';
+      const idType = this.formatIdType(hm.idType);
+      const idNumber = (hm.idNumber || '').trim();
+      const idIssueDate = hm.idIssueDate ? dayjs(hm.idIssueDate).format('DD/MM/YYYY') : '';
+      const idIssuePlace = (hm.idIssuePlace || '').trim();
+      const address = (hm.address || '').trim();
+      const detail = `${genderTitle}: ${fullName}${yearOfBirth ? ` (sinh năm: ${yearOfBirth})` : ''} - ${idType} số: ${idNumber}${idIssueDate ? `, cấp ngày: ${idIssueDate}` : ''}${idIssuePlace ? ` tại ${idIssuePlace}` : ''}${address ? `, địa chỉ: ${address}` : ''}`;
+
+      return {
+        index: idxNum,
+        _index: idxNum,
+        _number: idxNum,
+        STT: idxNum,
+        stt: idxNum,
+        fullName,
+        ho_ten: fullName,
+        HO_TEN: fullName,
+        TEN: fullName,
+        ten: fullName,
+        gender,
+        gioi_tinh: gender,
+        GIOI_TINH: gender,
+        genderTitle,
+        danh_xung: genderTitle,
+        DANH_XUNG: genderTitle,
+        xung_ho: genderTitle,
+        XUNG_HO: genderTitle,
+        yearOfBirth,
+        nam_sinh: yearOfBirth,
+        NAM_SINH: yearOfBirth,
+        idType,
+        loai_giay_to: idType,
+        LOAI_GIAY_TO: idType,
+        idNumber,
+        so_giay_to: idNumber,
+        SO_GIAY_TO: idNumber,
+        so_cccd: idNumber,
+        SO_CCCD: idNumber,
+        idIssueDate,
+        ngay_cap: idIssueDate,
+        NGAY_CAP: idIssueDate,
+        idIssuePlace,
+        noi_cap: idIssuePlace,
+        NOI_CAP: idIssuePlace,
+        address,
+        dia_chi: address,
+        DIA_CHI: address,
+        thong_tin_chi_tiet: detail,
+        THONG_TIN_CHI_TIET: detail,
+      };
+    });
+
+    const firstHouseholdMember = householdMembersList[0] || null;
+    const hasHouseholdMembers = householdMembersList.length > 0;
+    const mergedHouseholdMemberNames = mergeAssetValues(householdMembersList, (m) => m.HO_TEN);
+    const mergedHouseholdMemberIdNumbers = mergeAssetValues(householdMembersList, (m) => m.SO_GIAY_TO);
+    const mergedHouseholdMemberTitlesAndNames = mergeAssetValues(householdMembersList, (m) => `${m.DANH_XUNG}: ${m.HO_TEN}`);
+    const mergedHouseholdMemberAddresses = mergeAssetValues(householdMembersList, (m) => m.DIA_CHI);
+    const mergedHouseholdMemberDetails = mergeAssetValues(householdMembersList, (m) => m.THONG_TIN_CHI_TIET);
 
     const contractDate = loan.contractDate ? dayjs(loan.contractDate) : now;
     const loanAmount = Number(loan.loanAmount) || 0;
@@ -1784,6 +1970,39 @@ export class WordTemplateDataDictionaryService {
         currentYear: now.format('YYYY'),
         currentFullDate: `ngày ${now.format('DD')} tháng ${now.format('MM')} năm ${now.format('YYYY')}`,
       },
+      THANH_VIEN_HO: {
+        HO_TEN: firstHouseholdMember?.HO_TEN || '',
+        ho_ten: firstHouseholdMember?.HO_TEN || '',
+        TEN: firstHouseholdMember?.HO_TEN || '',
+        DANH_XUNG: firstHouseholdMember?.DANH_XUNG || '',
+        danh_xung: firstHouseholdMember?.DANH_XUNG || '',
+        XUNG_HO: firstHouseholdMember?.DANH_XUNG || '',
+        GIOI_TINH: firstHouseholdMember?.GIOI_TINH || '',
+        gioi_tinh: firstHouseholdMember?.GIOI_TINH || '',
+        NAM_SINH: firstHouseholdMember?.NAM_SINH || '',
+        nam_sinh: firstHouseholdMember?.NAM_SINH || '',
+        SO_GIAY_TO: firstHouseholdMember?.SO_GIAY_TO || '',
+        so_giay_to: firstHouseholdMember?.SO_GIAY_TO || '',
+        SO_CCCD: firstHouseholdMember?.SO_GIAY_TO || '',
+        so_cccd: firstHouseholdMember?.SO_GIAY_TO || '',
+        LOAI_GIAY_TO: firstHouseholdMember?.LOAI_GIAY_TO || '',
+        loai_giay_to: firstHouseholdMember?.LOAI_GIAY_TO || '',
+        NGAY_CAP: firstHouseholdMember?.NGAY_CAP || '',
+        ngay_cap: firstHouseholdMember?.NGAY_CAP || '',
+        NOI_CAP: firstHouseholdMember?.NOI_CAP || '',
+        noi_cap: firstHouseholdMember?.NOI_CAP || '',
+        DIA_CHI: firstHouseholdMember?.DIA_CHI || '',
+        dia_chi: firstHouseholdMember?.DIA_CHI || '',
+        HO_TEN_GOP: mergedHouseholdMemberNames,
+        SO_GIAY_TO_GOP: mergedHouseholdMemberIdNumbers,
+        SO_CCCD_GOP: mergedHouseholdMemberIdNumbers,
+        DANH_SACH_GOP: mergedHouseholdMemberNames,
+        DANH_XUNG_HO_TEN_GOP: mergedHouseholdMemberTitlesAndNames,
+        DIA_CHI_GOP: mergedHouseholdMemberAddresses,
+        THONG_TIN_CHI_TIET_GOP: mergedHouseholdMemberDetails,
+        CO_THANH_VIEN_HO: hasHouseholdMembers,
+        co_thanh_vien_ho: hasHouseholdMembers,
+      },
     };
 
     // Danh sách người thừa kế lặp
@@ -1964,6 +2183,38 @@ export class WordTemplateDataDictionaryService {
       NAM_SINH_NGUOI_THUA_KE: nested.heir?.yearOfBirth || '',
       SO_DIEN_THOAI_NGUOI_THUA_KE: nested.heir?.phoneNumber || '',
       DIA_CHI_NGUOI_THUA_KE: nested.heir?.address || '',
+
+      // Thành viên hộ gia đình (THANH_VIEN_HO.* & phẳng)
+      'THANH_VIEN_HO.HO_TEN': firstHouseholdMember?.HO_TEN || '',
+      'THANH_VIEN_HO.DANH_XUNG': firstHouseholdMember?.DANH_XUNG || '',
+      'THANH_VIEN_HO.XUNG_HO': firstHouseholdMember?.DANH_XUNG || '',
+      'THANH_VIEN_HO.GIOI_TINH': firstHouseholdMember?.GIOI_TINH || '',
+      'THANH_VIEN_HO.NAM_SINH': firstHouseholdMember?.NAM_SINH || '',
+      'THANH_VIEN_HO.SO_GIAY_TO': firstHouseholdMember?.SO_GIAY_TO || '',
+      'THANH_VIEN_HO.SO_CCCD': firstHouseholdMember?.SO_GIAY_TO || '',
+      'THANH_VIEN_HO.LOAI_GIAY_TO': firstHouseholdMember?.LOAI_GIAY_TO || '',
+      'THANH_VIEN_HO.NGAY_CAP': firstHouseholdMember?.NGAY_CAP || '',
+      'THANH_VIEN_HO.NOI_CAP': firstHouseholdMember?.NOI_CAP || '',
+      'THANH_VIEN_HO.DIA_CHI': firstHouseholdMember?.DIA_CHI || '',
+      'THANH_VIEN_HO.HO_TEN_GOP': mergedHouseholdMemberNames,
+      'THANH_VIEN_HO.SO_GIAY_TO_GOP': mergedHouseholdMemberIdNumbers,
+      'THANH_VIEN_HO.SO_CCCD_GOP': mergedHouseholdMemberIdNumbers,
+      'THANH_VIEN_HO.DANH_SACH_GOP': mergedHouseholdMemberNames,
+      'THANH_VIEN_HO.DANH_XUNG_HO_TEN_GOP': mergedHouseholdMemberTitlesAndNames,
+      'THANH_VIEN_HO.DIA_CHI_GOP': mergedHouseholdMemberAddresses,
+      'THANH_VIEN_HO.THONG_TIN_CHI_TIET_GOP': mergedHouseholdMemberDetails,
+      THANH_VIEN_HO_HO_TEN_GOP: mergedHouseholdMemberNames,
+      THANH_VIEN_HO_SO_GIAY_TO_GOP: mergedHouseholdMemberIdNumbers,
+      THANH_VIEN_HO_DANH_XUNG_HO_TEN_GOP: mergedHouseholdMemberTitlesAndNames,
+      THANH_VIEN_HO_DIA_CHI: firstHouseholdMember?.DIA_CHI || '',
+      THANH_VIEN_HO_DIA_CHI_GOP: mergedHouseholdMemberAddresses,
+      THANH_VIEN_HO_THONG_TIN_CHI_TIET_GOP: mergedHouseholdMemberDetails,
+      'KHOAN_VAY.CO_THANH_VIEN_HO': hasHouseholdMembers,
+      'TAI_SAN.CO_THANH_VIEN_HO': hasHouseholdMembers,
+      CO_THANH_VIEN_HO: hasHouseholdMembers,
+      co_thanh_vien_ho: hasHouseholdMembers,
+      DANH_SACH_THANH_VIEN_HO: householdMembersList,
+      danh_sach_thanh_vien_ho: householdMembersList,
       // Tài sản gộp (hỗ trợ cả cú pháp TAI_SAN.*_GOP và *_GOP)
       'TAI_SAN.MA_TAI_SAN_GOP': mergedAssetCodes,
       MA_TAI_SAN_GOP: mergedAssetCodes,
@@ -2360,6 +2611,9 @@ export class WordTemplateDataDictionaryService {
         CO_NGUOI_THUA_KE: coNguoiThuaKe,
         CO_NGUO_THUA_KE: coNguoiThuaKe,
         hasHeir: coNguoiThuaKe,
+        CO_THANH_VIEN_HO: hasHouseholdMembers,
+        co_thanh_vien_ho: hasHouseholdMembers,
+        DANH_SACH_THANH_VIEN_HO: householdMembersList,
       },
       QUY_TIN_DUNG: {
         TEN_QUY: nested.fund.name,
@@ -2422,6 +2676,11 @@ export class WordTemplateDataDictionaryService {
       nguoi_lien_quan: relatedPersonsList,
       NGUOI_LIEN_QUAN: relatedPersonsList,
       DANH_SACH_NGUOI_THUA_KE: heirsList,
+      THANH_VIEN_HO: nested.THANH_VIEN_HO,
+      CO_THANH_VIEN_HO: hasHouseholdMembers,
+      co_thanh_vien_ho: hasHouseholdMembers,
+      DANH_SACH_THANH_VIEN_HO: householdMembersList,
+      danh_sach_thanh_vien_ho: householdMembersList,
       PHUONG_AN: nested.PHUONG_AN,
       DANH_SACH_CHI_PHI: expensesList,
       CHI_PHI: expensesList,
@@ -2473,6 +2732,14 @@ export class WordTemplateDataDictionaryService {
         DANH_SACH_THU_NHAP_PHUONG_AN: incomesList,
         'PHUONG_AN.DANH_SACH_THU_NHAP': incomesList,
         'PHUONG_AN.THU_NHAP': incomesList,
+        householdMembers: householdMembersList,
+        DANH_SACH_THANH_VIEN_HO: householdMembersList,
+        danh_sach_thanh_vien_ho: householdMembersList,
+        thanh_vien_ho: householdMembersList,
+        THANH_VIEN_HO: householdMembersList,
+        'KHOAN_VAY.DANH_SACH_THANH_VIEN_HO': householdMembersList,
+        CO_THANH_VIEN_HO: hasHouseholdMembers,
+        co_thanh_vien_ho: hasHouseholdMembers,
       },
     };
   }

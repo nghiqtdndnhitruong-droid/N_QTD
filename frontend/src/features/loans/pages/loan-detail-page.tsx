@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import {
   ArrowLeft,
@@ -50,12 +50,14 @@ import { Can } from '@/features/auth/components/can';
 import { isLoanEligibleForRelatedPerson } from '@/shared/utils/identity-document';
 import { buildInterestExpenseItemName } from '../utils/loan-plan-templates';
 import { CollateralsSection } from '../components/collaterals-section';
+import { HouseholdMembersSection } from '../components/household-members-section';
 import { LoanValuationSection } from '../components/loan-valuation-section';
 import { DisbursementsSection } from '../components/disbursements-section';
 import { LoanSummaryStrip } from '../components/loan-summary-strip';
 import { RelatedPersonsSection } from '../components/related-persons-section';
 import { RepaymentsSection } from '../components/repayments-section';
 import { TemplateExportDialog } from '@/features/word-templates/components/template-export-dialog';
+import { CollateralOwnerType } from '../types/loan.types';
 import {
   useDeleteLoan,
   useLoanDetail,
@@ -82,6 +84,14 @@ export function LoanDetailPage() {
 
   const isEditable = loan.status === LoanStatus.DANG_TAO;
   const isRelatedPersonEligible = isLoanEligibleForRelatedPerson(loan.loanType, loan.loanAmount);
+  const hasHouseholdCollateral = useMemo(() => {
+    const collaterals = loan?.collaterals ?? [];
+    return collaterals.some(
+      (c) =>
+        c.ownerType === CollateralOwnerType.NGUOI_VAY_HO ||
+        c.ownerType === CollateralOwnerType.NGUOI_THUA_KE_HO
+    );
+  }, [loan?.collaterals]);
   const valuationsCount = loan.valuations?.length ?? valuations.length;
   const activeDisbursements = (loan.disbursements ?? []).filter((d) => !d.isDeleted);
   const activeRepayments = (loan.repayments ?? []).filter((r) => !r.isDeleted);
@@ -278,6 +288,11 @@ export function LoanDetailPage() {
             {loan.loanType === LoanType.TIN_CHAP ? 'Tài sản kê khai' : 'Tài sản thế chấp'} (
             {loan.collaterals?.length ?? 0})
           </TabsTrigger>
+          {loan.loanType === LoanType.THE_CHAP && hasHouseholdCollateral && (
+            <TabsTrigger value="household-members" className="gap-2">
+              <span>Thành viên hộ ({loan.householdMembers?.length ?? 0})</span>
+            </TabsTrigger>
+          )}
           <TabsTrigger value="valuations">
             Định giá ({valuationsCount})
           </TabsTrigger>
@@ -543,7 +558,7 @@ export function LoanDetailPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="collaterals">
+        <TabsContent value="collaterals" className="space-y-6">
           <CollateralsSection
             loanId={loan.id}
             loanType={loan.loanType}
@@ -552,7 +567,26 @@ export function LoanDetailPage() {
             readOnly={!isEditable}
             hasHeir={Boolean(loan.heir?.fullName?.trim())}
           />
+          {loan.loanType === LoanType.THE_CHAP && hasHouseholdCollateral && (
+            <HouseholdMembersSection
+              loanId={loan.id}
+              householdMembers={loan.householdMembers ?? []}
+              borrowerAddress={loan.member?.address || ''}
+              readOnly={!isEditable}
+            />
+          )}
         </TabsContent>
+
+        {loan.loanType === LoanType.THE_CHAP && hasHouseholdCollateral && (
+          <TabsContent value="household-members">
+            <HouseholdMembersSection
+              loanId={loan.id}
+              householdMembers={loan.householdMembers ?? []}
+              borrowerAddress={loan.member?.address || ''}
+              readOnly={!isEditable}
+            />
+          </TabsContent>
+        )}
 
         <TabsContent value="valuations">
           <LoanValuationSection

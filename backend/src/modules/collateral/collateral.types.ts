@@ -19,6 +19,17 @@ export interface ThirdPartyInfoDto {
   address: string;
 }
 
+export interface HouseholdMemberDto {
+  fullName: string;
+  yearOfBirth?: number;
+  gender?: Gender;
+  idType?: IdDocumentType;
+  idNumber: string;
+  idIssueDate?: string | Date | null;
+  idIssuePlace?: string | null;
+  address?: string | null;
+}
+
 export interface CreateCollateralDto {
   loanId: string;
   assetType: CollateralAssetType;
@@ -48,6 +59,7 @@ export interface CreateCollateralDto {
   valuationMethod?: ValuationMethod | null;
   ownerType: CollateralOwnerType;
   thirdPartyInfo?: ThirdPartyInfoDto | null;
+  householdMembers?: HouseholdMemberDto[] | null;
 }
 
 export interface UpdateCollateralDto extends Partial<Omit<CreateCollateralDto, 'loanId'>> {}

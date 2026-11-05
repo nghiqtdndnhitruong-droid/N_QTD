@@ -2,6 +2,7 @@ import { CollateralRepository, collateralRepository } from './collateral.reposit
 import {
   CollateralFilterQuery,
   CreateCollateralDto,
+  HouseholdMemberDto,
   ThirdPartyInfoDto,
   UpdateCollateralDto,
 } from './collateral.types';
@@ -13,10 +14,11 @@ import { createPaginationMeta, parsePagination } from '../../shared/utils/pagina
 import {
   calculateFlooredValuationAmount,
   getCanonicalIdIssuePlace,
+  parseCitizenIdInfo,
   requireValidCitizenIdInfo,
   resolveEffectiveCollateralArea,
 } from '../../shared/utils/identity-document.util';
-import { LoanType, CollateralOwnerType } from '@prisma/client';
+import { LoanType, CollateralOwnerType, Gender, IdDocumentType } from '@prisma/client';
 import { loanValuationService } from '../loan-valuation/loan-valuation.service';
 
 function normalizeThirdPartyInfo(info?: ThirdPartyInfoDto | null) {
@@ -31,6 +33,29 @@ function normalizeThirdPartyInfo(info?: ThirdPartyInfoDto | null) {
     idIssuePlace: getCanonicalIdIssuePlace(info.idType),
     address: info.address.trim(),
   };
+}
+
+export function normalizeHouseholdMember(item?: HouseholdMemberDto | null) {
+  if (!item || !item.fullName || !item.idNumber) return null;
+  const parsed = parseCitizenIdInfo(item.idNumber);
+  const idType = item.idType || IdDocumentType.CAN_CUOC_CONG_DAN;
+  return {
+    fullName: item.fullName.trim(),
+    yearOfBirth: item.yearOfBirth || parsed?.yearOfBirth || new Date().getFullYear(),
+    gender: item.gender || parsed?.gender || Gender.NAM,
+    idType,
+    idNumber: item.idNumber.trim(),
+    idIssueDate: item.idIssueDate ? new Date(item.idIssueDate) : null,
+    idIssuePlace: item.idIssuePlace?.trim() || getCanonicalIdIssuePlace(idType),
+    address: item.address ? item.address.trim() : null,
+  };
+}
+
+export function normalizeHouseholdMembers(items?: HouseholdMemberDto[] | null) {
+  if (!items || !Array.isArray(items)) return [];
+  return items
+    .map((m) => normalizeHouseholdMember(m))
+    .filter((m): m is NonNullable<typeof m> => m !== null);
 }
 
 export class CollateralService {
@@ -152,6 +177,8 @@ export class CollateralService {
         ? normalizeThirdPartyInfo(dto.thirdPartyInfo)
         : null;
 
+    const normalizedHouseholdMembers = normalizeHouseholdMembers(dto.householdMembers);
+
     const created = await this.repo.create(
       {
         ...dto,
@@ -160,6 +187,7 @@ export class CollateralService {
         pricePerSqMeter: valuation.pricePerSqMeter,
         valuationAmount: valuation.valuationAmount ?? 0,
         thirdPartyInfo: normalizedThirdParty,
+        householdMembers: normalizedHouseholdMembers,
         loanId,
       },
       location
@@ -266,7 +294,12 @@ export class CollateralService {
         ? (dto.ownerType === CollateralOwnerType.BAO_LANH ? normalizeThirdPartyInfo(dto.thirdPartyInfo) : null)
         : (dto.thirdPartyInfo !== undefined ? normalizeThirdPartyInfo(dto.thirdPartyInfo) : undefined);
 
-    const { thirdPartyInfo: _rawThirdParty, ...restDto } = dto;
+    const normalizedHouseholdMembers =
+      dto.householdMembers !== undefined
+        ? normalizeHouseholdMembers(dto.householdMembers)
+        : undefined;
+
+    const { thirdPartyInfo: _rawThirdParty, householdMembers: _rawHouseholdMembers, ...restDto } = dto;
 
     return this.repo.update(
       id,
@@ -284,6 +317,9 @@ export class CollateralService {
           : {}),
         ...(normalizedThirdParty !== undefined
           ? { thirdPartyInfo: normalizedThirdParty }
+          : {}),
+        ...(normalizedHouseholdMembers !== undefined
+          ? { householdMembers: normalizedHouseholdMembers }
           : {}),
       },
       location

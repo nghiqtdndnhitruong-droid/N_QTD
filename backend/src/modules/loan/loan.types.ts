@@ -1,6 +1,6 @@
 import { Loan, LoanType, LoanTermType, LoanStatus, IdDocumentType, Gender } from '@prisma/client';
 import { PaginationQuery } from '../../shared/types';
-import { CreateCollateralDto } from '../collateral/collateral.types';
+import { CreateCollateralDto, HouseholdMemberDto } from '../collateral/collateral.types';
 import { CreateRelatedPersonDto } from '../related-person/related-person.types';
 
 export interface HeirDto {
@@ -60,6 +60,7 @@ export interface CreateLoanDto {
   relatedPersons?: CreateRelatedPersonDto[];
   loanPlan?: LoanPlanDto;
   mortgageContract?: MortgageContractDto;
+  householdMembers?: HouseholdMemberDto[];
   collaterals?: Omit<CreateCollateralDto, 'loanId'>[];
 }
 

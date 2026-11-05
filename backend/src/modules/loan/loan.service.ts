@@ -28,6 +28,7 @@ import {
 } from '../../shared/utils/identity-document.util';
 import { relatedPersonService } from '../related-person/related-person.service';
 import { loanValuationService } from '../loan-valuation/loan-valuation.service';
+import { normalizeHouseholdMembers } from '../collateral/collateral.service';
 
 export class LoanService {
   constructor(
@@ -157,6 +158,17 @@ export class LoanService {
       dto.heir.yearOfBirth = cccdInfo.yearOfBirth;
       dto.heir.idIssuePlace = getCanonicalIdIssuePlace(dto.heir.idType);
       dto.heir.phoneNumber = normalizeOptionalPhoneNumber(dto.heir.phoneNumber);
+    }
+
+    if (dto.householdMembers !== undefined) {
+      if (dto.householdMembers && dto.householdMembers.length > 0) {
+        dto.householdMembers = normalizeHouseholdMembers(dto.householdMembers);
+      }
+    }
+
+    // 1d2. Tự động chuẩn hóa Thành viên hộ gia đình (nếu có)
+    if (dto.householdMembers && dto.householdMembers.length > 0) {
+      dto.householdMembers = normalizeHouseholdMembers(dto.householdMembers);
     }
 
     // 1e. Kiểm tra điều kiện Người liên quan (chỉ áp dụng THE_CHAP và loanAmount >= 140tr)
@@ -373,6 +385,12 @@ export class LoanService {
       dto.heir.yearOfBirth = cccdInfo.yearOfBirth;
       dto.heir.idIssuePlace = getCanonicalIdIssuePlace(dto.heir.idType);
       dto.heir.phoneNumber = normalizeOptionalPhoneNumber(dto.heir.phoneNumber);
+    }
+
+    if (dto.householdMembers !== undefined) {
+      if (dto.householdMembers && dto.householdMembers.length > 0) {
+        dto.householdMembers = normalizeHouseholdMembers(dto.householdMembers);
+      }
     }
 
     const effectiveLoanAmount = dto.loanAmount ?? existing.loanAmount;

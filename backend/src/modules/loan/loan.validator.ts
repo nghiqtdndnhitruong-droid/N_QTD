@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { LoanType, LoanTermType, LoanStatus, IdDocumentType, Gender } from '@prisma/client';
-import { createCollateralSchema } from '../collateral/collateral.validator';
+import { createCollateralSchema, householdMemberSchema } from '../collateral/collateral.validator';
 import {
   isValidVietnamesePhone,
   parseCitizenIdInfo,
@@ -98,6 +98,7 @@ export const createLoanSchema = z.object({
   relatedPersons: z.array(createRelatedPersonSchema).optional(),
   loanPlan: loanPlanSchema.optional(),
   mortgageContract: mortgageContractSchema.optional(),
+  householdMembers: z.array(householdMemberSchema).optional().nullable(),
   collaterals: z.array(createCollateralSchema).optional(),
 });
 

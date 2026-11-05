@@ -277,6 +277,7 @@ model Loan {
   heir             Heir?            // Người thừa kế (tùy chọn)
   loanPlan         LoanPlan?        // Phương án vay
   mortgageContract MortgageContract? // HĐ thế chấp (chỉ khi THE_CHAP)
+  householdMembers HouseholdMember[] // Danh sách thành viên hộ gia đình (quản lý ở cấp khoản vay)
 
   // Relations
   relatedPersons   RelatedPerson[]  // Người liên quan (chỉ áp dụng khi THE_CHAP và loanAmount >= 140.000.000)
@@ -356,6 +357,18 @@ type ThirdPartyInfo {
   address       String
 }
 
+// Embedded: Thành viên trong hộ gia đình (khi ownerType thuộc diện Hộ)
+type HouseholdMember {
+  fullName      String
+  yearOfBirth   Int?
+  gender        Gender?
+  idType        IdDocumentType?
+  idNumber      String
+  idIssueDate   DateTime?
+  idIssuePlace  String?
+  address       String?
+}
+
 model Collateral {
   id                  String              @id @default(auto()) @map("_id") @db.ObjectId
   loanId              String              @db.ObjectId
@@ -399,6 +412,7 @@ model Collateral {
   // Chủ sở hữu
   ownerType           CollateralOwnerType
   thirdPartyInfo      ThirdPartyInfo?     // Thông tin bên thứ 3 (nếu BAO_LANH)
+  householdMembers    HouseholdMember[]   // Danh sách thành viên trong hộ gia đình (nếu chủ sở hữu là Hộ)
 
   valuations          LoanValuation[]
 

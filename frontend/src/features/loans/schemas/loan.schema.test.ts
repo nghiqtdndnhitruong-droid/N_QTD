@@ -8,6 +8,7 @@ import {
 } from '@/shared/types';
 import {
   collateralFormSchema,
+  householdMemberFormSchema,
   loanTermsStepSchema,
   repaymentFormSchema,
 } from './loan.schema';
@@ -77,5 +78,42 @@ describe('loan.schema validation', () => {
       autoSettleIfPaidInFull: true,
     });
     expect(zeroRepay.success).toBe(false);
+  });
+
+  it('kiểm thực thành viên hộ gia đình hợp lệ và chấp nhận danh sách householdMembers trong tài sản', () => {
+    const validMember = householdMemberFormSchema.safeParse({
+      fullName: 'Nguyễn Văn An',
+      idNumber: '084085001234',
+      idIssueDate: '2021-05-15',
+    });
+    expect(validMember.success).toBe(true);
+
+    const invalidMember = householdMemberFormSchema.safeParse({
+      fullName: 'A',
+      idNumber: '12345',
+    });
+    expect(invalidMember.success).toBe(false);
+
+    const validHouseholdCollateral = collateralFormSchema.safeParse({
+      assetType: CollateralAssetType.QUYEN_SU_DUNG_DAT,
+      assetCode: 'TS-HO-01',
+      certificateNumber: 'CS 999',
+      sheetNumber: '05',
+      plotNumber: '12',
+      area: 800,
+      provinceId: '79',
+      communeId: '001',
+      valuationMethod: ValuationMethod.BANG_GIA_QUY,
+      valuationAmount: 400_000_000,
+      ownerType: CollateralOwnerType.NGUOI_VAY_HO,
+      householdMembers: [
+        {
+          fullName: 'Nguyễn Văn An',
+          idNumber: '084085001234',
+          idIssueDate: '2021-05-15',
+        },
+      ],
+    });
+    expect(validHouseholdCollateral.success).toBe(true);
   });
 });

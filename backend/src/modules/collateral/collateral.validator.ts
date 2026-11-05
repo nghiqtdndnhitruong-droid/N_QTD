@@ -32,6 +32,28 @@ export const thirdPartyInfoSchema = z.object({
   address: z.string().trim().min(3),
 });
 
+export const householdMemberSchema = z.object({
+  fullName: z.string().trim().min(2, 'Họ tên thành viên hộ tối thiểu 2 ký tự'),
+  yearOfBirth: z.number().int().min(1900).max(new Date().getFullYear()).optional(),
+  idType: z.nativeEnum(IdDocumentType).optional(),
+  idNumber: z
+    .string()
+    .trim()
+    .regex(/^\d{12}$/, 'Số CCCD / Thẻ căn cước của thành viên hộ phải gồm 12 chữ số')
+    .refine((val) => parseCitizenIdInfo(val) !== null, {
+      message: 'Số CCCD của thành viên hộ không đúng quy tắc mã hóa giới tính & năm sinh',
+    }),
+  idIssueDate: z
+    .string()
+    .datetime({ offset: true })
+    .or(z.string().regex(/^\d{4}-\d{2}-\d{2}$/))
+    .nullable()
+    .optional(),
+  idIssuePlace: z.string().trim().nullable().optional(),
+  gender: z.nativeEnum(Gender).optional(),
+  address: z.string().trim().nullable().optional(),
+});
+
 export const baseCollateralSchema = z.object({
   assetType: z.nativeEnum(CollateralAssetType, {
     errorMap: () => ({ message: 'Loại tài sản không hợp lệ' }),
@@ -104,6 +126,7 @@ export const baseCollateralSchema = z.object({
     );
     return hasAny ? val : null;
   }, thirdPartyInfoSchema.nullable().optional()),
+  householdMembers: z.array(householdMemberSchema).optional().nullable(),
 });
 
 export const createCollateralSchema = baseCollateralSchema

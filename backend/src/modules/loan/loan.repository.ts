@@ -242,6 +242,19 @@ export class LoanRepository {
         heir: heirData,
         loanPlan: loanPlanData,
         mortgageContract: mortgageContractData,
+        householdMembers:
+          data.householdMembers && data.householdMembers.length > 0
+            ? data.householdMembers.map((m) => ({
+                fullName: m.fullName.trim(),
+                yearOfBirth: m.yearOfBirth ?? null,
+                gender: m.gender ?? null,
+                idType: m.idType ?? null,
+                idNumber: m.idNumber.trim(),
+                idIssueDate: m.idIssueDate ? new Date(m.idIssueDate) : null,
+                idIssuePlace: m.idIssuePlace ?? null,
+                address: m.address ?? null,
+              }))
+            : [],
       },
     });
 
@@ -399,6 +412,22 @@ export class LoanRepository {
       } else {
         updateData.mortgageContract = null;
       }
+    }
+
+    if (data.householdMembers !== undefined) {
+      updateData.householdMembers =
+        data.householdMembers && data.householdMembers.length > 0
+          ? data.householdMembers.map((m) => ({
+              fullName: m.fullName.trim(),
+              yearOfBirth: m.yearOfBirth ?? null,
+              gender: m.gender ?? null,
+              idType: m.idType ?? null,
+              idNumber: m.idNumber.trim(),
+              idIssueDate: m.idIssueDate ? new Date(m.idIssueDate) : null,
+              idIssuePlace: m.idIssuePlace ?? null,
+              address: m.address ?? null,
+            }))
+          : [];
     }
 
     return prisma.loan.update({

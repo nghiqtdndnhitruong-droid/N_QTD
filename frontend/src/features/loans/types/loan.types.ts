@@ -113,6 +113,17 @@ export interface ThirdPartyInfo {
   address: string;
 }
 
+export interface HouseholdMember {
+  fullName: string;
+  yearOfBirth?: number;
+  gender?: Gender;
+  idType?: IdDocumentType;
+  idNumber: string;
+  idIssueDate?: string | null;
+  idIssuePlace?: string | null;
+  address?: string | null;
+}
+
 export interface Collateral {
   id: string;
   loanId: string;
@@ -146,6 +157,7 @@ export interface Collateral {
   valuationMethod?: ValuationMethod | null;
   ownerType: CollateralOwnerType;
   thirdPartyInfo?: ThirdPartyInfo | null;
+  householdMembers?: HouseholdMember[] | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -207,6 +219,7 @@ export interface Loan {
   isMissingRelatedPerson?: boolean;
   loanPlan: LoanPlan | null;
   mortgageContract: MortgageContract | null;
+  householdMembers?: HouseholdMember[] | null;
   collaterals?: Collateral[];
   valuations?: LoanValuation[];
   disbursements?: Disbursement[];
@@ -290,6 +303,7 @@ export interface CreateLoanPayload {
   relatedPersons?: CreateRelatedPersonPayload[];
   loanPlan?: Omit<LoanPlan, 'totalExpenses' | 'totalRevenues' | 'profit'>;
   mortgageContract?: MortgageContract;
+  householdMembers?: HouseholdMember[];
   collaterals?: CreateCollateralPayload[];
 }
 
@@ -322,6 +336,7 @@ export interface CreateCollateralPayload {
   valuationMethod?: ValuationMethod | null;
   ownerType: CollateralOwnerType;
   thirdPartyInfo?: ThirdPartyInfo | null;
+  householdMembers?: HouseholdMember[] | null;
 }
 
 export type UpdateCollateralPayload = Partial<CreateCollateralPayload>;
@@ -373,7 +388,7 @@ export interface LoanListQuery extends ListQueryParams {
   hamletId?: string;
 }
 
-export { ValuationType } from '@/shared/types';
+export { ValuationType, CollateralOwnerType } from '@/shared/types';
 
 export const VALUATION_TYPE_LABELS: Record<ValuationType, string> = {
   THEO_NGHI_DINH_QUY: 'Theo nghị định Quỹ',
