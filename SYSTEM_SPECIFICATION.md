@@ -245,7 +245,7 @@ flowchart LR
   - Chọn thời hạn: Ngắn hạn (12 tháng) hoặc Trung hạn (24 tháng).
   - Nhập số tiền vay: Tự động format tiền tệ VNĐ và diễn giải số tiền bằng chữ tiếng Việt tức thì.
   - Tự động áp dụng lãi suất theo bậc thang và tính toán các mốc ngày quan trọng: Ngày cấp khế ước, Ngày đáo hạn dự kiến (12 hoặc 24 tháng), Ngày thanh toán phân nửa (đối với cho vay trung hạn).
-  - Tự động sinh số khế ước chuẩn quy định: `[STT]/HĐTD.[KỲ_HẠN]-[NĂM]` (Ví dụ: `15/HĐTD.NH-2026`).
+  - **Tự động định dạng số khế ước & số HĐ thế chấp:** Hỗ trợ nhập và tự động format định dạng `YY.MM.XXX` (Ví dụ: `26.11.020`). Tự động trích xuất các từ khóa riêng biệt: `KHOAN_VAY.SO_KHE_UOC_NAM`, `KHOAN_VAY.SO_KHE_UOC_THANG`, `KHOAN_VAY.SO_KHE_UOC_NGAY`, `KHOAN_VAY.SO_KHE_UOC_SO` (số cuối) và so sánh tự động số khế ước có giống số HĐ thế chấp hay không.
 - **Bước 3 - Người liên quan & Người thừa kế:**
   - Nếu là khoản vay thế chấp có giá trị **từ 140.000.000 VNĐ trở lên**: Hệ thống tự động kích hoạt bảng kê khai người liên quan (Cha, Mẹ, Con, Vợ/Chồng, Anh/Chị/Em...).
   - Quản lý thông tin Người thừa kế tài sản (nếu có).
@@ -318,8 +318,9 @@ flowchart LR
 
 ### 4.8. Người liên quan & Người thừa kế (Related Person & Heir)
 - **Ngưỡng kiểm soát rủi ro:** Áp dụng theo quy định của Ngân hàng Nhà nước, tất cả khoản vay thế chấp có hạn mức từ 140 triệu VNĐ bắt buộc phải lập danh sách người có liên quan.
-- **Quan hệ người liên quan:** Cha, Mẹ, Con, Vợ, Chồng, Anh, Chị, Em, Cô, Dì, Chú, Bác, Cậu...
-- **Kê khai tín dụng:** Kê khai rõ việc người liên quan có đang vay vốn tại Quỹ tín dụng hay không (`creditFundLoan`: "Không" hoặc nêu rõ số tiền/hợp đồng đang vay).
+- **Quan hệ người liên quan:** Chỉ giữ lại mối quan hệ trực tiếp với Người vay (Vợ, Chồng, Con, Mẹ, Cha...), không bắt buộc/lược bỏ quan hệ với người thừa kế.
+- **Kê khai vốn vay tại Quỹ tín dụng:** Cột "Vốn vay Quỹ tín dụng" (`creditFundLoan`) mặc định là `"Không"`, cho phép sửa nếu người liên quan có đang vay vốn tại Quỹ.
+- **Tương thích mẫu in:** Cung cấp trọn bộ từ khóa trong khối lặp `DANH_SACH_NGUOI_LIEN_QUAN` (`nlq.HO_TEN`, `nlq.DANH_XUNG`, `nlq.SO_CCCD`, `nlq.NGAY_CAP`, `nlq.NOI_CAP`, `nlq.QUAN_HE`, `nlq.VON_VAY_QTD`...) và đồng thời tương thích ngược với cú pháp bảng biểu docxtemplater `{{#nguoi_lien_quan}} {{index}} {{ho_ten}} {{so_giay_to}} {{ngay_cap}} {{noi_cap}} {{quan_he}} {{von_vay}} {{/nguoi_lien_quan}}`.
 
 ### 4.9. Giải ngân & Kế hoạch thu nợ (Disbursement & Repayment)
 - **Giải ngân:** Ghi nhận ngày giải ngân thực tế, số tiền, phương thức nhận tiền. Khoản vay tự động chuyển trạng thái `DA_GIAI_NGAN`.
@@ -514,6 +515,7 @@ Hệ thống cài đặt các thuật toán ghép chuỗi pháp lý cực kỳ n
 | **v2.0 (Toàn diện & Tối ưu hóa)** | - Ra mắt **Word Template Engine v2.0**: AST Compiler, Run Reconciler, Safe Expression Evaluator.<br>- Hỗ trợ câu văn đặc thù `{{TAI_SAN.CAU_SO_VAO_SO_GCN}}`, tự động thêm tiền tố "Số vào sổ cấp...".<br>- Khắc phục triệt để hiển thị `{{KHOAN_VAY.NGAY_DINH_GIA}}`, tự động phân rã ngày/tháng/năm.<br>- Tối ưu hóa giao diện Định giá trên cùng 1 trang và đồng bộ ngày/loại định giá chung. |
 | **v2.1 (Thành viên hộ gia đình)** | - Tích hợp phân hệ **Thành viên hộ gia đình (`householdMembers`)** dưới dạng **Section độc lập ở ngoài** tương tự Section Định giá.<br>- **Điều kiện hiển thị:** Tự động xuất hiện khi Thể loại vay là Thế chấp (`THE_CHAP`) VÀ có ít nhất 1 tài sản thuộc loại đất hộ (`NGUOI_VAY_HO`, `NGUOI_THUA_KE_HO`).<br>- Bổ sung trường **Địa chỉ thường trú** (`address`) và nút tiện ích **"Lấy địa chỉ người vay"** 1-click.<br>- Cơ chế thông minh: Tự động trích xuất Năm sinh, Giới tính (khóa/disable) từ số CCCD 12 số; Nơi cấp khóa/disable và tự nhảy theo loại giấy tờ (Căn cước: "Bộ Công An", CCCD: "Cục CSQLHC về TTXH").<br>- Tinh gọn giao diện (bỏ chữ "tự nhảy" trên nhãn trường).<br>- Bổ sung bộ từ khóa biểu mẫu `THANH_VIEN_HO.*`, vòng lặp `DANH_SACH_THANH_VIEN_HO`, và điều kiện logic `CO_THANH_VIEN_HO`. |
 | **v2.2 (Phân nhóm địa bàn Xã cho Tài sản)** | - Bổ sung tính năng **Phân nhóm địa bàn cấp Xã (`AreaGroup`)** tại mục Quản lý địa bàn Ấp / Xã.<br>- Cho phép tạo các Nhóm địa bàn (Nhóm 1, Nhóm 2...) và gán danh sách các Xã vào nhóm.<br>- Tài sản thế chấp tự động nhận diện nhóm tương ứng dựa theo Xã nơi có đất (lưu ý: chỉ áp dụng phân nhóm cho tài sản thế chấp).<br>- Cung cấp bộ từ khóa và điều kiện kiểm tra nhóm trong biểu mẫu Word: `CO_TAI_SAN_NHOM_1`, `CO_TAI_SAN_NHOM_2`, `CO_TAI_SAN_NHOM_<MA_NHOM>`, `TAI_SAN.MA_NHOM`, `TAI_SAN.TEN_NHOM`, `TAI_SAN.DANH_SACH_NHOM_GOP`, biến lặp `item.TEN_NHOM`, `item.CO_NHOM_1`... |
+| **v2.3 (Chuẩn hóa Người liên quan, Khế ước & Định giá)** | - **Người liên quan:** Chỉ giữ mối quan hệ với người vay (bỏ quan hệ người thừa kế), bổ sung cột Vốn vay Quỹ tín dụng (`creditFundLoan`) mặc định `"Không"`, bổ sung đầy đủ bộ từ khóa trong `DANH_SACH_NGUOI_LIEN_QUAN` và hỗ trợ cú pháp `{{#nguoi_lien_quan}}`.<br>- **Format Số khế ước & HĐTC:** Tự động format định dạng `YY.MM.XXX` (dấu chấm tự động), bổ sung các keyword `SO_KHE_UOC_NAM`, `SO_KHE_UOC_THANG`, `SO_KHE_UOC_NGAY`, `SO_KHE_UOC_SO`.<br>- **Định giá:** Bổ sung keyword đơn giá thị trường `DON_GIA_THI_TRUONG`, cột `GHI_CHU` trong vòng lặp `DANH_SACH_DINH_GIA`, chuẩn hóa format số phân cách hàng nghìn cho `dg.GIA_TIEN_SO`. |
 
 ---
 
