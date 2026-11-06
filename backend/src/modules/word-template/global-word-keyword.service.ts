@@ -1464,6 +1464,70 @@ export class GlobalWordKeywordService {
         dataPath: 'collaterals_summary.totalValuationAmountWords',
         dataType: 'CURRENCY_WORDS',
       },
+      // 70% Tổng giá trị định giá (làm tròn xuống)
+      {
+        keyword: 'TAI_SAN.TONG_DINH_GIA_70',
+        displayName: '70% tổng định giá tài sản có đuôi đ (TAI_SAN.TONG_DINH_GIA_70)',
+        category: 'TAI_SAN',
+        dataPath: 'TAI_SAN.TONG_DINH_GIA_70',
+        dataType: 'CURRENCY',
+      },
+      {
+        keyword: 'TAI_SAN.TONG_DINH_GIA_70_SO',
+        displayName: '70% tổng định giá tài sản dạng số thuần (TAI_SAN.TONG_DINH_GIA_70_SO)',
+        category: 'TAI_SAN',
+        dataPath: 'TAI_SAN.TONG_DINH_GIA_70_SO',
+        dataType: 'TEXT',
+      },
+      {
+        keyword: 'TAI_SAN.TONG_DINH_GIA_70_CHU',
+        displayName: '70% tổng định giá tài sản bằng chữ (TAI_SAN.TONG_DINH_GIA_70_CHU)',
+        category: 'TAI_SAN',
+        dataPath: 'TAI_SAN.TONG_DINH_GIA_70_CHU',
+        dataType: 'CURRENCY_WORDS',
+      },
+      {
+        keyword: 'TONG_DINH_GIA_70',
+        displayName: '70% tổng định giá tài sản có đuôi đ (TONG_DINH_GIA_70)',
+        category: 'TAI_SAN',
+        dataPath: 'TONG_DINH_GIA_70',
+        dataType: 'CURRENCY',
+      },
+      {
+        keyword: 'TONG_DINH_GIA_70_SO',
+        displayName: '70% tổng định giá tài sản dạng số thuần (TONG_DINH_GIA_70_SO)',
+        category: 'TAI_SAN',
+        dataPath: 'TONG_DINH_GIA_70_SO',
+        dataType: 'TEXT',
+      },
+      {
+        keyword: 'TONG_DINH_GIA_70_CHU',
+        displayName: '70% tổng định giá tài sản bằng chữ (TONG_DINH_GIA_70_CHU)',
+        category: 'TAI_SAN',
+        dataPath: 'TONG_DINH_GIA_70_CHU',
+        dataType: 'CURRENCY_WORDS',
+      },
+      {
+        keyword: 'KHOAN_VAY.TONG_DINH_GIA_70',
+        displayName: '70% tổng định giá tài sản (KHOAN_VAY.TONG_DINH_GIA_70)',
+        category: 'TAI_SAN',
+        dataPath: 'KHOAN_VAY.TONG_DINH_GIA_70',
+        dataType: 'CURRENCY',
+      },
+      {
+        keyword: 'KHOAN_VAY.TONG_DINH_GIA_70_SO',
+        displayName: '70% tổng định giá tài sản dạng số (KHOAN_VAY.TONG_DINH_GIA_70_SO)',
+        category: 'TAI_SAN',
+        dataPath: 'KHOAN_VAY.TONG_DINH_GIA_70_SO',
+        dataType: 'TEXT',
+      },
+      {
+        keyword: 'KHOAN_VAY.TONG_DINH_GIA_70_CHU',
+        displayName: '70% tổng định giá tài sản bằng chữ (KHOAN_VAY.TONG_DINH_GIA_70_CHU)',
+        category: 'TAI_SAN',
+        dataPath: 'KHOAN_VAY.TONG_DINH_GIA_70_CHU',
+        dataType: 'CURRENCY_WORDS',
+      },
 
       // 4. Danh sách tài sản (Dùng cho vòng lặp FOR)
       {

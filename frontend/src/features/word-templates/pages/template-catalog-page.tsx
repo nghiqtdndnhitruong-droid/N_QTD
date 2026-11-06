@@ -833,6 +833,8 @@ Số tờ bản đồ gộp: {{TAI_SAN.SO_TO_GOP}}`}
                 {`Diện tích gộp: {{TAI_SAN.DIEN_TICH_GOP}}
 Tổng diện tích: {{TONG_DIEN_TICH}} (hoặc {{TAI_SAN.TONG_DIEN_TICH}})
 Tổng định giá: {{TAI_SAN.TONG_DINH_GIA}} (hoặc {{TONG_DINH_GIA}})
+70% Tổng định giá: {{TAI_SAN.TONG_DINH_GIA_70}} (hoặc {{TONG_DINH_GIA_70}})
+70% Định giá (chữ): {{TAI_SAN.TONG_DINH_GIA_70_CHU}} (hoặc {{TONG_DINH_GIA_70_CHU}})
 Địa chỉ gộp: {{TAI_SAN.DIA_CHI_GOP}}
 Chủ sở hữu gộp: {{TAI_SAN.CHU_SO_HUU_GOP}}
 Ngày cấp GCN gộp: {{TAI_SAN.NGAY_CAP_GOP}}

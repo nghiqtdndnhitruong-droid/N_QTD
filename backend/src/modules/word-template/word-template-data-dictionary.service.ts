@@ -235,6 +235,9 @@ export class WordTemplateDataDictionaryService {
           { path: 'TAI_SAN.TONG_DIEN_TICH_CHU', label: 'Tổng diện tích tất cả tài sản bằng chữ', dataType: 'TEXT', sampleValue: 'Hai nghìn năm trăm mét vuông' },
           { path: 'TAI_SAN.TONG_DINH_GIA', label: 'Tổng định giá tất cả tài sản (VND)', dataType: 'CURRENCY', sampleValue: '673.000.000 đ' },
           { path: 'TAI_SAN.TONG_DINH_GIA_CHU', label: 'Tổng định giá tất cả tài sản bằng chữ', dataType: 'CURRENCY_WORDS', sampleValue: 'Sáu trăm bảy mươi ba triệu đồng' },
+          { path: 'TAI_SAN.TONG_DINH_GIA_70', label: '70% tổng giá trị định giá (làm tròn xuống, VND)', dataType: 'CURRENCY', sampleValue: '471.000.000 đ' },
+          { path: 'TAI_SAN.TONG_DINH_GIA_70_SO', label: '70% tổng giá trị định giá (dạng số)', dataType: 'TEXT', sampleValue: '471.000.000' },
+          { path: 'TAI_SAN.TONG_DINH_GIA_70_CHU', label: '70% tổng giá trị định giá bằng chữ', dataType: 'CURRENCY_WORDS', sampleValue: 'Bốn trăm bảy mươi mốt triệu đồng' },
           { path: 'TAI_SAN.SO_LUONG_TAI_SAN', label: 'Tổng số lượng tài sản', dataType: 'NUMBER', sampleValue: 2 },
           { path: 'TAI_SAN.TONG_SO_TAI_SAN', label: 'Tổng số lượng tài sản (alias)', dataType: 'NUMBER', sampleValue: 2 },
           { path: 'TAI_SAN.IS_KHAC_DIA_CHI', label: 'Các tài sản ở khác địa chỉ (True/False)', dataType: 'BOOLEAN', sampleValue: false },
@@ -795,7 +798,7 @@ export class WordTemplateDataDictionaryService {
     };
   }
 
-  private buildRawLoanData(loan: any) {
+  public buildRawLoanData(loan: any) {
     const member = loan.member || {};
     const collaterals = loan.collaterals || [];
     const relatedPersons = loan.relatedPersons || [];
@@ -1057,7 +1060,13 @@ export class WordTemplateDataDictionaryService {
     );
 
     // 4. Xử lý danh sách Định giá khoản vay (KHOAN_VAY.DANH_SACH_DINH_GIA & các trường liên quan)
-    const rawValuations = loan.valuations || [];
+    const rawValuations = Array.isArray(loan.valuations)
+      ? loan.valuations
+      : Array.isArray(loan.loanValuations)
+      ? loan.loanValuations
+      : loan.loanValuation
+      ? [loan.loanValuation]
+      : [];
     const valuationsList = rawValuations.map((v: any, index: number) => {
       const vType = v.valuationType;
       const vTypeLabel = (VALUATION_TYPE_LABELS as any)[vType] || vType;
@@ -1074,10 +1083,14 @@ export class WordTemplateDataDictionaryService {
           ? Number(v.totalPriceBeforeRound)
           : Math.round(effArea * pricePerSqMeterNum);
 
-      const flooredPrice =
+      const rawPrice =
         v.totalPrice !== undefined && v.totalPrice !== null
-          ? Math.floor(Number(v.totalPrice) / 1_000_000) * 1_000_000
-          : Math.floor(computedBeforeRound / 1_000_000) * 1_000_000;
+          ? v.totalPrice
+          : v.totalValuationPrice !== undefined && v.totalValuationPrice !== null
+          ? v.totalValuationPrice
+          : computedBeforeRound;
+
+      const flooredPrice = Math.floor(Number(rawPrice) / 1_000_000) * 1_000_000;
 
       const areaFormatted = areaNum.toLocaleString('vi-VN');
       const actualAreaFormatted = actualAreaNum !== null ? actualAreaNum.toLocaleString('vi-VN') : '';
@@ -1233,7 +1246,11 @@ export class WordTemplateDataDictionaryService {
     const uniqueValuationTypes = Array.from(new Set(valuationsList.map((v: any) => v.LOAI_DINH_GIA).filter(Boolean)));
     const loanValuationType = uniqueValuationTypes.length === 1 ? uniqueValuationTypes[0] : '';
 
-    const totalValuationPrice = valuationsList.reduce((sum: number, v: any) => sum + (Number(v.GIA_TIEN_RAW || v.totalPriceNumber || 0) || 0), 0);
+    const totalValuationPrice = valuationsList.reduce(
+      (sum: number, v: any) =>
+        sum + (Number(v.GIA_TIEN_RAW || v.totalPriceNumber || v.totalPrice || v.totalValuationPrice || 0) || 0),
+      0
+    );
     const totalValuationPriceFormatted = totalValuationPrice.toLocaleString('vi-VN');
     const totalValuationPriceWords = vndToWords(totalValuationPrice);
 
@@ -1256,6 +1273,25 @@ export class WordTemplateDataDictionaryService {
     const donGiaThiTruongFormatted = marketPriceNum > 0 ? `${marketPriceNum.toLocaleString('vi-VN')}đ` : '';
     const donGiaThiTruongWithSpace = marketPriceNum > 0 ? `${marketPriceNum.toLocaleString('vi-VN')} đ` : '';
     const donGiaThiTruongNoUnit = marketPriceNum > 0 ? marketPriceNum.toLocaleString('vi-VN') : '';
+
+    // Tính toán 70% tổng giá trị định giá và làm tròn xuống
+    const fallbackDirectValuation = Number(
+      loan.totalValuationPrice || loan.loanValuation?.totalValuationPrice || 0
+    );
+    const effectiveTotalValuation =
+      totalValuationPrice > 0
+        ? totalValuationPrice
+        : totalCollateralValuationRounded > 0
+        ? totalCollateralValuationRounded
+        : fallbackDirectValuation;
+    const rawValuation70 = effectiveTotalValuation * 0.7;
+    let valuation70Rounded = Math.floor(rawValuation70 / 1_000_000) * 1_000_000;
+    if (valuation70Rounded === 0 && rawValuation70 > 0) {
+      valuation70Rounded = Math.floor(rawValuation70);
+    }
+    const valuation70Formatted = `${valuation70Rounded.toLocaleString('vi-VN')} đ`;
+    const valuation70NumberFormatted = valuation70Rounded.toLocaleString('vi-VN');
+    const valuation70Words = vndToWords(valuation70Rounded);
 
 
     const hasSingleOwner = uniqueOwnersMap.size === 1;
@@ -2162,6 +2198,12 @@ export class WordTemplateDataDictionaryService {
         don_gia_dinh_gia: donGiaThiTruongFormatted,
         DON_GIA_DINH_GIA: donGiaThiTruongFormatted,
         don_gia_thi_truong: donGiaThiTruongFormatted,
+        TONG_DINH_GIA_70: valuation70Formatted,
+        TONG_DINH_GIA_70_SO: valuation70NumberFormatted,
+        TONG_DINH_GIA_70_RAW: valuation70Rounded,
+        TONG_DINH_GIA_70_CHU: valuation70Words,
+        totalValuation70Amount: valuation70Formatted,
+        totalValuation70AmountWords: valuation70Words,
       },
       mortgage: {
         contractNumber: mortgage?.contractNumber || '',
@@ -2179,6 +2221,9 @@ export class WordTemplateDataDictionaryService {
         totalValuationAmount: `${totalCollateralValuation.toLocaleString('vi-VN')} đ`,
         totalValuationAmountRounded: `${totalCollateralValuationRounded.toLocaleString('vi-VN')} đ`,
         totalValuationAmountWords: vndToWords(totalCollateralValuationRounded),
+        totalValuation70Amount: valuation70Formatted,
+        totalValuation70AmountNumber: valuation70NumberFormatted,
+        totalValuation70AmountWords: valuation70Words,
         firstAssetAddress: firstCollateral?.address || '',
         firstAssetOwner:
           firstCollateral?.ownerType === 'BAO_LANH' && firstCollateral?.thirdPartyInfo?.fullName
@@ -2235,6 +2280,15 @@ export class WordTemplateDataDictionaryService {
         TONG_DINH_GIA_RAW: totalCollateralValuationRounded,
         TONG_GIA_TRI_DINH_GIA: `${totalCollateralValuationRounded.toLocaleString('vi-VN')} đ`,
         TONG_GIA_TRI_DINH_GIA_CHU: vndToWords(totalCollateralValuationRounded),
+
+        // 70% tổng giá trị định giá (làm tròn xuống)
+        TONG_DINH_GIA_70: valuation70Formatted,
+        TONG_DINH_GIA_70_SO: valuation70NumberFormatted,
+        TONG_DINH_GIA_70_RAW: valuation70Rounded,
+        TONG_DINH_GIA_70_CHU: valuation70Words,
+        GIA_TRI_DINH_GIA_70: valuation70Formatted,
+        GIA_TRI_DINH_GIA_70_SO: valuation70NumberFormatted,
+        GIA_TRI_DINH_GIA_70_CHU: valuation70Words,
 
         // Tổng số lượng tài sản
         SO_LUONG_TAI_SAN: collaterals.length,
@@ -2447,6 +2501,33 @@ export class WordTemplateDataDictionaryService {
         totalValuationPrice > 0 ? totalValuationPriceFormatted : nested.collaterals_summary.totalValuationAmountRounded,
       'TAI_SAN.TONG_GIA_TRI_DINH_GIA_CHU':
         totalValuationPrice > 0 ? totalValuationPriceWords : nested.collaterals_summary.totalValuationAmountWords,
+
+      // 70% Tổng giá trị định giá (làm tròn xuống)
+      TONG_DINH_GIA_70: valuation70Formatted,
+      TONG_DINH_GIA_70_SO: valuation70NumberFormatted,
+      TONG_DINH_GIA_70_RAW: valuation70Rounded,
+      TONG_DINH_GIA_70_CHU: valuation70Words,
+      'TAI_SAN.TONG_DINH_GIA_70': valuation70Formatted,
+      'TAI_SAN.TONG_DINH_GIA_70_SO': valuation70NumberFormatted,
+      'TAI_SAN.TONG_DINH_GIA_70_RAW': valuation70Rounded,
+      'TAI_SAN.TONG_DINH_GIA_70_CHU': valuation70Words,
+      'TAI_SAN.GIA_TRI_DINH_GIA_70': valuation70Formatted,
+      'TAI_SAN.GIA_TRI_DINH_GIA_70_SO': valuation70NumberFormatted,
+      'TAI_SAN.GIA_TRI_DINH_GIA_70_CHU': valuation70Words,
+      'KHOAN_VAY.TONG_DINH_GIA_70': valuation70Formatted,
+      'KHOAN_VAY.TONG_DINH_GIA_70_SO': valuation70NumberFormatted,
+      'KHOAN_VAY.TONG_DINH_GIA_70_RAW': valuation70Rounded,
+      'KHOAN_VAY.TONG_DINH_GIA_70_CHU': valuation70Words,
+      'KHOAN_VAY.TONG_GIA_TRI_DINH_GIA_70': valuation70Formatted,
+      'KHOAN_VAY.TONG_GIA_TRI_DINH_GIA_70_SO': valuation70NumberFormatted,
+      'KHOAN_VAY.TONG_GIA_TRI_DINH_GIA_70_RAW': valuation70Rounded,
+      'KHOAN_VAY.TONG_GIA_TRI_DINH_GIA_70_CHU': valuation70Words,
+      GIA_TRI_70_PHAN_TRAM: valuation70Formatted,
+      GIA_TRI_70_PHAN_TRAM_CHU: valuation70Words,
+      MUC_CHO_VAY_TOI_DA_70: valuation70Formatted,
+      MUC_CHO_VAY_TOI_DA_70_CHU: valuation70Words,
+      'KHOAN_VAY.MUC_CHO_VAY_TOI_DA_70': valuation70Formatted,
+      'KHOAN_VAY.MUC_CHO_VAY_TOI_DA_70_CHU': valuation70Words,
       NGAY_HIEN_TAI: nested.fund.currentDay,
       THANG_HIEN_TAI: nested.fund.currentMonth,
       NAM_HIEN_TAI: nested.fund.currentYear,
@@ -2926,6 +3007,15 @@ export class WordTemplateDataDictionaryService {
         TONG_GIA_TIEN_DINH_GIA_SO: totalValuationPriceFormatted,
         TONG_GIA_TIEN_DINH_GIA_RAW: totalValuationPrice,
         TONG_GIA_TIEN_DINH_GIA_CHU: totalValuationPriceWords,
+        TONG_DINH_GIA_70: valuation70Formatted,
+        TONG_DINH_GIA_70_SO: valuation70NumberFormatted,
+        TONG_DINH_GIA_70_RAW: valuation70Rounded,
+        TONG_DINH_GIA_70_CHU: valuation70Words,
+        TONG_GIA_TRI_DINH_GIA_70: valuation70Formatted,
+        TONG_GIA_TRI_DINH_GIA_70_SO: valuation70NumberFormatted,
+        TONG_GIA_TRI_DINH_GIA_70_CHU: valuation70Words,
+        MUC_CHO_VAY_TOI_DA_70: valuation70Formatted,
+        MUC_CHO_VAY_TOI_DA_70_CHU: valuation70Words,
         CO_DINH_GIA_THEO_NGHI_DINH_QUY: hasValuationTheoNghiDinhQuy,
         CO_DINH_GIA_THEO_NGHI_DINH_QUY_CU: hasValuationTheoNghiDinhQuyCu,
         CO_DINH_GIA_THEO_GIA_THI_TRUONG: hasValuationTheoGiaThiTruong,
