@@ -1329,18 +1329,105 @@ export class WordTemplateDataDictionaryService {
       c.pricePerSqMeter ? `${Number(c.pricePerSqMeter).toLocaleString('vi-VN')} đ` : ''
     );
 
-    // Chuẩn bị danh sách tài sản lặp
-    const collateralsList = collaterals.map((c: any, idx: number) => {
-      const area = Number(c.area) || 0;
-      const val = Number(c.valuationAmount) || 0;
-      const price = Number(c.pricePerSqMeter) || 0;
-      const owner = this.extractOwnerInfo(c, member, heir);
-      const certType = this.formatCertificateType(c.certificateType);
-      const certClause = this.formatCertificateClause(c);
-      const restrictions = c.useRestrictions?.trim() || '...................';
+    // Chuẩn bị danh sách tài sản lặp (DANH_SACH_TAI_SAN)
+    // Quy tắc gộp theo địa chỉ:
+    // 1. Các tài sản có cùng địa chỉ (không phân biệt hoa/thường, khoảng trắng) được gộp vào chung 1 ô/phần tử lặp (index 0, index 1...)
+    // 2. Trong mỗi phần tử lặp, các thông tin (Mã, Số thửa, Số tờ, Số GCN, Diện tích...) được gộp phân cách bởi dấu "; " (giống quy tắc tài sản gộp TAI_SAN.*_GOP)
+    // 3. Các tài sản có địa chỉ khác nhau sẽ được tách sang các phần tử (index) kế tiếp
+    // 4. Nếu không khai báo địa chỉ, mỗi tài sản giữ nhóm riêng biệt để tránh gộp ngoài ý muốn
+    const addressGroupsMap = new Map<string, any[]>();
+    let emptyAddressCounter = 0;
+    for (const c of collaterals) {
+      const rawAddr = (c.address || '').trim().replace(/\s+/g, ' ');
+      const groupKey = rawAddr ? rawAddr.toLowerCase() : `__unspecified_addr_${emptyAddressCounter++}`;
+      if (!addressGroupsMap.has(groupKey)) {
+        addressGroupsMap.set(groupKey, []);
+      }
+      addressGroupsMap.get(groupKey)!.push(c);
+    }
 
-      const cMembersRaw = Array.isArray(c.householdMembers) ? c.householdMembers : [];
-      const cHouseholdMembers = cMembersRaw.map((hm: any, hIdx: number) => {
+    const addressGroupList = Array.from(addressGroupsMap.values());
+    const totalGroups = addressGroupList.length;
+
+    const collateralsList = addressGroupList.map((groupCollaterals: any[], groupIdx: number) => {
+      const idxNum = groupIdx + 1;
+
+      // Gộp các giá trị bằng mergeAssetValues
+      const assetCode = mergeAssetValues(groupCollaterals, (c: any) => c.assetCode);
+      const assetType = mergeAssetValues(groupCollaterals, (c: any) => this.formatAssetType(c.assetType));
+      const assetName = mergeAssetValues(groupCollaterals, (c: any) => c.assetName || this.formatAssetType(c.assetType));
+      const certType = mergeAssetValues(groupCollaterals, (c: any) => this.formatCertificateType(c.certificateType), 'GCN');
+      const certNumber = mergeAssetValues(groupCollaterals, (c: any) => c.certificateNumber);
+      const issueBookNumber = mergeAssetValues(groupCollaterals, (c: any) => c.issueBookNumber);
+      const sheetNumber = mergeAssetValues(groupCollaterals, (c: any) => c.sheetNumber);
+      const plotNumber = mergeAssetValues(groupCollaterals, (c: any) => c.plotNumber);
+      const address = mergeAssetValues(groupCollaterals, (c: any) => c.address);
+
+      // Cụm câu số vào sổ cấp GCN
+      const groupCertClauses: string[] = [];
+      const seenGroupClauses = new Set<string>();
+      for (const c of groupCollaterals) {
+        const clause = this.formatCertificateClause(c);
+        if (clause && !seenGroupClauses.has(clause)) {
+          seenGroupClauses.add(clause);
+          groupCertClauses.push(clause);
+        }
+      }
+      const certClause = groupCertClauses.length > 0 ? groupCertClauses.join(', ') : '...................';
+
+      // Diện tích và định giá
+      const groupAreaSum = groupCollaterals.reduce((sum, c) => sum + (Number(c.area) || 0), 0);
+      const area = mergeAssetValues(groupCollaterals, (c: any) =>
+        c.area ? `${Number(c.area).toLocaleString('vi-VN')} m²` : ''
+      );
+      const actualArea = mergeAssetValues(groupCollaterals, (c: any) =>
+        c.actualArea ? `${Number(c.actualArea).toLocaleString('vi-VN')} m²` : ''
+      );
+      const pricePerSqMeter = mergeAssetValues(groupCollaterals, (c: any) =>
+        c.pricePerSqMeter ? `${Number(c.pricePerSqMeter).toLocaleString('vi-VN')} đ` : ''
+      );
+      const groupValSum = groupCollaterals.reduce((sum, c) => sum + (Number(c.valuationAmount) || 0), 0);
+      const valuationAmount = mergeAssetValues(groupCollaterals, (c: any) =>
+        c.valuationAmount ? `${Number(c.valuationAmount).toLocaleString('vi-VN')} đ` : ''
+      );
+
+      // Mục đích, thời hạn, hình thức, hạn chế sử dụng
+      const usagePurpose = mergeAssetValues(groupCollaterals, (c: any) => c.usagePurpose);
+      const usageDuration = mergeAssetValues(groupCollaterals, (c: any) => c.usageDuration);
+      const usageForm = mergeAssetValues(groupCollaterals, (c: any) => c.usageForm);
+      const restrictions = mergeAssetValues(groupCollaterals, (c: any) => c.useRestrictions, '...................');
+      const origin = mergeAssetValues(groupCollaterals, (c: any) => c.origin);
+
+      // Nơi cấp, ngày cấp
+      const issuePlace = mergeAssetValues(groupCollaterals, (c: any) => c.issuePlace);
+      const issueDate = mergeAssetValues(groupCollaterals, (c: any) =>
+        c.issueDate ? dayjs(c.issueDate).format('DD/MM/YYYY') : ''
+      );
+
+      // Thông tin chủ sở hữu của nhóm tài sản
+      const groupOwners = groupCollaterals.map((c: any) => this.extractOwnerInfo(c, member, heir));
+      const ownerFullName = mergeAssetValues(groupOwners, (o: any) => o.fullName);
+      const ownerGenderTitle = mergeAssetValues(groupOwners, (o: any) => o.genderTitle);
+      const ownerIdType = mergeAssetValues(groupOwners, (o: any) => o.idType);
+      const ownerIdNumber = mergeAssetValues(groupOwners, (o: any) => o.idNumber);
+      const ownerIdIssueDate = mergeAssetValues(groupOwners, (o: any) => o.idIssueDate);
+      const ownerIdIssuePlace = mergeAssetValues(groupOwners, (o: any) => o.idIssuePlace);
+      const ownerAddress = mergeAssetValues(groupOwners, (o: any) => o.address);
+      const ownerYearOfBirth = mergeAssetValues(groupOwners, (o: any) => o.yearOfBirth);
+      const ownerRelationship = mergeAssetValues(groupOwners, (o: any) => o.relationship);
+
+      // Thành viên hộ của nhóm tài sản
+      const groupHMembersMap = new Map<string, any>();
+      for (const c of groupCollaterals) {
+        const cMembersRaw = Array.isArray(c.householdMembers) ? c.householdMembers : [];
+        for (const hm of cMembersRaw) {
+          const key = (hm.idNumber || hm.fullName || '').trim().toLowerCase();
+          if (key && !groupHMembersMap.has(key)) {
+            groupHMembersMap.set(key, hm);
+          }
+        }
+      }
+      const cHouseholdMembers = Array.from(groupHMembersMap.values()).map((hm: any, hIdx: number) => {
         const hIdxNum = hIdx + 1;
         const hFullName = (hm.fullName || '').trim();
         const hIsNam = hm.gender === 'NAM';
@@ -1395,52 +1482,191 @@ export class WordTemplateDataDictionaryService {
       const hasCHouseholdMembers = cHouseholdMembers.length > 0;
 
       return {
-        index: idx + 1,
-        assetCode: c.assetCode || '',
-        assetType: this.formatAssetType(c.assetType),
+        index: idxNum,
+        _index: groupIdx,
+        _number: idxNum,
+        _first: groupIdx === 0,
+        _last: groupIdx === totalGroups - 1,
+        _length: totalGroups,
+        STT: idxNum,
+        stt: idxNum,
+        SO_LUONG_TAI_SAN: groupCollaterals.length,
+        collateralCount: groupCollaterals.length,
+
+        // Mã tài sản
+        assetCode,
+        ma_tai_san: assetCode,
+        MA_TAI_SAN: assetCode,
+        MA_TAI_SAN_GOP: assetCode,
+
+        // Tên tài sản
+        assetName,
+        ten_tai_san: assetName,
+        TEN_TAI_SAN: assetName,
+
+        // Loại tài sản
+        assetType,
+        loai_tai_san: assetType,
+        LOAI_TAI_SAN: assetType,
+        LOAI_TAI_SAN_GOP: assetType,
+
+        // Loại GCN
         certificateType: certType,
+        loai_giay_chung_nhan: certType,
         LOAI_GIAY_CHUNG_NHAN: certType,
+        LOAI_GIAY_CHUNG_NHAN_GOP: certType,
+
+        // Câu số vào sổ cấp GCN
         certificateClause: certClause,
         CAU_SO_VAO_SO_GCN: certClause,
+        cau_so_vao_so_gcn: certClause,
         SO_VAO_SO_CAP_GCN: certClause,
-        certificateNumber: c.certificateNumber || '',
-        issueBookNumber: c.issueBookNumber || '',
-        sheetNumber: c.sheetNumber || '',
-        plotNumber: c.plotNumber || '',
-        area: `${area.toLocaleString('vi-VN')} m²`,
-        areaWords: areaToWords(area),
-        actualArea: c.actualArea ? `${Number(c.actualArea).toLocaleString('vi-VN')} m²` : '',
-        pricePerSqMeter: `${price.toLocaleString('vi-VN')} đ`,
-        valuationAmount: `${val.toLocaleString('vi-VN')} đ`,
-        valuationAmountWords: vndToWords(val),
-        usagePurpose: c.usagePurpose || '',
-        usageDuration: c.usageDuration || '',
-        usageForm: c.usageForm || '',
-        HINH_THUC_SU_DUNG: c.usageForm || '',
+        so_vao_so_cap_gcn: certClause,
+        CAU_SO_VAO_SO_GCN_GOP: certClause,
+        SO_VAO_SO_CAP_GCN_GOP: certClause,
+
+        // Số GCN
+        certificateNumber: certNumber,
+        so_gcn: certNumber,
+        SO_GCN: certNumber,
+        SO_PHAT_HANH_GCN: certNumber,
+        so_phat_hanh_gcn: certNumber,
+        SO_GCN_GOP: certNumber,
+
+        // Số vào sổ
+        issueBookNumber,
+        so_vao_so: issueBookNumber,
+        SO_VAO_SO: issueBookNumber,
+        SO_VAO_SO_GCN: issueBookNumber,
+        SO_VAO_SO_GOP: issueBookNumber,
+
+        // Tờ bản đồ
+        sheetNumber,
+        so_to: sheetNumber,
+        SO_TO: sheetNumber,
+        to_ban_do: sheetNumber,
+        TO_BAN_DO: sheetNumber,
+        SO_TO_GOP: sheetNumber,
+        TO_BAN_DO_GOP: sheetNumber,
+
+        // Thửa đất
+        plotNumber,
+        so_thua: plotNumber,
+        SO_THUA: plotNumber,
+        SO_THUA_GOP: plotNumber,
+
+        // Diện tích
+        area,
+        dien_tich: area,
+        DIEN_TICH: area,
+        DIEN_TICH_GOP: area,
+        areaWords: areaToWords(groupAreaSum),
+        DIEN_TICH_CHU: areaToWords(groupAreaSum),
+        TONG_DIEN_TICH: `${groupAreaSum.toLocaleString('vi-VN')} m²`,
+        TONG_DIEN_TICH_CHU: areaToWords(groupAreaSum),
+        areaNumber: groupAreaSum,
+        DIEN_TICH_SO: groupAreaSum,
+
+        // Diện tích thực tế
+        actualArea,
+        dien_tich_thuc_te: actualArea,
+        DIEN_TICH_THUC_TE: actualArea,
+        DIEN_TICH_THUC_TE_GOP: actualArea,
+
+        // Đơn giá & Định giá
+        pricePerSqMeter,
+        don_gia: pricePerSqMeter,
+        DON_GIA: pricePerSqMeter,
+        valuationAmount,
+        gia_tri_dinh_gia: valuationAmount,
+        GIA_TRI_DINH_GIA: valuationAmount,
+        valuationAmountWords: vndToWords(groupValSum),
+        GIA_TRI_DINH_GIA_CHU: vndToWords(groupValSum),
+        TONG_GIA_TRI_DINH_GIA: `${groupValSum.toLocaleString('vi-VN')} đ`,
+
+        // Mục đích, thời hạn, hình thức, hạn chế
+        usagePurpose,
+        muc_dich_su_dung: usagePurpose,
+        MUC_DICH_SU_DUNG: usagePurpose,
+        MUC_DICH_SU_DUNG_GOP: usagePurpose,
+
+        usageDuration,
+        thoi_han_su_dung: usageDuration,
+        THOI_HAN_SU_DUNG: usageDuration,
+        THOI_HAN_SU_DUNG_GOP: usageDuration,
+
+        usageForm,
+        hinh_thuc_su_dung: usageForm,
+        HINH_THUC_SU_DUNG: usageForm,
+        HINH_THUC_SU_DUNG_GOP: usageForm,
+
         useRestrictions: restrictions,
+        han_che_su_dung: restrictions,
         HAN_CHE_SU_DUNG: restrictions,
-        issuePlace: c.issuePlace || '',
-        issueDate: c.issueDate ? dayjs(c.issueDate).format('DD/MM/YYYY') : '',
-        address: c.address || '',
-        ownerName: owner.fullName,
-        CHU_SO_HUU: owner.fullName,
-        CHU_SO_HUU_HO_TEN: owner.fullName,
-        CHU_SO_HUU_XUNG_HO: owner.genderTitle,
-        CHU_SO_HUU_DANH_XUNG: owner.genderTitle,
-        CHU_SO_HUU_LOAI_GIAY_TO: owner.idType,
-        CHU_SO_HUU_SO_GIAY_TO: owner.idNumber,
-        CHU_SO_HUU_SO_CCCD: owner.idNumber,
-        CHU_SO_HUU_NGAY_CAP: owner.idIssueDate,
-        CHU_SO_HUU_NOI_CAP: owner.idIssuePlace,
-        CHU_SO_HUU_DIA_CHI: owner.address,
-        CHU_SO_HUU_NAM_SINH: owner.yearOfBirth,
-        CHU_SO_HUU_QUAN_HE: owner.relationship,
+        HAN_CHE_SU_DUNG_GOP: restrictions,
+
+        origin,
+        nguon_goc_su_dung: origin,
+        NGUON_GOC_SU_DUNG: origin,
+
+        // Nơi cấp & ngày cấp
+        issuePlace,
+        noi_cap: issuePlace,
+        NOI_CAP: issuePlace,
+        noi_cap_gcn: issuePlace,
+        NOI_CAP_GCN: issuePlace,
+
+        issueDate,
+        ngay_cap: issueDate,
+        NGAY_CAP: issueDate,
+        ngay_cap_gcn: issueDate,
+        NGAY_CAP_GCN: issueDate,
+
+        // Địa chỉ
+        address,
+        dia_chi: address,
+        DIA_CHI: address,
+        DIA_CHI_TAI_SAN: address,
+        DIA_CHI_GOP: address,
+
+        // Chủ sở hữu
+        ownerName: ownerFullName,
+        CHU_SO_HUU: ownerFullName,
+        chu_so_huu: ownerFullName,
+        CHU_SO_HUU_HO_TEN: ownerFullName,
+        chu_so_huu_ho_ten: ownerFullName,
+        CHU_SO_HUU_XUNG_HO: ownerGenderTitle,
+        chu_so_huu_xung_ho: ownerGenderTitle,
+        CHU_SO_HUU_DANH_XUNG: ownerGenderTitle,
+        chu_so_huu_danh_xung: ownerGenderTitle,
+        CHU_SO_HUU_LOAI_GIAY_TO: ownerIdType,
+        chu_so_huu_loai_giay_to: ownerIdType,
+        CHU_SO_HUU_SO_GIAY_TO: ownerIdNumber,
+        chu_so_huu_so_giay_to: ownerIdNumber,
+        CHU_SO_HUU_SO_CCCD: ownerIdNumber,
+        chu_so_huu_so_cccd: ownerIdNumber,
+        CHU_SO_HUU_NGAY_CAP: ownerIdIssueDate,
+        chu_so_huu_ngay_cap: ownerIdIssueDate,
+        CHU_SO_HUU_NOI_CAP: ownerIdIssuePlace,
+        chu_so_huu_noi_cap: ownerIdIssuePlace,
+        CHU_SO_HUU_DIA_CHI: ownerAddress,
+        chu_so_huu_dia_chi: ownerAddress,
+        CHU_SO_HUU_NAM_SINH: ownerYearOfBirth,
+        chu_so_huu_nam_sinh: ownerYearOfBirth,
+        CHU_SO_HUU_QUAN_HE: ownerRelationship,
+        chu_so_huu_quan_he: ownerRelationship,
+
+        // Thành viên hộ
         householdMembers: cHouseholdMembers,
         DANH_SACH_THANH_VIEN_HO: cHouseholdMembers,
         danh_sach_thanh_vien_ho: cHouseholdMembers,
         CO_THANH_VIEN_HO: hasCHouseholdMembers,
         co_thanh_vien_ho: hasCHouseholdMembers,
         'TAI_SAN.CO_THANH_VIEN_HO': hasCHouseholdMembers,
+
+        // Danh sách tài sản con trong nhóm
+        groupCollaterals,
+        collaterals: groupCollaterals,
       };
     });
 
