@@ -273,6 +273,25 @@ export class WordTemplateDataDictionaryService {
               { path: 'ownerName', label: 'Họ tên chủ sở hữu / bên bảo lãnh', dataType: 'TEXT', sampleValue: 'Nguyễn Văn An' },
             ],
           },
+          {
+            path: 'DANH_SACH_CHU_SO_HUU_VA_THUA_KE',
+            label: 'Danh sách chủ sở hữu kèm người thừa kế/người vay (Khối lặp)',
+            dataType: 'LIST',
+            isList: true,
+            itemFields: [
+              { path: 'index', label: 'Số thứ tự (1, 2, 3...)', dataType: 'NUMBER', sampleValue: 1 },
+              { path: 'HO_TEN', label: 'Họ và tên chủ sở hữu / người thừa kế / người vay', dataType: 'TEXT', sampleValue: 'Nguyễn Văn An' },
+              { path: 'DANH_XUNG', label: 'Danh xưng (Ông/Bà/Hộ Ông/Hộ Bà)', dataType: 'TEXT', sampleValue: 'Ông' },
+              { path: 'GIOI_TINH', label: 'Giới tính (Nam/Nữ)', dataType: 'TEXT', sampleValue: 'Nam' },
+              { path: 'NAM_SINH', label: 'Năm sinh', dataType: 'TEXT', sampleValue: '1980' },
+              { path: 'LOAI_GIAY_TO', label: 'Loại giấy tờ (Căn cước / CCCD)', dataType: 'TEXT', sampleValue: 'Căn cước công dân' },
+              { path: 'SO_CCCD', label: 'Số CCCD / Căn cước', dataType: 'TEXT', sampleValue: '084080001234' },
+              { path: 'NGAY_CAP', label: 'Ngày cấp', dataType: 'DATE', sampleValue: '10/05/2021' },
+              { path: 'NOI_CAP', label: 'Nơi cấp', dataType: 'TEXT', sampleValue: 'Cục Cảnh sát QLHC về TTXH' },
+              { path: 'DIA_CHI', label: 'Địa chỉ thường trú', dataType: 'TEXT', sampleValue: 'Ấp Nô Lựa, Xã Nhị Trường, Tỉnh Vĩnh Long' },
+              { path: 'QUAN_HE', label: 'Quan hệ (Người vay / Người thừa kế / Bên bảo lãnh)', dataType: 'TEXT', sampleValue: 'Người vay' },
+            ],
+          },
         ],
       },
       {
@@ -848,21 +867,102 @@ export class WordTemplateDataDictionaryService {
       }
     });
 
-    const uniqueOwnersList = Array.from(uniqueOwnersMap.values()).map((o, idx) => ({
-      index: idx + 1,
-      ...o,
-      HO_TEN: o.fullName,
-      XUNG_HO: o.genderTitle,
-      DANH_XUNG: o.genderTitle,
-      LOAI_GIAY_TO: o.idType,
-      SO_GIAY_TO: o.idNumber,
-      SO_CCCD: o.idNumber,
-      NGAY_CAP: o.idIssueDate,
-      NOI_CAP: o.idIssuePlace,
-      DIA_CHI: o.address,
-      NAM_SINH: o.yearOfBirth,
-      QUAN_HE: o.relationship,
-    }));
+    const mapOwnerItem = (o: any, idx: number) => {
+      const idxNum = idx + 1;
+      return {
+        ...o,
+        index: idxNum,
+        _index: idxNum,
+        _number: idxNum,
+        STT: idxNum,
+        stt: idxNum,
+        fullName: o.fullName || '',
+        ho_ten: o.fullName || '',
+        HO_TEN: o.fullName || '',
+        gender: o.gender || '',
+        gioi_tinh: o.gender || '',
+        GIOI_TINH: o.gender || '',
+        genderTitle: o.genderTitle || '',
+        danh_xung: o.genderTitle || '',
+        DANH_XUNG: o.genderTitle || '',
+        xung_ho: o.genderTitle || '',
+        XUNG_HO: o.genderTitle || '',
+        idType: o.idType || '',
+        loai_giay_to: o.idType || '',
+        LOAI_GIAY_TO: o.idType || '',
+        idNumber: o.idNumber || '',
+        so_giay_to: o.idNumber || '',
+        SO_GIAY_TO: o.idNumber || '',
+        so_cccd: o.idNumber || '',
+        SO_CCCD: o.idNumber || '',
+        idIssueDate: o.idIssueDate || '',
+        ngay_cap: o.idIssueDate || '',
+        NGAY_CAP: o.idIssueDate || '',
+        NGAY_CAP_CCCD: o.idIssueDate || '',
+        idIssuePlace: o.idIssuePlace || '',
+        noi_cap: o.idIssuePlace || '',
+        NOI_CAP: o.idIssuePlace || '',
+        noi_cap_cccd: o.idIssuePlace || '',
+        NOI_CAP_CCCD: o.idIssuePlace || '',
+        address: o.address || '',
+        dia_chi: o.address || '',
+        DIA_CHI: o.address || '',
+        yearOfBirth: o.yearOfBirth ? String(o.yearOfBirth) : '',
+        nam_sinh: o.yearOfBirth ? String(o.yearOfBirth) : '',
+        NAM_SINH: o.yearOfBirth ? String(o.yearOfBirth) : '',
+        relationship: o.relationship || '',
+        quan_he: o.relationship || '',
+        QUAN_HE: o.relationship || '',
+        phoneNumber: o.phoneNumber || '',
+        so_dien_thoai: o.phoneNumber || '',
+        SO_DIEN_THOAI: o.phoneNumber || '',
+      };
+    };
+
+    const uniqueOwnersList = Array.from(uniqueOwnersMap.values()).map(mapOwnerItem);
+
+    // Xây dựng danh sách chủ sở hữu mở rộng (DANH_SACH_CHU_SO_HUU_VA_THUA_KE)
+    // Quy tắc tự động bổ sung người thừa kế hoặc người vay:
+    // 1. Nếu trong danh sách chủ sở hữu đã có 2 người trở lên -> Không thêm ai vào
+    // 2. Nếu trong danh sách chủ sở hữu có người vay -> Tự thêm người thừa kế vào cuối (nếu có người thừa kế)
+    // 3. Nếu trong danh sách chủ sở hữu có người thừa kế -> Tự thêm người vay vào cuối
+    const extendedOwnersRaw: any[] = Array.from(uniqueOwnersMap.values()).map((o) => ({ ...o }));
+
+    const hasBorrowerInOwners = extendedOwnersRaw.some((o: any) =>
+      o.ownerType === 'NGUOI_VAY_CA_NHAN' ||
+      o.ownerType === 'NGUOI_VAY_HO' ||
+      (o.key && o.key.startsWith('MEMBER_')) ||
+      (member?.idNumber && o.idNumber === member.idNumber) ||
+      (member?.fullName && (o.fullName || '').replace(/^Hộ\s+/i, '').trim().toLowerCase() === member.fullName.trim().toLowerCase())
+    );
+
+    const hasHeirInOwners = extendedOwnersRaw.some((o: any) =>
+      o.ownerType === 'NGUOI_THUA_KE_CA_NHAN' ||
+      o.ownerType === 'NGUOI_THUA_KE_HO' ||
+      (o.key && o.key.startsWith('HEIR_')) ||
+      (heir?.idNumber && o.idNumber === heir.idNumber) ||
+      (heir?.fullName && (o.fullName || '').replace(/^Hộ\s+/i, '').trim().toLowerCase() === heir.fullName.trim().toLowerCase())
+    );
+
+    const hasValidHeir = Boolean(heir && heir.fullName && heir.fullName.trim() !== '');
+
+    if (extendedOwnersRaw.length >= 2) {
+      // Đã có từ 2 người trở lên -> Không thêm ai vào
+    } else if (hasBorrowerInOwners) {
+      // Đã có người vay -> Tự thêm người thừa kế vào cuối (nếu có người thừa kế)
+      if (hasValidHeir) {
+        const heirOwner = this.extractOwnerInfo({ ownerType: 'NGUOI_THUA_KE_CA_NHAN' }, member, heir);
+        extendedOwnersRaw.push(heirOwner);
+      }
+    } else if (hasHeirInOwners) {
+      // Có người thừa kế -> Tự thêm người vay vào cuối
+      if (member && member.fullName && member.fullName.trim()) {
+        const borrowerOwner = this.extractOwnerInfo({ ownerType: 'NGUOI_VAY_CA_NHAN' }, member, heir);
+        extendedOwnersRaw.push(borrowerOwner);
+      }
+    }
+
+    const extendedOwnersList = extendedOwnersRaw.map(mapOwnerItem);
 
     const uniqueOwnerNames = Array.from(uniqueOwnersMap.values()).map((o) => o.fullName);
     let mergedOwners = '';
@@ -2605,6 +2705,15 @@ export class WordTemplateDataDictionaryService {
         DON_GIA_DINH_GIA: donGiaThiTruongFormatted,
         don_gia_thi_truong: donGiaThiTruongFormatted,
         DANH_SACH_DINH_GIA: valuationsList,
+        DANH_SACH_CHU_SO_HUU: uniqueOwnersList,
+        DANH_SACH_NGUOI_SO_HUU: uniqueOwnersList,
+        DANH_SACH_CHU_SO_HUU_VA_THUA_KE: extendedOwnersList,
+        DANH_SACH_CHU_SO_HUU_KEM_THUA_KE: extendedOwnersList,
+        DANH_SACH_CHU_SO_HUU_VA_NGUOI_THUA_KE: extendedOwnersList,
+        DANH_SACH_NGUOI_SO_HUU_VA_THUA_KE: extendedOwnersList,
+        DANH_SACH_NGUOI_SO_HUU_KEM_THUA_KE: extendedOwnersList,
+        DANH_SACH_CHU_SO_HUU_MO_RONG: extendedOwnersList,
+        DANH_SACH_NGUOI_SO_HUU_MO_RONG: extendedOwnersList,
         DANH_SACH_NGUOI_LIEN_QUAN: relatedPersonsList,
         nguoi_lien_quan: relatedPersonsList,
         NGUOI_LIEN_QUAN: relatedPersonsList,
@@ -2670,6 +2779,14 @@ export class WordTemplateDataDictionaryService {
       isBothBorrowerAndHeirOwner,
       isBorrowerAndHeirOwner: isBothBorrowerAndHeirOwner,
       DANH_SACH_CHU_SO_HUU: uniqueOwnersList,
+      DANH_SACH_NGUOI_SO_HUU: uniqueOwnersList,
+      DANH_SACH_CHU_SO_HUU_VA_THUA_KE: extendedOwnersList,
+      DANH_SACH_CHU_SO_HUU_KEM_THUA_KE: extendedOwnersList,
+      DANH_SACH_CHU_SO_HUU_VA_NGUOI_THUA_KE: extendedOwnersList,
+      DANH_SACH_NGUOI_SO_HUU_VA_THUA_KE: extendedOwnersList,
+      DANH_SACH_NGUOI_SO_HUU_KEM_THUA_KE: extendedOwnersList,
+      DANH_SACH_CHU_SO_HUU_MO_RONG: extendedOwnersList,
+      DANH_SACH_NGUOI_SO_HUU_MO_RONG: extendedOwnersList,
       DANH_SACH_TAI_SAN: collateralsList,
       DANH_SACH_DINH_GIA: valuationsList,
       DANH_SACH_NGUOI_LIEN_QUAN: relatedPersonsList,
@@ -2707,6 +2824,21 @@ export class WordTemplateDataDictionaryService {
         'KHOAN_VAY.DANH_SACH_DINH_GIA': valuationsList,
         uniqueOwners: uniqueOwnersList,
         DANH_SACH_CHU_SO_HUU: uniqueOwnersList,
+        DANH_SACH_NGUOI_SO_HUU: uniqueOwnersList,
+        'KHOAN_VAY.DANH_SACH_CHU_SO_HUU': uniqueOwnersList,
+        'KHOAN_VAY.DANH_SACH_NGUOI_SO_HUU': uniqueOwnersList,
+        extendedOwners: extendedOwnersList,
+        DANH_SACH_CHU_SO_HUU_VA_THUA_KE: extendedOwnersList,
+        DANH_SACH_CHU_SO_HUU_KEM_THUA_KE: extendedOwnersList,
+        DANH_SACH_CHU_SO_HUU_VA_NGUOI_THUA_KE: extendedOwnersList,
+        DANH_SACH_NGUOI_SO_HUU_VA_THUA_KE: extendedOwnersList,
+        DANH_SACH_NGUOI_SO_HUU_KEM_THUA_KE: extendedOwnersList,
+        DANH_SACH_CHU_SO_HUU_MO_RONG: extendedOwnersList,
+        DANH_SACH_NGUOI_SO_HUU_MO_RONG: extendedOwnersList,
+        'KHOAN_VAY.DANH_SACH_CHU_SO_HUU_VA_THUA_KE': extendedOwnersList,
+        'KHOAN_VAY.DANH_SACH_CHU_SO_HUU_KEM_THUA_KE': extendedOwnersList,
+        'KHOAN_VAY.DANH_SACH_CHU_SO_HUU_MO_RONG': extendedOwnersList,
+        'KHOAN_VAY.DANH_SACH_NGUOI_SO_HUU_VA_THUA_KE': extendedOwnersList,
         relatedPersons: relatedPersonsList,
         DANH_SACH_NGUOI_LIEN_QUAN: relatedPersonsList,
         'KHOAN_VAY.DANH_SACH_NGUOI_LIEN_QUAN': relatedPersonsList,

@@ -469,6 +469,54 @@ Quan hệ người vay: {{nlq.QUAN_HE}} | Vốn vay QTD: {{nlq.VON_VAY_QTD}}
             </div>
           </Card>
 
+          {/* Card 9: DANH SÁCH CHỦ SỞ HỮU & NGƯỜI THỪA KẾ / NGƯỜI VAY */}
+          <Card className="p-5 border border-slate-200 bg-white space-y-4 lg:col-span-2">
+            <div className="flex items-center gap-2 font-bold text-slate-900 border-b border-slate-100 pb-3">
+              <Users className="h-5 w-5 text-indigo-600" />
+              <span>9. Bảng lặp Chủ sở hữu kèm Thừa kế / Người vay (DANH_SACH_CHU_SO_HUU_VA_THUA_KE)</span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+              <div className="space-y-2">
+                <span className="font-semibold text-slate-700">Cú pháp dòng lặp bảng chủ sở hữu mở rộng:</span>
+                <div className="relative rounded bg-slate-900 p-3 font-mono text-emerald-400 whitespace-pre-wrap">
+{`{{#FOR cs IN DANH_SACH_CHU_SO_HUU_VA_THUA_KE}}
+STT: {{@number}} | Họ tên: {{cs.HO_TEN}}
+Danh xưng: {{cs.DANH_XUNG}} | CCCD: {{cs.SO_CCCD}}
+Ngày cấp: {{cs.NGAY_CAP}} | Nơi cấp: {{cs.NOI_CAP}}
+Địa chỉ: {{cs.DIA_CHI}} | Quan hệ: {{cs.QUAN_HE}}
+{{/FOR}}`}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleCopy(`{{#FOR cs IN DANH_SACH_CHU_SO_HUU_VA_THUA_KE}}\n{{@number}} | {{cs.HO_TEN}} | {{cs.SO_CCCD}} | {{cs.NGAY_CAP}} | {{cs.NOI_CAP}} | {{cs.DIA_CHI}}\n{{/FOR}}`)
+                    }
+                    className="absolute right-2 top-2 rounded bg-slate-800 p-1 text-slate-400 hover:text-white"
+                    title="Sao chép"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </button>
+                </div>
+                <p className="text-[11px] text-slate-500">
+                  <strong>Quy tắc tự động:</strong> Nếu danh sách chủ sở hữu có người vay → tự thêm người thừa kế vào cuối (nếu có); Nếu có người thừa kế → tự thêm người vay vào cuối; Nếu đã có từ 2 người trở lên → giữ nguyên không thêm ai.
+                </p>
+              </div>
+              <div className="space-y-2">
+                <span className="font-semibold text-slate-700">Các trường con trong mỗi dòng:</span>
+                <div className="space-y-1 text-[11px] text-slate-600">
+                  <p>• <code>cs.HO_TEN</code> / <code>cs.ho_ten</code>: Họ và tên chủ sở hữu / thừa kế / người vay</p>
+                  <p>• <code>cs.DANH_XUNG</code> / <code>cs.XUNG_HO</code>: Danh xưng (Ông/Bà/Hộ Ông/Hộ Bà)</p>
+                  <p>• <code>cs.GIOI_TINH</code>: Giới tính (Nam/Nữ)</p>
+                  <p>• <code>cs.NAM_SINH</code>: Năm sinh</p>
+                  <p>• <code>cs.SO_CCCD</code> / <code>cs.SO_GIAY_TO</code>: Số CCCD / Căn cước</p>
+                  <p>• <code>cs.NGAY_CAP</code> / <code>cs.NOI_CAP</code>: Ngày cấp và nơi cấp giấy tờ</p>
+                  <p>• <code>cs.DIA_CHI</code>: Địa chỉ thường trú</p>
+                  <p>• <code>cs.QUAN_HE</code>: Quan hệ (Người vay / Người thừa kế / Bên thứ ba bảo lãnh)</p>
+                  <p>• <strong>Bí danh (Alias):</strong> <code>DANH_SACH_NGUOI_SO_HUU_VA_THUA_KE</code>, <code>DANH_SACH_CHU_SO_HUU_MO_RONG</code>, <code>DANH_SACH_NGUOI_SO_HUU</code></p>
+                </div>
+              </div>
+            </div>
+          </Card>
+
           {/* Card 6: DANH SÁCH THU NHẬP & KIỂM TRA TRUNG HẠN */}
           <Card className="p-5 border border-slate-200 bg-white space-y-4 lg:col-span-2">
             <div className="flex items-center gap-2 font-bold text-slate-900 border-b border-slate-100 pb-3">
