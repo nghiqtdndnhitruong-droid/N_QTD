@@ -138,6 +138,44 @@ describe('DANH_SACH_CHU_SO_HUU_VA_THUA_KE (Extended Owners Loop)', () => {
     expect(extendedList[1].HO_TEN).toBe('Trần Thị Người Thừa Kế');
   });
 
+  it('Điều kiện đặc biệt (Bảo lãnh): Trường hợp có người bảo lãnh thì chỉ hiển thị duy nhất người bảo lãnh', () => {
+    const loan = {
+      member,
+      heir,
+      collaterals: [
+        {
+          ownerType: 'BAO_LANH',
+          assetCode: 'TS-BL-01',
+          sheetNumber: '5',
+          plotNumber: '50',
+          area: 800,
+          thirdPartyInfo: {
+            fullName: 'Lê Văn Bảo Lãnh',
+            gender: 'NAM',
+            idType: 'CAN_CUOC_CONG_DAN',
+            idNumber: '084090888999',
+            idIssueDate: '2020-01-01',
+            idIssuePlace: 'Cục CSQLHC về TTXH',
+            yearOfBirth: 1978,
+            address: 'Ấp 3, Xã Nhị Trường',
+          },
+        },
+      ],
+    };
+
+    const { resolvedContext } = wordTemplateDataDictionaryService.resolveLoanData(loan, []);
+    const extendedList = resolvedContext.DANH_SACH_CHU_SO_HUU_VA_THUA_KE;
+
+    expect(extendedList).toBeDefined();
+    // Chỉ duy nhất người bảo lãnh, không thêm người vay hoặc người thừa kế
+    expect(extendedList.length).toBe(1);
+    expect(extendedList[0].index).toBe(1);
+    expect(extendedList[0].HO_TEN).toBe('Lê Văn Bảo Lãnh');
+    expect(extendedList[0].DANH_XUNG).toBe('Ông');
+    expect(extendedList[0].SO_CCCD).toBe('084090888999');
+    expect(extendedList[0].QUAN_HE).toBe('Bên thứ ba bảo lãnh');
+  });
+
   it('Hỗ trợ đầy đủ các từ khóa bí danh (aliases)', () => {
     const loan = {
       member,
@@ -168,3 +206,4 @@ describe('DANH_SACH_CHU_SO_HUU_VA_THUA_KE (Extended Owners Loop)', () => {
     expect(resolvedContext.KHOAN_VAY.DANH_SACH_CHU_SO_HUU_VA_THUA_KE.length).toBe(2);
   });
 });
+

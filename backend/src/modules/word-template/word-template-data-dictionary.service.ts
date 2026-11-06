@@ -922,43 +922,51 @@ export class WordTemplateDataDictionaryService {
     const uniqueOwnersList = Array.from(uniqueOwnersMap.values()).map(mapOwnerItem);
 
     // Xây dựng danh sách chủ sở hữu mở rộng (DANH_SACH_CHU_SO_HUU_VA_THUA_KE)
-    // Quy tắc tự động bổ sung người thừa kế hoặc người vay:
+    // Quy tắc tự động:
+    // 0. Trường hợp có người bảo lãnh trong vòng lặp -> Chỉ hiển thị duy nhất người bảo lãnh (không thêm người vay, không thêm người thừa kế)
     // 1. Nếu trong danh sách chủ sở hữu đã có 2 người trở lên -> Không thêm ai vào
     // 2. Nếu trong danh sách chủ sở hữu có người vay -> Tự thêm người thừa kế vào cuối (nếu có người thừa kế)
     // 3. Nếu trong danh sách chủ sở hữu có người thừa kế -> Tự thêm người vay vào cuối
-    const extendedOwnersRaw: any[] = Array.from(uniqueOwnersMap.values()).map((o) => ({ ...o }));
+    let extendedOwnersRaw: any[] = Array.from(uniqueOwnersMap.values()).map((o) => ({ ...o }));
 
-    const hasBorrowerInOwners = extendedOwnersRaw.some((o: any) =>
-      o.ownerType === 'NGUOI_VAY_CA_NHAN' ||
-      o.ownerType === 'NGUOI_VAY_HO' ||
-      (o.key && o.key.startsWith('MEMBER_')) ||
-      (member?.idNumber && o.idNumber === member.idNumber) ||
-      (member?.fullName && (o.fullName || '').replace(/^Hộ\s+/i, '').trim().toLowerCase() === member.fullName.trim().toLowerCase())
-    );
+    const hasGuarantorInOwners = extendedOwnersRaw.some((o: any) => o.ownerType === 'BAO_LANH');
 
-    const hasHeirInOwners = extendedOwnersRaw.some((o: any) =>
-      o.ownerType === 'NGUOI_THUA_KE_CA_NHAN' ||
-      o.ownerType === 'NGUOI_THUA_KE_HO' ||
-      (o.key && o.key.startsWith('HEIR_')) ||
-      (heir?.idNumber && o.idNumber === heir.idNumber) ||
-      (heir?.fullName && (o.fullName || '').replace(/^Hộ\s+/i, '').trim().toLowerCase() === heir.fullName.trim().toLowerCase())
-    );
+    if (hasGuarantorInOwners) {
+      // Trường hợp có người bảo lãnh: chỉ hiển thị duy nhất người bảo lãnh
+      extendedOwnersRaw = extendedOwnersRaw.filter((o: any) => o.ownerType === 'BAO_LANH');
+    } else {
+      const hasBorrowerInOwners = extendedOwnersRaw.some((o: any) =>
+        o.ownerType === 'NGUOI_VAY_CA_NHAN' ||
+        o.ownerType === 'NGUOI_VAY_HO' ||
+        (o.key && o.key.startsWith('MEMBER_')) ||
+        (member?.idNumber && o.idNumber === member.idNumber) ||
+        (member?.fullName && (o.fullName || '').replace(/^Hộ\s+/i, '').trim().toLowerCase() === member.fullName.trim().toLowerCase())
+      );
 
-    const hasValidHeir = Boolean(heir && heir.fullName && heir.fullName.trim() !== '');
+      const hasHeirInOwners = extendedOwnersRaw.some((o: any) =>
+        o.ownerType === 'NGUOI_THUA_KE_CA_NHAN' ||
+        o.ownerType === 'NGUOI_THUA_KE_HO' ||
+        (o.key && o.key.startsWith('HEIR_')) ||
+        (heir?.idNumber && o.idNumber === heir.idNumber) ||
+        (heir?.fullName && (o.fullName || '').replace(/^Hộ\s+/i, '').trim().toLowerCase() === heir.fullName.trim().toLowerCase())
+      );
 
-    if (extendedOwnersRaw.length >= 2) {
-      // Đã có từ 2 người trở lên -> Không thêm ai vào
-    } else if (hasBorrowerInOwners) {
-      // Đã có người vay -> Tự thêm người thừa kế vào cuối (nếu có người thừa kế)
-      if (hasValidHeir) {
-        const heirOwner = this.extractOwnerInfo({ ownerType: 'NGUOI_THUA_KE_CA_NHAN' }, member, heir);
-        extendedOwnersRaw.push(heirOwner);
-      }
-    } else if (hasHeirInOwners) {
-      // Có người thừa kế -> Tự thêm người vay vào cuối
-      if (member && member.fullName && member.fullName.trim()) {
-        const borrowerOwner = this.extractOwnerInfo({ ownerType: 'NGUOI_VAY_CA_NHAN' }, member, heir);
-        extendedOwnersRaw.push(borrowerOwner);
+      const hasValidHeir = Boolean(heir && heir.fullName && heir.fullName.trim() !== '');
+
+      if (extendedOwnersRaw.length >= 2) {
+        // Đã có từ 2 người trở lên -> Không thêm ai vào
+      } else if (hasBorrowerInOwners) {
+        // Đã có người vay -> Tự thêm người thừa kế vào cuối (nếu có người thừa kế)
+        if (hasValidHeir) {
+          const heirOwner = this.extractOwnerInfo({ ownerType: 'NGUOI_THUA_KE_CA_NHAN' }, member, heir);
+          extendedOwnersRaw.push(heirOwner);
+        }
+      } else if (hasHeirInOwners) {
+        // Có người thừa kế -> Tự thêm người vay vào cuối
+        if (member && member.fullName && member.fullName.trim()) {
+          const borrowerOwner = this.extractOwnerInfo({ ownerType: 'NGUOI_VAY_CA_NHAN' }, member, heir);
+          extendedOwnersRaw.push(borrowerOwner);
+        }
       }
     }
 

@@ -497,7 +497,7 @@ Ngày cấp: {{cs.NGAY_CAP}} | Nơi cấp: {{cs.NOI_CAP}}
                   </button>
                 </div>
                 <p className="text-[11px] text-slate-500">
-                  <strong>Quy tắc tự động:</strong> Nếu danh sách chủ sở hữu có người vay → tự thêm người thừa kế vào cuối (nếu có); Nếu có người thừa kế → tự thêm người vay vào cuối; Nếu đã có từ 2 người trở lên → giữ nguyên không thêm ai.
+                  <strong>Quy tắc tự động:</strong> Trường hợp có Người bảo lãnh → chỉ hiển thị duy nhất người bảo lãnh. Nếu không có bảo lãnh: Nếu có người vay → tự thêm người thừa kế vào cuối (nếu có); Nếu có người thừa kế → tự thêm người vay vào cuối; Nếu đã có từ 2 người trở lên → giữ nguyên không thêm ai.
                 </p>
               </div>
               <div className="space-y-2">
