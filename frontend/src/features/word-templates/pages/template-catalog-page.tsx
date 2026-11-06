@@ -40,6 +40,7 @@ const CATEGORIES = [
   { value: 'TAI_SAN', label: 'Tài sản bảo đảm' },
   { value: 'NGUOI_LIEN_QUAN', label: 'Người liên quan' },
   { value: 'NGUOI_THUA_KE', label: 'Người thừa kế' },
+  { value: 'THANH_VIEN_HO', label: 'Thành viên hộ gia đình' },
   { value: 'QUY_TIN_DUNG', label: 'Quỹ tín dụng nhân dân' },
   { value: 'CHUNG', label: 'Khác / Chung' },
 ];
@@ -512,6 +513,65 @@ Ngày cấp: {{cs.NGAY_CAP}} | Nơi cấp: {{cs.NOI_CAP}}
                   <p>• <code>cs.DIA_CHI</code>: Địa chỉ thường trú</p>
                   <p>• <code>cs.QUAN_HE</code>: Quan hệ (Người vay / Người thừa kế / Bên thứ ba bảo lãnh)</p>
                   <p>• <strong>Bí danh (Alias):</strong> <code>DANH_SACH_NGUOI_SO_HUU_VA_THUA_KE</code>, <code>DANH_SACH_CHU_SO_HUU_MO_RONG</code>, <code>DANH_SACH_NGUOI_SO_HUU</code></p>
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          {/* Card 10: THÀNH VIÊN HỘ GIA ĐÌNH (THANH_VIEN_HO.* & DANH_SACH_THANH_VIEN_HO) */}
+          <Card className="p-5 border border-slate-200 bg-white space-y-4 lg:col-span-2">
+            <div className="flex items-center gap-2 font-bold text-slate-900 border-b border-slate-100 pb-3">
+              <Users className="h-5 w-5 text-emerald-600" />
+              <span>10. Thành viên hộ gia đình (THANH_VIEN_HO.* & DANH_SACH_THANH_VIEN_HO)</span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+              <div className="space-y-2">
+                <span className="font-semibold text-slate-700">Cú pháp dòng lặp bảng thành viên hộ:</span>
+                <div className="relative rounded bg-slate-900 p-3 font-mono text-emerald-400 whitespace-pre-wrap">
+{`{{#FOR tv IN DANH_SACH_THANH_VIEN_HO}}
+STT: {{@number}} | Họ tên: {{tv.HO_TEN}}
+Danh xưng: {{tv.DANH_XUNG}} | Giới tính: {{tv.GIOI_TINH}}
+Năm sinh: {{tv.NAM_SINH}} | CCCD: {{tv.SO_CCCD}}
+Ngày cấp: {{tv.NGAY_CAP}} | Nơi cấp: {{tv.NOI_CAP}}
+Địa chỉ: {{tv.DIA_CHI}}
+{{/FOR}}`}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleCopy(`{{#FOR tv IN DANH_SACH_THANH_VIEN_HO}}\n{{@number}} | {{tv.HO_TEN}} | {{tv.SO_CCCD}} | {{tv.NGAY_CAP}} | {{tv.NOI_CAP}} | {{tv.DIA_CHI}}\n{{/FOR}}`)
+                    }
+                    className="absolute right-2 top-2 rounded bg-slate-800 p-1 text-slate-400 hover:text-white"
+                    title="Sao chép"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </button>
+                </div>
+                <p className="text-[11px] text-slate-500">
+                  Hỗ trợ cả cú pháp docxtemplater truyền thống: <code>{`{{#danh_sach_thanh_vien_ho}} {{index}} {{ho_ten}} {{so_cccd}} {{dia_chi}} {{/danh_sach_thanh_vien_ho}}`}</code>.
+                </p>
+                <p className="text-[11px] text-slate-500">
+                  Điều kiện kiểm tra có thành viên hộ: <code>{`{{#IF CO_THANH_VIEN_HO}}...{{/IF}}`}</code> hoặc <code>{`{{#IF KHOAN_VAY.CO_THANH_VIEN_HO}}...{{/IF}}`}</code>.
+                </p>
+              </div>
+              <div className="space-y-2">
+                <span className="font-semibold text-slate-700">Các trường con & từ khóa gộp:</span>
+                <div className="space-y-1 text-[11px] text-slate-600">
+                  <p>• <code>tv.HO_TEN</code>: Họ và tên thành viên hộ</p>
+                  <p>• <code>tv.DANH_XUNG</code> / <code>tv.XUNG_HO</code>: Danh xưng (Ông/Bà)</p>
+                  <p>• <code>tv.GIOI_TINH</code>: Giới tính (Nam/Nữ - tự động nhận diện từ CCCD)</p>
+                  <p>• <code>tv.NAM_SINH</code>: Năm sinh (tự động nhận diện từ CCCD)</p>
+                  <p>• <code>tv.SO_CCCD</code> / <code>tv.SO_GIAY_TO</code>: Số CCCD / Căn cước 12 số</p>
+                  <p>• <code>tv.LOAI_GIAY_TO</code>: Căn cước công dân / Căn cước</p>
+                  <p>• <code>tv.NGAY_CAP</code> / <code>tv.NOI_CAP</code>: Ngày cấp và nơi cấp</p>
+                  <p>• <code>tv.DIA_CHI</code>: Địa chỉ thường trú</p>
+                  <div className="pt-1 border-t border-slate-200 mt-1">
+                    <span className="font-semibold text-slate-700">Cụm từ khóa gộp chuỗi:</span>
+                    <p>• <code>THANH_VIEN_HO.HO_TEN_GOP</code>: Danh sách họ tên gộp (nối dấu ;)</p>
+                    <p>• <code>THANH_VIEN_HO.SO_CCCD_GOP</code>: Danh sách số CCCD gộp</p>
+                    <p>• <code>THANH_VIEN_HO.DANH_XUNG_HO_TEN_GOP</code>: Ghép danh xưng và họ tên</p>
+                    <p>• <code>THANH_VIEN_HO.DIA_CHI_GOP</code>: Danh sách địa chỉ gộp</p>
+                    <p>• <code>THANH_VIEN_HO.THONG_TIN_CHI_TIET_GOP</code>: Thông tin chi tiết pháp lý từng thành viên</p>
+                  </div>
                 </div>
               </div>
             </div>

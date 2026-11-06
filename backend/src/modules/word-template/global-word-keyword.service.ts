@@ -2443,56 +2443,261 @@ export class GlobalWordKeywordService {
         dataPath: 'fund.currentYear',
         dataType: 'TEXT',
       },
+
+      // =========================================================================
+      // 8. Thành viên hộ gia đình (THANH_VIEN_HO)
+      // =========================================================================
+      {
+        keyword: 'THANH_VIEN_HO.HO_TEN',
+        displayName: 'Họ tên thành viên hộ (người đầu tiên)',
+        category: 'THANH_VIEN_HO',
+        dataPath: 'nested.THANH_VIEN_HO.HO_TEN',
+        dataType: 'TEXT',
+      },
+      {
+        keyword: 'THANH_VIEN_HO.DANH_XUNG',
+        displayName: 'Danh xưng thành viên hộ (Ông/Bà)',
+        category: 'THANH_VIEN_HO',
+        dataPath: 'nested.THANH_VIEN_HO.DANH_XUNG',
+        dataType: 'GENDER_TITLE',
+      },
+      {
+        keyword: 'THANH_VIEN_HO.XUNG_HO',
+        displayName: 'Xưng hô thành viên hộ (Ông/Bà - alias)',
+        category: 'THANH_VIEN_HO',
+        dataPath: 'nested.THANH_VIEN_HO.XUNG_HO',
+        dataType: 'GENDER_TITLE',
+      },
+      {
+        keyword: 'THANH_VIEN_HO.GIOI_TINH',
+        displayName: 'Giới tính thành viên hộ (Nam/Nữ)',
+        category: 'THANH_VIEN_HO',
+        dataPath: 'nested.THANH_VIEN_HO.GIOI_TINH',
+        dataType: 'TEXT',
+      },
+      {
+        keyword: 'THANH_VIEN_HO.NAM_SINH',
+        displayName: 'Năm sinh thành viên hộ (4 chữ số)',
+        category: 'THANH_VIEN_HO',
+        dataPath: 'nested.THANH_VIEN_HO.NAM_SINH',
+        dataType: 'TEXT',
+      },
+      {
+        keyword: 'THANH_VIEN_HO.SO_CCCD',
+        displayName: 'Số CCCD thành viên hộ (12 số)',
+        category: 'THANH_VIEN_HO',
+        dataPath: 'nested.THANH_VIEN_HO.SO_CCCD',
+        dataType: 'TEXT',
+      },
+      {
+        keyword: 'THANH_VIEN_HO.SO_GIAY_TO',
+        displayName: 'Số giấy tờ thành viên hộ (alias)',
+        category: 'THANH_VIEN_HO',
+        dataPath: 'nested.THANH_VIEN_HO.SO_GIAY_TO',
+        dataType: 'TEXT',
+      },
+      {
+        keyword: 'THANH_VIEN_HO.LOAI_GIAY_TO',
+        displayName: 'Loại giấy tờ thành viên hộ (Căn cước / CCCD)',
+        category: 'THANH_VIEN_HO',
+        dataPath: 'nested.THANH_VIEN_HO.LOAI_GIAY_TO',
+        dataType: 'TEXT',
+      },
+      {
+        keyword: 'THANH_VIEN_HO.NGAY_CAP',
+        displayName: 'Ngày cấp giấy tờ thành viên hộ (DD/MM/YYYY)',
+        category: 'THANH_VIEN_HO',
+        dataPath: 'nested.THANH_VIEN_HO.NGAY_CAP',
+        dataType: 'DATE',
+        formatPattern: 'DD/MM/YYYY',
+      },
+      {
+        keyword: 'THANH_VIEN_HO.NOI_CAP',
+        displayName: 'Nơi cấp giấy tờ thành viên hộ',
+        category: 'THANH_VIEN_HO',
+        dataPath: 'nested.THANH_VIEN_HO.NOI_CAP',
+        dataType: 'TEXT',
+      },
+      {
+        keyword: 'THANH_VIEN_HO.DIA_CHI',
+        displayName: 'Địa chỉ thường trú thành viên hộ (người đầu tiên)',
+        category: 'THANH_VIEN_HO',
+        dataPath: 'nested.THANH_VIEN_HO.DIA_CHI',
+        dataType: 'TEXT',
+      },
+      // Cụm từ khóa gộp (_GOP)
+      {
+        keyword: 'THANH_VIEN_HO.HO_TEN_GOP',
+        displayName: 'Họ tên các thành viên hộ gộp (nối dấu ;)',
+        category: 'THANH_VIEN_HO',
+        dataPath: 'nested.THANH_VIEN_HO.HO_TEN_GOP',
+        dataType: 'TEXT',
+      },
+      {
+        keyword: 'THANH_VIEN_HO_HO_TEN_GOP',
+        displayName: 'Họ tên các thành viên hộ gộp (phẳng)',
+        category: 'THANH_VIEN_HO',
+        dataPath: 'flatVariables.THANH_VIEN_HO_HO_TEN_GOP',
+        dataType: 'TEXT',
+      },
+      {
+        keyword: 'THANH_VIEN_HO.SO_CCCD_GOP',
+        displayName: 'Số CCCD các thành viên hộ gộp (nối dấu ;)',
+        category: 'THANH_VIEN_HO',
+        dataPath: 'nested.THANH_VIEN_HO.SO_CCCD_GOP',
+        dataType: 'TEXT',
+      },
+      {
+        keyword: 'THANH_VIEN_HO.SO_GIAY_TO_GOP',
+        displayName: 'Số giấy tờ các thành viên hộ gộp (alias)',
+        category: 'THANH_VIEN_HO',
+        dataPath: 'nested.THANH_VIEN_HO.SO_GIAY_TO_GOP',
+        dataType: 'TEXT',
+      },
+      {
+        keyword: 'THANH_VIEN_HO_SO_GIAY_TO_GOP',
+        displayName: 'Số giấy tờ các thành viên hộ gộp (phẳng)',
+        category: 'THANH_VIEN_HO',
+        dataPath: 'flatVariables.THANH_VIEN_HO_SO_GIAY_TO_GOP',
+        dataType: 'TEXT',
+      },
+      {
+        keyword: 'THANH_VIEN_HO.DANH_XUNG_HO_TEN_GOP',
+        displayName: 'Danh xưng + Họ tên các thành viên hộ gộp',
+        category: 'THANH_VIEN_HO',
+        dataPath: 'nested.THANH_VIEN_HO.DANH_XUNG_HO_TEN_GOP',
+        dataType: 'TEXT',
+      },
+      {
+        keyword: 'THANH_VIEN_HO_DANH_XUNG_HO_TEN_GOP',
+        displayName: 'Danh xưng + Họ tên các thành viên hộ gộp (phẳng)',
+        category: 'THANH_VIEN_HO',
+        dataPath: 'flatVariables.THANH_VIEN_HO_DANH_XUNG_HO_TEN_GOP',
+        dataType: 'TEXT',
+      },
+      {
+        keyword: 'THANH_VIEN_HO.DIA_CHI_GOP',
+        displayName: 'Địa chỉ các thành viên hộ gộp (nối dấu ;)',
+        category: 'THANH_VIEN_HO',
+        dataPath: 'nested.THANH_VIEN_HO.DIA_CHI_GOP',
+        dataType: 'TEXT',
+      },
+      {
+        keyword: 'THANH_VIEN_HO_DIA_CHI_GOP',
+        displayName: 'Địa chỉ các thành viên hộ gộp (phẳng)',
+        category: 'THANH_VIEN_HO',
+        dataPath: 'flatVariables.THANH_VIEN_HO_DIA_CHI_GOP',
+        dataType: 'TEXT',
+      },
+      {
+        keyword: 'THANH_VIEN_HO.THONG_TIN_CHI_TIET_GOP',
+        displayName: 'Thông tin chi tiết pháp lý từng thành viên hộ gộp',
+        category: 'THANH_VIEN_HO',
+        dataPath: 'nested.THANH_VIEN_HO.THONG_TIN_CHI_TIET_GOP',
+        dataType: 'TEXT',
+      },
+      {
+        keyword: 'THANH_VIEN_HO_THONG_TIN_CHI_TIET_GOP',
+        displayName: 'Thông tin chi tiết pháp lý từng thành viên hộ gộp (phẳng)',
+        category: 'THANH_VIEN_HO',
+        dataPath: 'flatVariables.THANH_VIEN_HO_THONG_TIN_CHI_TIET_GOP',
+        dataType: 'TEXT',
+      },
+      // Logic kiểm tra
+      {
+        keyword: 'CO_THANH_VIEN_HO',
+        displayName: 'Khoản vay có thành viên hộ gia đình (True/False)',
+        category: 'THANH_VIEN_HO',
+        dataPath: 'flatVariables.CO_THANH_VIEN_HO',
+        dataType: 'BOOLEAN',
+      },
+      {
+        keyword: 'KHOAN_VAY.CO_THANH_VIEN_HO',
+        displayName: 'Khoản vay có thành viên hộ (KHOAN_VAY.*)',
+        category: 'THANH_VIEN_HO',
+        dataPath: 'nested.loan.hasHouseholdMembers',
+        dataType: 'BOOLEAN',
+      },
+      {
+        keyword: 'TAI_SAN.CO_THANH_VIEN_HO',
+        displayName: 'Tài sản có thành viên hộ (TAI_SAN.*)',
+        category: 'TAI_SAN',
+        dataPath: 'nested.collateral.hasHouseholdMembers',
+        dataType: 'BOOLEAN',
+      },
+      // Danh sách lặp bảng
+      {
+        keyword: 'DANH_SACH_THANH_VIEN_HO',
+        displayName: 'Danh sách thành viên hộ gia đình (Khối lặp FOR/Bảng)',
+        category: 'THANH_VIEN_HO',
+        dataPath: 'lists.DANH_SACH_THANH_VIEN_HO',
+        dataType: 'LIST',
+        isList: true,
+        itemProperties: {
+          STT: 'index',
+          HO_TEN: 'fullName',
+          DANH_XUNG: 'genderTitle',
+          XUNG_HO: 'genderTitle',
+          GIOI_TINH: 'gender',
+          NAM_SINH: 'yearOfBirth',
+          LOAI_GIAY_TO: 'idType',
+          SO_GIAY_TO: 'idNumber',
+          SO_CCCD: 'idNumber',
+          NGAY_CAP: 'idIssueDate',
+          NOI_CAP: 'idIssuePlace',
+          DIA_CHI: 'address',
+        },
+      },
     ];
 
-    const count = await prisma.globalWordKeyword.count();
-    if (count > 0 && !force) {
-      // Nếu đã có dữ liệu, chỉ bổ sung các từ khóa mới (GOP, TONG_DIEN_TICH) một lần duy nhất khi chạy hệ thống
-      if (!GlobalWordKeywordService.gopKeywordsInitialized) {
-        GlobalWordKeywordService.gopKeywordsInitialized = true;
-        for (const kw of defaultKeywords) {
-          const existed = await prisma.globalWordKeyword.findUnique({
-            where: { keyword: kw.keyword },
-          });
-          if (!existed) {
-            await prisma.globalWordKeyword.create({
-              data: {
-                keyword: kw.keyword,
-                displayName: kw.displayName,
-                category: kw.category,
-                dataPath: kw.dataPath,
-                dataType: kw.dataType || 'TEXT',
-                defaultValue: kw.defaultValue || '...................',
-                isList: Boolean(kw.isList),
-                itemProperties: kw.itemProperties || null,
-                isSystem: true,
-              },
-            });
-          }
-        }
+    const existingKeywords = await prisma.globalWordKeyword.findMany({
+      select: { keyword: true },
+    });
+    const existingSet = new Set(existingKeywords.map((k) => k.keyword));
+    const missing = defaultKeywords.filter((k) => !existingSet.has(k.keyword));
+
+    if (missing.length > 0) {
+      for (const kw of missing) {
+        await prisma.globalWordKeyword.create({
+          data: {
+            keyword: kw.keyword,
+            displayName: kw.displayName,
+            category: kw.category,
+            dataPath: kw.dataPath,
+            dataType: kw.dataType || 'TEXT',
+            defaultValue: kw.defaultValue || '...................',
+            isList: Boolean(kw.isList),
+            itemProperties: kw.itemProperties || null,
+            isSystem: true,
+          },
+        });
       }
-      return;
     }
 
-    GlobalWordKeywordService.gopKeywordsInitialized = true;
-    for (const kw of defaultKeywords) {
-      await prisma.globalWordKeyword.upsert({
-        where: { keyword: kw.keyword },
-        update: {
-          itemProperties: kw.itemProperties || undefined,
-        },
-        create: {
-          keyword: kw.keyword,
-          displayName: kw.displayName,
-          category: kw.category,
-          dataPath: kw.dataPath,
-          dataType: kw.dataType || 'TEXT',
-          defaultValue: kw.defaultValue || '...................',
-          isList: Boolean(kw.isList),
-          itemProperties: kw.itemProperties || null,
-          isSystem: true,
-        },
-      });
+    if (force) {
+      for (const kw of defaultKeywords) {
+        await prisma.globalWordKeyword.upsert({
+          where: { keyword: kw.keyword },
+          update: {
+            displayName: kw.displayName,
+            category: kw.category,
+            dataPath: kw.dataPath,
+            dataType: kw.dataType || 'TEXT',
+            itemProperties: kw.itemProperties || undefined,
+          },
+          create: {
+            keyword: kw.keyword,
+            displayName: kw.displayName,
+            category: kw.category,
+            dataPath: kw.dataPath,
+            dataType: kw.dataType || 'TEXT',
+            defaultValue: kw.defaultValue || '...................',
+            isList: Boolean(kw.isList),
+            itemProperties: kw.itemProperties || null,
+            isSystem: true,
+          },
+        });
+      }
     }
   }
 }
