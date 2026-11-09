@@ -40,6 +40,8 @@ router.get('/plan-templates/calculate', asyncHandler(loanController.calculatePla
 
 router.get('/:id', asyncHandler(loanController.getById));
 
+router.post('/:id/clone', asyncHandler(loanController.clone));
+
 router.get('/:id/summary', asyncHandler(loanController.getSummary));
 
 router.put(

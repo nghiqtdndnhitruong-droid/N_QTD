@@ -80,6 +80,24 @@ export function useCreateLoan() {
   });
 }
 
+export function useCloneLoan() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      sourceLoanId,
+      targetMemberId,
+    }: {
+      sourceLoanId: string;
+      targetMemberId?: string;
+    }) => loansApi.clone(sourceLoanId, targetMemberId ? { targetMemberId } : undefined),
+    onSuccess: (cloned) => {
+      void qc.invalidateQueries({ queryKey: queryKeys.loans.lists() });
+      void qc.invalidateQueries({ queryKey: queryKeys.dashboard.all });
+      invalidateLoanEverything(qc, cloned.id);
+    },
+  });
+}
+
 export function useUpdateLoan(loanId: string) {
   const qc = useQueryClient();
   return useMutation({

@@ -102,6 +102,19 @@ export class LoanController {
     };
     res.status(200).json(response);
   };
+
+  clone = async (req: Request, res: Response): Promise<void> => {
+    const id = String(req.params.id);
+    const targetMemberId = req.body?.targetMemberId ? String(req.body.targetMemberId) : undefined;
+    const cloned = await this.service.clone(id, { targetMemberId });
+    const response: ApiResponse<Loan> = {
+      success: true,
+      message: 'Đã sao chép hồ sơ khoản vay thành công',
+      data: cloned,
+      timestamp: new Date().toISOString(),
+    };
+    res.status(201).json(response);
+  };
 }
 
 export const loanController = new LoanController();

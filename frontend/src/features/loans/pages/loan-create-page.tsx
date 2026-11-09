@@ -79,6 +79,7 @@ import { CollateralsSection } from '../components/collaterals-section';
 import { HouseholdMembersSection } from '../components/household-members-section';
 import { LoanValuationSection } from '../components/loan-valuation-section';
 import { RelatedPersonsSection } from '../components/related-persons-section';
+import { LoanCloneModal } from '../components/loan-clone-modal';
 import { CollateralOwnerType } from '../types/loan.types';
 import {
   useCreateLoan,
@@ -165,6 +166,7 @@ export function LoanCreatePage() {
   const [memberId, setMemberId] = useState<string>(preselectedMemberId);
   const [memberError, setMemberError] = useState<string | undefined>();
   const [confirmCompleteOpen, setConfirmCompleteOpen] = useState(false);
+  const [copyDialogOpen, setCopyDialogOpen] = useState(false);
 
   // State quản lý Mẫu phương án vay (Mẫu sửa nhà / Mẫu chăn nuôi)
   const [activeTemplate, setActiveTemplate] = useState<LoanPlanTemplateCode | null>(null);
@@ -680,6 +682,15 @@ export function LoanCreatePage() {
           ) : undefined
         }
         description="Quy trình lập hồ sơ gồm 6 bước. Từ bước 2 trở đi, hồ sơ được lưu tự động ở trạng thái Đang tạo để bạn có thể tiếp tục bất cứ lúc nào."
+        actions={
+          <Button
+            variant="secondary"
+            leftIcon={<Copy className="h-4 w-4" />}
+            onClick={() => setCopyDialogOpen(true)}
+          >
+            Tải từ khoản vay cũ
+          </Button>
+        }
       />
 
       <Stepper
@@ -692,13 +703,22 @@ export function LoanCreatePage() {
       {/* BƯỚC 1: CHỌN THÀNH VIÊN */}
       {stepIndex === 0 && (
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between pb-3">
             <div>
               <CardTitle>Bước 1: Chọn thành viên vay vốn</CardTitle>
               <CardDescription>
                 Tra cứu thành viên hiện có hoặc tạo nhanh hồ sơ thành viên mới
               </CardDescription>
             </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              leftIcon={<Copy className="h-4 w-4 text-primary-600" />}
+              onClick={() => setCopyDialogOpen(true)}
+            >
+              Sao chép từ khoản vay cũ
+            </Button>
           </CardHeader>
           <CardContent>
             <MemberLookupField
@@ -1529,6 +1549,17 @@ export function LoanCreatePage() {
         confirmText="Xác nhận hoàn thành"
         isLoading={updateStatusMutation.isPending}
         onConfirm={handleCompleteDossier}
+      />
+
+      <LoanCloneModal
+        open={copyDialogOpen}
+        onOpenChange={setCopyDialogOpen}
+        targetMemberId={memberId || undefined}
+        onSuccess={(clonedLoan) => {
+          setSearchParams({ draft: clonedLoan.id }, { replace: true });
+          setMemberId(clonedLoan.memberId);
+          setStepIndex(1);
+        }}
       />
     </div>
   );

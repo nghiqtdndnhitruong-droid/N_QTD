@@ -52,6 +52,10 @@ export const loansApi = {
     return apiPost<Loan, CreateLoanPayload>('/loans', payload);
   },
 
+  clone(id: string, payload?: { targetMemberId?: string }): Promise<Loan> {
+    return apiPost<Loan, { targetMemberId?: string } | undefined>(`/loans/${id}/clone`, payload);
+  },
+
   update(id: string, payload: UpdateLoanPayload): Promise<Loan> {
     return apiPut<Loan, UpdateLoanPayload>(`/loans/${id}`, payload);
   },

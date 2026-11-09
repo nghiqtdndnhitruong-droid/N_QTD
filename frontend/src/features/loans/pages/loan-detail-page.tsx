@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router';
 import {
   ArrowLeft,
   CheckCircle2,
+  Copy,
   FilePenLine,
   FileText,
   Printer,
@@ -59,6 +60,7 @@ import { RepaymentsSection } from '../components/repayments-section';
 import { TemplateExportDialog } from '@/features/word-templates/components/template-export-dialog';
 import { CollateralOwnerType } from '../types/loan.types';
 import {
+  useCloneLoan,
   useDeleteLoan,
   useLoanDetail,
   useLoanSummary,
@@ -78,6 +80,7 @@ export function LoanDetailPage() {
   const { data: summary, isLoading: isSummaryLoading } = useLoanSummary(id);
   const statusMutation = useUpdateLoanStatus(id ?? '');
   const deleteLoanMutation = useDeleteLoan();
+  const cloneLoanMutation = useCloneLoan();
 
   const hasHouseholdCollateral = useMemo(() => {
     const collaterals = loan?.collaterals ?? [];
@@ -135,6 +138,16 @@ export function LoanDetailPage() {
       navigate('/loans');
     } catch (err) {
       setConfirmDeleteOpen(false);
+      notifyApiError(err);
+    }
+  };
+
+  const handleCloneLoan = async () => {
+    try {
+      const cloned = await cloneLoanMutation.mutateAsync({ sourceLoanId: loan.id });
+      notifySuccess('Đã sao chép hồ sơ khoản vay thành công!');
+      navigate(`/loans/new?draft=${cloned.id}`);
+    } catch (err) {
       notifyApiError(err);
     }
   };
@@ -216,6 +229,18 @@ export function LoanDetailPage() {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+            </Can>
+
+            <Can perm="loan:create">
+              <Button
+                variant="outline"
+                size="sm"
+                leftIcon={<Copy className="h-4 w-4" />}
+                isLoading={cloneLoanMutation.isPending}
+                onClick={handleCloneLoan}
+              >
+                Sao chép khoản vay
+              </Button>
             </Can>
 
             {isEditable && (

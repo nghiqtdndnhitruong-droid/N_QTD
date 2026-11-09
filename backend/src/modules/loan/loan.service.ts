@@ -570,6 +570,234 @@ export class LoanService {
 
     return summary;
   }
+
+  async clone(sourceLoanId: string, options?: { targetMemberId?: string }) {
+    const sourceLoan = await this.repo.findById(sourceLoanId);
+    if (!sourceLoan) {
+      throw AppError.notFound(
+        `Không tìm thấy khoản vay gốc với ID: ${sourceLoanId}`,
+        ErrorCode.LOAN_NOT_FOUND
+      );
+    }
+
+    const targetMemberId = options?.targetMemberId || sourceLoan.memberId;
+    const member = await this.memberRepo.findById(targetMemberId);
+    if (!member) {
+      throw AppError.notFound(
+        `Không tìm thấy thành viên đích với ID: ${targetMemberId}`,
+        ErrorCode.MEMBER_NOT_FOUND
+      );
+    }
+
+    // 1. Xác định lãi suất hiệu lực
+    let annualRate = sourceLoan.interestRate;
+    try {
+      annualRate = await interestRateService.determineInterestRate(
+        sourceLoan.termType,
+        sourceLoan.loanAmount,
+        new Date()
+      );
+    } catch {
+      // Giữ nguyên lãi suất gốc nếu chưa có cấu hình cho ngày hôm nay
+    }
+
+    // 2. Tạo bản ghi khoản vay mới ở trạng thái DANG_TAO (Bản nháp)
+    const clonedLoan = await prisma.loan.create({
+      data: {
+        memberId: targetMemberId,
+        loanType: sourceLoan.loanType,
+        termType: sourceLoan.termType,
+        termMonths: sourceLoan.termMonths,
+        loanAmount: sourceLoan.loanAmount,
+        interestRate: annualRate,
+        loanStartDate: new Date(),
+        contractNumber: null, // Chưa cấp số khế ước cho hồ sơ mới
+        contractDate: null,
+        status: LoanStatus.DANG_TAO,
+        expectedMaturityDate: null,
+        maturityDate: null,
+        halfTermPaymentDate: null,
+        heir: sourceLoan.heir
+          ? {
+              fullName: sourceLoan.heir.fullName,
+              yearOfBirth: sourceLoan.heir.yearOfBirth,
+              gender: sourceLoan.heir.gender,
+              idType: sourceLoan.heir.idType,
+              idNumber: sourceLoan.heir.idNumber,
+              idIssueDate: sourceLoan.heir.idIssueDate,
+              idIssuePlace: sourceLoan.heir.idIssuePlace,
+              idExpiry: sourceLoan.heir.idExpiry,
+              relationship: sourceLoan.heir.relationship,
+              phoneNumber: sourceLoan.heir.phoneNumber,
+              address: sourceLoan.heir.address,
+            }
+          : undefined,
+        loanPlan: sourceLoan.loanPlan
+          ? {
+              purpose: sourceLoan.loanPlan.purpose,
+              loanAmount: sourceLoan.loanPlan.loanAmount,
+              ownCapital: sourceLoan.loanPlan.ownCapital,
+              borrowedCapital: sourceLoan.loanPlan.borrowedCapital,
+              expenses: sourceLoan.loanPlan.expenses ? [...sourceLoan.loanPlan.expenses] : [],
+              revenues: sourceLoan.loanPlan.revenues ? [...sourceLoan.loanPlan.revenues] : [],
+              totalExpenses: (sourceLoan.loanPlan.expenses || []).reduce(
+                (sum, e) => sum + (e.amount || 0),
+                0
+              ),
+              totalRevenues: (sourceLoan.loanPlan.revenues || []).reduce(
+                (sum, r) => sum + (r.amount || 0),
+                0
+              ),
+              profit:
+                (sourceLoan.loanPlan.revenues || []).reduce((sum, r) => sum + (r.amount || 0), 0) -
+                (sourceLoan.loanPlan.expenses || []).reduce((sum, e) => sum + (e.amount || 0), 0),
+            }
+          : undefined,
+        mortgageContract: sourceLoan.mortgageContract
+          ? {
+              contractNumber: '', // Xóa số HĐTC để cán bộ nhập số mới
+              contractDuration: sourceLoan.mortgageContract.contractDuration,
+              contractExpiryDate: sourceLoan.mortgageContract.contractExpiryDate,
+              committeeAuthDate: sourceLoan.mortgageContract.committeeAuthDate,
+            }
+          : undefined,
+        householdMembers:
+          sourceLoan.householdMembers && sourceLoan.householdMembers.length > 0
+            ? sourceLoan.householdMembers.map((m) => ({ ...m }))
+            : undefined,
+      },
+    });
+
+    // 3. Sao chép Người liên quan
+    if (sourceLoan.relatedPersons && sourceLoan.relatedPersons.length > 0) {
+      for (const rp of sourceLoan.relatedPersons) {
+        await prisma.relatedPerson.create({
+          data: {
+            loanId: clonedLoan.id,
+            fullName: rp.fullName,
+            yearOfBirth: rp.yearOfBirth,
+            gender: rp.gender,
+            idType: rp.idType,
+            idNumber: rp.idNumber,
+            idIssueDate: rp.idIssueDate,
+            idIssuePlace: rp.idIssuePlace,
+            idExpiry: rp.idExpiry,
+            phoneNumber: rp.phoneNumber,
+            relationship: rp.relationship,
+            relatedPersonRelationship: rp.relatedPersonRelationship,
+            creditFundLoan: rp.creditFundLoan,
+            address: rp.address || '',
+            provinceId: rp.provinceId,
+            provinceName: rp.provinceName,
+            communeId: rp.communeId,
+            communeName: rp.communeName,
+            hamletId: rp.hamletId,
+            hamletName: rp.hamletName,
+            addressDetail: rp.addressDetail,
+          },
+        });
+      }
+    }
+
+    // 4. Sao chép Tài sản thế chấp (Collaterals)
+    const collateralIdMap = new Map<string, string>();
+
+    if (sourceLoan.collaterals && sourceLoan.collaterals.length > 0) {
+      for (const c of sourceLoan.collaterals) {
+        // Kiểm tra nếu mã tài sản đã tồn tại thì tự động sinh hậu tố duy nhất
+        let targetAssetCode = c.assetCode.trim();
+        const existingCollateral = await prisma.collateral.findFirst({
+          where: { assetCode: { equals: targetAssetCode, mode: 'insensitive' } },
+        });
+
+        if (existingCollateral) {
+          let suffix = 1;
+          while (true) {
+            const candidate = `${targetAssetCode}-${suffix}`;
+            const match = await prisma.collateral.findFirst({
+              where: { assetCode: { equals: candidate, mode: 'insensitive' } },
+            });
+            if (!match) {
+              targetAssetCode = candidate;
+              break;
+            }
+            suffix++;
+          }
+        }
+
+        const newCol = await prisma.collateral.create({
+          data: {
+            loanId: clonedLoan.id,
+            assetType: c.assetType,
+            certificateType: c.certificateType,
+            assetCode: targetAssetCode,
+            certificateNumber: c.certificateNumber,
+            issueBookNumber: c.issueBookNumber,
+            sheetNumber: c.sheetNumber,
+            plotNumber: c.plotNumber,
+            area: c.area,
+            actualArea: c.actualArea,
+            pricePerSqMeter: c.pricePerSqMeter,
+            origin: c.origin,
+            usagePurpose: c.usagePurpose,
+            usageDuration: c.usageDuration,
+            usageForm: c.usageForm,
+            useRestrictions: c.useRestrictions,
+            issuePlace: c.issuePlace,
+            issueDate: c.issueDate,
+            provinceId: c.provinceId,
+            provinceName: c.provinceName,
+            communeId: c.communeId,
+            communeName: c.communeName,
+            hamletId: c.hamletId,
+            hamletName: c.hamletName,
+            addressDetail: c.addressDetail,
+            address: c.address,
+            valuationAmount: c.valuationAmount,
+            valuationMethod: c.valuationMethod,
+            ownerType: c.ownerType,
+            thirdPartyInfo: c.thirdPartyInfo ? { ...c.thirdPartyInfo } : undefined,
+            householdMembers:
+              c.householdMembers && c.householdMembers.length > 0
+                ? c.householdMembers.map((hm) => ({ ...hm }))
+                : undefined,
+          },
+        });
+
+        collateralIdMap.set(c.id, newCol.id);
+      }
+    }
+
+    // 5. Sao chép Định giá (LoanValuations)
+    if (sourceLoan.valuations && sourceLoan.valuations.length > 0) {
+      for (const v of sourceLoan.valuations) {
+        const newCollateralId = v.collateralId ? collateralIdMap.get(v.collateralId) ?? null : null;
+        const newCollateralIds = (v.collateralIds || [])
+          .map((oldId) => collateralIdMap.get(oldId))
+          .filter((id): id is string => Boolean(id));
+
+        await prisma.loanValuation.create({
+          data: {
+            loanId: clonedLoan.id,
+            collateralId: newCollateralId,
+            collateralIds: newCollateralIds,
+            valuationType: v.valuationType,
+            valuationDate: v.valuationDate,
+            sheetNumber: v.sheetNumber,
+            plotNumber: v.plotNumber,
+            area: v.area,
+            actualArea: v.actualArea,
+            pricePerSqMeter: v.pricePerSqMeter,
+            totalPriceBeforeRound: v.totalPriceBeforeRound,
+            totalPrice: v.totalPrice,
+            notes: v.notes,
+          },
+        });
+      }
+    }
+
+    return (await this.repo.findById(clonedLoan.id))!;
+  }
 }
 
 export const loanService = new LoanService();
