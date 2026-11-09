@@ -248,7 +248,7 @@ export function DashboardPage() {
                         <div className="font-semibold text-slate-900">
                           {l.member?.fullName ?? '—'}{' '}
                           <span className="font-mono text-primary-700">
-                            ({l.contractNumber || `#${l.id.slice(-6)}`})
+                            ({l.contractNumber || 'Chưa cấp số khế ước'})
                           </span>
                         </div>
                         <div className="text-slate-500">
@@ -299,7 +299,7 @@ export function DashboardPage() {
                         <div className="font-semibold text-slate-900">
                           {l.member?.fullName ?? '—'}{' '}
                           <span className="font-mono text-danger-700">
-                            ({l.contractNumber || `#${l.id.slice(-6)}`})
+                            ({l.contractNumber || 'Chưa cấp số khế ước'})
                           </span>
                         </div>
                         <div className="text-slate-500">

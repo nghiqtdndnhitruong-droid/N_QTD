@@ -219,9 +219,7 @@ export class LoanRepository {
       };
     }
 
-    const normalizedContractNumber =
-      data.contractNumber?.trim() ||
-      `KU-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`;
+    const normalizedContractNumber = data.contractNumber?.trim() || null;
 
     const createdLoan = await prisma.loan.create({
       data: {
@@ -233,7 +231,7 @@ export class LoanRepository {
         interestRate,
         loanStartDate: data.loanStartDate ? new Date(data.loanStartDate) : new Date(),
         contractNumber: normalizedContractNumber,
-        contractDate: data.contractDate ? new Date(data.contractDate) : new Date(),
+        contractDate: data.contractDate ? new Date(data.contractDate) : null,
         status: LoanStatus.DANG_TAO,
         expectedMaturityDate: timeline?.expectedMaturityDate ?? null,
         maturityDate: timeline?.maturityDate ?? null,
@@ -333,7 +331,7 @@ export class LoanRepository {
       updateData.loanStartDate = data.loanStartDate ? new Date(data.loanStartDate) : new Date();
     }
     if (data.contractNumber !== undefined) {
-      updateData.contractNumber = data.contractNumber.trim();
+      updateData.contractNumber = data.contractNumber?.trim() ? data.contractNumber.trim() : null;
     }
     if (data.contractDate !== undefined) {
       updateData.contractDate = data.contractDate ? new Date(data.contractDate) : null;

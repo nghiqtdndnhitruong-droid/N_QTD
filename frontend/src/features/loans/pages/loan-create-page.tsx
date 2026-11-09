@@ -98,7 +98,7 @@ import {
   type LoanTermsStepValues,
   type MortgageContractFormValues,
 } from '../schemas/loan.schema';
-import { formatContractNumber, generateDefaultContractNumber } from '../utils/contract-number';
+import { formatContractNumber } from '../utils/contract-number';
 import {
   calculateLoanPlanTemplate,
   buildInterestExpenseItemName,
@@ -195,7 +195,7 @@ export function LoanCreatePage() {
       loanType: LoanType.THE_CHAP,
       termType: LoanTermType.NGAN_HAN,
       loanAmount: 100_000_000,
-      contractNumber: generateDefaultContractNumber(),
+      contractNumber: '',
       contractDate: toApiDate(new Date()),
     },
   });
@@ -287,7 +287,7 @@ export function LoanCreatePage() {
     resolver: zodResolver(mortgageContractFormSchema),
     mode: 'onTouched',
     defaultValues: {
-      contractNumber: generateDefaultContractNumber(),
+      contractNumber: '',
       contractDuration: '',
       contractExpiryDate: '',
       committeeAuthDate: '',

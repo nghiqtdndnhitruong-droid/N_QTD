@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { LandPlot, MapPin, Pencil, Plus, Search, Trash2, Users } from 'lucide-react';
+import { Copy, LandPlot, MapPin, Pencil, Plus, Search, Trash2, Users } from 'lucide-react';
 import {
   CollateralAssetType,
   CollateralCertificateType,
@@ -244,7 +244,7 @@ export function CollateralsSection({
     reset({
       assetType: CollateralAssetType.QUYEN_SU_DUNG_DAT,
       certificateType: CollateralCertificateType.GCN,
-      assetCode: `TS-${Date.now().toString().slice(-5)}`,
+      assetCode: '',
       certificateNumber: '',
       issueBookNumber: '',
       sheetNumber: '',
@@ -252,7 +252,7 @@ export function CollateralsSection({
       area: 1000,
       actualArea: null,
       pricePerSqMeter: null,
-      origin: 'Nhà nước công nhận quyền sử dụng đất',
+      origin: '',
       usagePurpose: 'Đất trồng cây lâu năm',
       usageDuration: 'Lâu dài',
       usageForm: 'Sử dụng riêng',
@@ -312,6 +312,7 @@ export function CollateralsSection({
       certificateNumber: values.certificateNumber.trim(),
       issueBookNumber: values.issueBookNumber?.trim() || undefined,
       issueDate: values.issueDate || undefined,
+      actualArea: editingItem ? (editingItem.actualArea ?? null) : null,
       valuationMethod: isUnsecured ? null : values.valuationMethod,
       valuationAmount: isUnsecured ? 0 : (values.valuationAmount ?? 0),
       thirdPartyInfo:
@@ -646,6 +647,23 @@ export function CollateralsSection({
               className="space-y-5"
             >
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="flex items-center justify-between rounded-lg border border-primary-200 bg-primary-50/60 px-3.5 py-2 text-xs text-primary-900 sm:col-span-2">
+                  <span className="font-medium">
+                    Tiện ích: Nhấn nút để sao chép nhanh ký tự m² dán vào các trường mô tả.
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText('m²');
+                      notifySuccess('Đã sao chép ký tự "m²" vào clipboard');
+                    }}
+                    className="inline-flex items-center gap-1.5 rounded-md border border-primary-300 bg-white px-2.5 py-1 text-xs font-semibold text-primary-700 shadow-sm hover:bg-primary-50 transition-colors"
+                  >
+                    <Copy className="h-3.5 w-3.5" />
+                    <span>Copy m²</span>
+                  </button>
+                </div>
+
                 <FormSelectField
                   control={control}
                   name="assetType"
@@ -668,7 +686,7 @@ export function CollateralsSection({
                   name="assetCode"
                   label="Mã số tài sản (Mã số đất - Duy nhất)"
                   required
-                  placeholder="VD: TS000001"
+                  placeholder=""
                   hint="Mã định danh tài sản trong hệ thống (tương ứng vị trí Mã số đất)"
                 />
                 <FormTextField
@@ -702,13 +720,11 @@ export function CollateralsSection({
                   unit="m²"
                   hint="Diện tích pháp lý trên sổ đỏ"
                 />
-                <FormNumberField
+                <FormTextField
                   control={control}
-                  name="actualArea"
-                  label="Diện tích thực tế (Thẩm định)"
-                  allowDecimal
-                  unit="m²"
-                  hint="Tùy chọn. Ưu tiên dùng để tính giá trị định giá"
+                  name="origin"
+                  label="Nguồn gốc sử dụng"
+                  placeholder="VD: Nhà nước giao đất có thu tiền sử dụng đất / Nhận chuyển nhượng..."
                 />
                 <FormDateField
                   control={control}
@@ -737,7 +753,20 @@ export function CollateralsSection({
                   control={control}
                   name="usageForm"
                   label="Hình thức sử dụng"
-                  placeholder="VD: Sử dụng riêng / Sử dụng chung"
+                  placeholder="VD: Sử dụng riêng: 500 m²; Sử dụng chung: 100 m² hoặc Sử dụng riêng"
+                  extraRight={
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText('m²');
+                        notifySuccess('Đã sao chép ký tự "m²" vào clipboard');
+                      }}
+                      className="inline-flex items-center gap-1 text-[11px] font-medium text-primary-600 hover:text-primary-800 hover:underline"
+                    >
+                      <Copy className="h-3 w-3" />
+                      <span>Copy m²</span>
+                    </button>
+                  }
                 />
                 <FormTextField
                   control={control}

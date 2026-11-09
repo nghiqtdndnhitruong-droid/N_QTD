@@ -1425,7 +1425,7 @@ export class WordTemplateDataDictionaryService {
     const mergedIssuePlaces = mergeAssetValues(collaterals, (c: any) => c.issuePlace);
     const mergedUsagePurposes = mergeAssetValues(collaterals, (c: any) => c.usagePurpose);
     const mergedUsageDurations = mergeAssetValues(collaterals, (c: any) => c.usageDuration);
-    const mergedUsageForms = mergeAssetValues(collaterals, (c: any) => c.usageForm);
+    const mergedUsageForms = this.formatMergedUsageForms(collaterals);
     const mergedUseRestrictions = mergeAssetValues(
       collaterals,
       (c: any) => c.useRestrictions,
@@ -1539,7 +1539,7 @@ export class WordTemplateDataDictionaryService {
       // Mục đích, thời hạn, hình thức, hạn chế sử dụng
       const usagePurpose = mergeAssetValues(groupCollaterals, (c: any) => c.usagePurpose);
       const usageDuration = mergeAssetValues(groupCollaterals, (c: any) => c.usageDuration);
-      const usageForm = mergeAssetValues(groupCollaterals, (c: any) => c.usageForm);
+      const usageForm = this.formatMergedUsageForms(groupCollaterals);
       const restrictions = mergeAssetValues(groupCollaterals, (c: any) => c.useRestrictions, '...................');
       const origin = mergeAssetValues(groupCollaterals, (c: any) => c.origin);
 
@@ -3521,6 +3521,111 @@ export class WordTemplateDataDictionaryService {
     }
 
     return clauses.join('; ');
+  }
+
+  /**
+   * Gộp hình thức sử dụng của nhiều tài sản:
+   * Nếu có nhiều thửa và nội dung là "riêng: x1 m2, chung: y1 m2" hoặc "sử dụng riêng: x2 m2; sử dụng chung: y2 m2"
+   * thì tự gộp lại thành 1 câu: "riêng: x1+x2 m2; chung: y1+y2 m2" (hoặc "sử dụng riêng: ...; sử dụng chung: ...")
+   * Tương tự nếu chỉ có sử dụng riêng: "riêng: x1+x2 m2" (hoặc "sử dụng riêng: ...").
+   */
+  public formatMergedUsageForms(items: any[]): string {
+    if (!items || items.length === 0) return '';
+    const rawForms = items
+      .map((c) => (typeof c === 'string' ? c : c?.usageForm))
+      .filter((f) => Boolean(f && String(f).trim()));
+
+    if (rawForms.length === 0) return '';
+    if (rawForms.length === 1) return String(rawForms[0]).trim();
+
+    // Helper parse số từ chuỗi tiếng Việt: "1.992,5" -> 1992.5, "500" -> 500
+    const parseViNum = (s: string): number => {
+      let clean = s.trim();
+      if (clean.includes('.') && clean.includes(',')) {
+        clean = clean.replace(/\./g, '').replace(',', '.');
+      } else if (clean.includes(',')) {
+        clean = clean.replace(',', '.');
+      }
+      const val = parseFloat(clean);
+      return isNaN(val) ? 0 : val;
+    };
+
+    const parsed = rawForms.map((textStr) => {
+      const text = String(textStr).trim();
+      const isLowercase = text.startsWith('r') || text.startsWith('s');
+      const hasSuDung = /sử\s*dụng/i.test(text);
+      const unit = text.includes('m²') ? 'm²' : 'm2';
+
+      const riengMatch = text.match(/(?:sử\s*dụng\s*)?riêng\s*[:\s-]\s*([\d.,]+)/i);
+      const chungMatch = text.match(/(?:sử\s*dụng\s*)?chung\s*[:\s-]\s*([\d.,]+)/i);
+
+      return {
+        rieng: riengMatch ? parseViNum(riengMatch[1]) : undefined,
+        chung: chungMatch ? parseViNum(chungMatch[1]) : undefined,
+        hasSuDung,
+        isLowercase,
+        unit,
+      };
+    });
+
+    const hasAnyNumber = parsed.some((p) => p.rieng !== undefined || p.chung !== undefined);
+    if (!hasAnyNumber) {
+      return mergeAssetValues(items, (c: any) => c?.usageForm);
+    }
+
+    let totalRieng = 0;
+    let hasRieng = false;
+    let totalChung = 0;
+    let hasChung = false;
+    let anySuDung = false;
+    let allLowercase = true;
+    let unit = 'm2';
+
+    for (const p of parsed) {
+      if (p.rieng !== undefined) {
+        totalRieng += p.rieng;
+        hasRieng = true;
+      }
+      if (p.chung !== undefined) {
+        totalChung += p.chung;
+        hasChung = true;
+      }
+      if (p.hasSuDung) anySuDung = true;
+      if (!p.isLowercase) allLowercase = false;
+      if (p.unit === 'm²') unit = 'm²';
+    }
+
+    const formatNum = (val: number): string => {
+      return val.toLocaleString('vi-VN', { useGrouping: false, maximumFractionDigits: 2 });
+    };
+
+    const parts: string[] = [];
+
+    if (hasRieng) {
+      let label = '';
+      if (anySuDung) {
+        label = allLowercase ? 'sử dụng riêng' : 'Sử dụng riêng';
+      } else {
+        label = allLowercase ? 'riêng' : 'Riêng';
+      }
+      parts.push(`${label}: ${formatNum(totalRieng)} ${unit}`);
+    }
+
+    if (hasChung) {
+      let label = '';
+      if (anySuDung) {
+        label = allLowercase ? 'sử dụng chung' : 'Sử dụng chung';
+      } else {
+        label = allLowercase ? 'chung' : 'Chung';
+      }
+      parts.push(`${label}: ${formatNum(totalChung)} ${unit}`);
+    }
+
+    if (parts.length > 0) {
+      return parts.join('; ');
+    }
+
+    return mergeAssetValues(items, (c: any) => c?.usageForm);
   }
 }
 

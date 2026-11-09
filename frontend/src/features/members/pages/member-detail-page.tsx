@@ -240,7 +240,7 @@ export function MemberDetailPage() {
                       className="cursor-pointer hover:bg-primary-50/50"
                     >
                       <td className="px-4 py-3 font-mono font-semibold text-primary-700">
-                        {loan.contractNumber || `#${loan.id.slice(-6)}`}
+                        {loan.contractNumber || 'Chưa cấp số khế ước'}
                       </td>
                       <td className="px-4 py-3">{LOAN_TYPE_LABELS[loan.loanType]}</td>
                       <td className="px-4 py-3">{LOAN_TERM_TYPE_LABELS[loan.termType]}</td>

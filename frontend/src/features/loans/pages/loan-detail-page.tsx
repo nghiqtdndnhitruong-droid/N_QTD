@@ -158,7 +158,7 @@ export function LoanDetailPage() {
             <span>Danh sách khoản vay</span>
           </Link>
         }
-        title={loan.contractNumber || `Hồ sơ vay #${loan.id.slice(-6)}`}
+        title={loan.contractNumber || `Hồ sơ vay #${loan.id.slice(-6)} (Chưa cấp số khế ước)`}
         badge={<LoanStatusBadge status={loan.status} />}
         description={`Thành viên: ${loan.member?.fullName ?? '—'}${loan.member?.memberCode ? ` (${loan.member.memberCode})` : ' (Chưa cấp mã)'} · ${LOAN_TYPE_LABELS[loan.loanType]} · ${LOAN_TERM_TYPE_LABELS[loan.termType]}`}
         actions={
@@ -316,7 +316,7 @@ export function LoanDetailPage() {
                 <DescriptionList columns={2}>
                   <DescriptionItem
                     label="Số khế ước nhận nợ"
-                    value={loan.contractNumber || 'Chưa cấp số'}
+                    value={loan.contractNumber || 'Chưa cấp số khế ước'}
                     mono
                   />
                   <DescriptionItem
@@ -653,7 +653,7 @@ export function LoanDetailPage() {
       <ConfirmDialog
         open={confirmDeleteOpen}
         onOpenChange={setConfirmDeleteOpen}
-        title={`Xác nhận xóa hồ sơ khoản vay ${loan.contractNumber || `#${loan.id.slice(-6)}`}?`}
+        title={`Xác nhận xóa hồ sơ khoản vay ${loan.contractNumber || 'Chưa cấp số khế ước'}?`}
         description={
           hasFinancialTransactions
             ? `CẢNH BÁO NGHIỆP VỤ: Khoản vay này đang ở trạng thái "${LOAN_STATUS_META[loan.status].label}" (${loan.disbursements?.length ?? 0} đợt giải ngân, ${loan.repayments?.length ?? 0} đợt trả nợ). Hệ thống KHÔNG cho phép xóa khoản vay đã có lịch sử kế toán. Vui lòng thực hiện nghiệp vụ Thu nợ / Tất toán.`

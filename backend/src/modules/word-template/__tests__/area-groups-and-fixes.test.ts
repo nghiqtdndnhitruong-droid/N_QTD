@@ -231,3 +231,68 @@ describe('Feature: Area Groups and CO_TRONG_NHOM_* Conditions', () => {
   });
 });
 
+describe('Feature: Merged usageForm calculation (Hình thức sử dụng gộp)', () => {
+  it('correctly sums riêng and chung when in format "riêng: x1 m2, chung: y1 m2"', () => {
+    const collaterals = [
+      { usageForm: 'riêng: 100 m2, chung: 50 m2' },
+      { usageForm: 'riêng: 200 m2, chung: 20 m2' },
+    ];
+    const result = wordTemplateDataDictionaryService.formatMergedUsageForms(collaterals);
+    expect(result).toBe('riêng: 300 m2; chung: 70 m2');
+  });
+
+  it('correctly sums riêng and chung when in format "sử dụng riêng: x1 m2; sử dụng chung: y1 m2"', () => {
+    const collaterals = [
+      { usageForm: 'sử dụng riêng: 150,5 m2; sử dụng chung: 30 m2' },
+      { usageForm: 'sử dụng riêng: 250 m2; sử dụng chung: 70 m2' },
+    ];
+    const result = wordTemplateDataDictionaryService.formatMergedUsageForms(collaterals);
+    expect(result).toBe('sử dụng riêng: 400,5 m2; sử dụng chung: 100 m2');
+  });
+
+  it('correctly sums when only riêng is present: "Sử dụng riêng: 100 m2"', () => {
+    const collaterals = [
+      { usageForm: 'Sử dụng riêng: 100 m2' },
+      { usageForm: 'Sử dụng riêng: 250 m2' },
+    ];
+    const result = wordTemplateDataDictionaryService.formatMergedUsageForms(collaterals);
+    expect(result).toBe('Sử dụng riêng: 350 m2');
+  });
+
+  it('correctly sums when only riêng with unit m² is present', () => {
+    const collaterals = [
+      { usageForm: 'riêng: 100 m²' },
+      { usageForm: 'riêng: 200 m²' },
+    ];
+    const result = wordTemplateDataDictionaryService.formatMergedUsageForms(collaterals);
+    expect(result).toBe('riêng: 300 m²');
+  });
+
+  it('handles buildRawLoanData with multiple collaterals having numeric usageForm', () => {
+    const mockLoan = {
+      id: 'loan-usage-1',
+      contractNumber: null,
+      collaterals: [
+        {
+          id: 'c-1',
+          assetCode: 'TS-01',
+          usageForm: 'riêng: 100 m2, chung: 50 m2',
+          address: 'Xã Nhị Trường',
+        },
+        {
+          id: 'c-2',
+          assetCode: 'TS-02',
+          usageForm: 'riêng: 200 m2, chung: 20 m2',
+          address: 'Xã Nhị Trường',
+        },
+      ],
+    };
+
+    const raw = wordTemplateDataDictionaryService.buildRawLoanData(mockLoan);
+    expect(raw.flatVariables['TAI_SAN.HINH_THUC_SU_DUNG_GOP']).toBe('riêng: 300 m2; chung: 70 m2');
+    expect(raw.flatVariables['HINH_THUC_SU_DUNG_GOP']).toBe('riêng: 300 m2; chung: 70 m2');
+    expect(raw.nested.TAI_SAN.HINH_THUC_SU_DUNG_GOP).toBe('riêng: 300 m2; chung: 70 m2');
+    expect(raw.nested.DANH_SACH_TAI_SAN[0].HINH_THUC_SU_DUNG).toBe('riêng: 300 m2; chung: 70 m2');
+  });
+});
+

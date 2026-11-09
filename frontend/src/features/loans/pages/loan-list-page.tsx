@@ -62,9 +62,13 @@ export function LoanListPage() {
           <Link
             to={`/loans/${row.original.id}`}
             onClick={(e) => e.stopPropagation()}
-            className="font-mono font-semibold text-primary-700 hover:underline"
+            className={
+              row.original.contractNumber
+                ? 'font-mono font-semibold text-primary-700 hover:underline'
+                : 'italic text-xs text-slate-400 hover:text-slate-600 hover:underline'
+            }
           >
-            {row.original.contractNumber || `NHÁP-#${row.original.id.slice(-6)}`}
+            {row.original.contractNumber || 'Chưa cấp số khế ước'}
           </Link>
         ),
       },
@@ -366,8 +370,14 @@ export function LoanListPage() {
         renderMobileCard={(row) => (
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="font-mono font-bold text-primary-700">
-                {row.contractNumber || `NHÁP-#${row.id.slice(-6)}`}
+              <span
+                className={
+                  row.contractNumber
+                    ? 'font-mono font-bold text-primary-700'
+                    : 'italic text-xs text-slate-400'
+                }
+              >
+                {row.contractNumber || 'Chưa cấp số khế ước'}
               </span>
               <LoanStatusBadge status={row.status} />
             </div>
@@ -390,7 +400,7 @@ export function LoanListPage() {
       <ConfirmDialog
         open={Boolean(deletingLoan)}
         onOpenChange={(open) => !open && setDeletingLoan(null)}
-        title={`Xác nhận xóa khoản vay ${deletingLoan?.contractNumber || `#${deletingLoan?.id.slice(-6) ?? ''}`}?`}
+        title={`Xác nhận xóa khoản vay ${deletingLoan?.contractNumber || 'Chưa cấp số khế ước'}?`}
         description={
           deletingLoan
             ? isDeletingLoanFinanciallyLocked

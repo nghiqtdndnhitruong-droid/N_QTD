@@ -273,7 +273,7 @@ model Loan {
   loanStartDate    DateTime?        @default(now()) // Ngày khởi tạo khoản vay
 
   // Khế ước
-  contractNumber   String?          @unique // Số khế ước duy nhất toàn hệ thống
+  contractNumber   String?          // Số khế ước (duy nhất theo partial index & service)
   contractDate     DateTime?        // Ngày cấp khế ước
 
   // Trạng thái
@@ -308,6 +308,7 @@ model Loan {
   @@index([status])
   @@index([loanType])
   @@index([maturityDate])
+  @@index([contractNumber])
   @@map("loans")
 }
 
