@@ -307,7 +307,9 @@ export interface CreateLoanPayload {
   collaterals?: CreateCollateralPayload[];
 }
 
-export type UpdateLoanPayload = Partial<Omit<CreateLoanPayload, 'memberId'>>;
+export type UpdateLoanPayload = Partial<Omit<CreateLoanPayload, 'memberId' | 'mortgageContract'>> & {
+  mortgageContract?: Partial<MortgageContract>;
+};
 
 export interface CreateCollateralPayload {
   assetType: CollateralAssetType;

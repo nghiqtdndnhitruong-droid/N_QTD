@@ -63,6 +63,7 @@ export interface WordTemplate {
   loanTypeScope: LoanTypeScope;
   description?: string | null;
   isActive: boolean;
+  sortOrder?: number;
   currentVersion: number;
   currentFilePath: string;
   originalFileName: string;
@@ -92,6 +93,7 @@ export interface UpdateWordTemplateInput {
   loanTypeScope?: LoanTypeScope;
   description?: string;
   isActive?: boolean;
+  sortOrder?: number;
 }
 
 export interface KeywordValidationWarning {

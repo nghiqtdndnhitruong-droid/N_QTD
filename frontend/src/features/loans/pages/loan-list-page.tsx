@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import type { ColumnDef } from '@tanstack/react-table';
-import { Download, Eye, FilePenLine, Plus, Trash2, Copy } from 'lucide-react';
+import { Download, Eye, FilePenLine, Plus, Trash2 } from 'lucide-react';
 import { LoanStatus, LoanTermType, LoanType } from '@/shared/types';
 import {
   LOAN_STATUS_META,
@@ -20,7 +20,7 @@ import {
   notifySuccess,
 } from '@/components/feedback';
 import { Can } from '@/features/auth/components/can';
-import { useCloneLoan, useDeleteLoan, useLoansList } from '../hooks/use-loans';
+import { useDeleteLoan, useLoansList } from '../hooks/use-loans';
 import type { Loan } from '../types/loan.types';
 
 const FILTER_KEYS = ['status', 'loanType', 'termType'] as const;
@@ -28,9 +28,7 @@ const FILTER_KEYS = ['status', 'loanType', 'termType'] as const;
 export function LoanListPage() {
   const navigate = useNavigate();
   const [deletingLoan, setDeletingLoan] = useState<Loan | null>(null);
-  const [cloningLoanId, setCloningLoanId] = useState<string | null>(null);
   const deleteLoanMutation = useDeleteLoan();
-  const cloneLoanMutation = useCloneLoan();
 
   const tableState = useTableUrlState<{
     status?: LoanStatus;
@@ -53,19 +51,6 @@ export function LoanListPage() {
     loanType: tableState.filters.loanType,
     termType: tableState.filters.termType,
   });
-
-  const handleCloneLoan = async (loanId: string) => {
-    try {
-      setCloningLoanId(loanId);
-      const cloned = await cloneLoanMutation.mutateAsync({ sourceLoanId: loanId });
-      notifySuccess('Đã sao chép hồ sơ khoản vay thành công!');
-      navigate(`/loans/new?draft=${cloned.id}`);
-    } catch (err) {
-      notifyApiError(err);
-    } finally {
-      setCloningLoanId(null);
-    }
-  };
 
   const columns = useMemo<ColumnDef<Loan>[]>(
     () => [
@@ -205,20 +190,6 @@ export function LoanListPage() {
             >
               Chi tiết
             </Button>
-            <Can perm="loan:create">
-              <Button
-                variant="ghost"
-                size="sm"
-                leftIcon={<Copy className="h-3.5 w-3.5" />}
-                isLoading={cloningLoanId === row.original.id}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  void handleCloneLoan(row.original.id);
-                }}
-              >
-                Sao chép
-              </Button>
-            </Can>
             <Can perm="loan:delete">
               <Button
                 variant="ghost"
@@ -237,7 +208,7 @@ export function LoanListPage() {
         ),
       },
     ],
-    [navigate, cloningLoanId, cloneLoanMutation],
+    [navigate],
   );
 
   const isDeletingLoanFinanciallyLocked = Boolean(

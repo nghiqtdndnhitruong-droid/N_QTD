@@ -1,0 +1,163 @@
+import { describe, it, expect } from 'vitest';
+import { wordTemplateDataDictionaryService } from '../word-template-data-dictionary.service';
+
+describe('Second Owner Keywords (CHU_SO_HUU_2 / CHU_SO_HUU_THU_HAI)', () => {
+  const member = {
+    fullName: 'Lê Văn Người Vay',
+    gender: 'NAM',
+    idType: 'CAN_CUOC_CONG_DAN',
+    idNumber: '084085001111',
+    idIssueDate: '2021-05-15',
+    idIssuePlace: 'Cục CSQLHC về TTXH',
+    yearOfBirth: 1985,
+    address: 'Ấp Nô Lựa, Xã Nhị Trường',
+  };
+
+  const heir = {
+    fullName: 'Nguyễn Thị Đồng Sở Hữu',
+    gender: 'NU',
+    idType: 'CAN_CUOC_CONG_DAN',
+    idNumber: '084190002222',
+    idIssueDate: '2022-08-10',
+    idIssuePlace: 'Cục CSQLHC về TTXH',
+    yearOfBirth: 1990,
+    address: 'Ấp Nô Lựa, Xã Nhị Trường',
+    relationship: 'Vợ',
+  };
+
+  it('Trường hợp 1: Tài sản đồng sở hữu (NGUOI_VAY_VA_NGUOI_THUA_KE) -> Lấy đúng Chủ sở hữu 1 và Chủ sở hữu 2', () => {
+    const loan = {
+      member,
+      heir,
+      collaterals: [
+        {
+          ownerType: 'NGUOI_VAY_VA_NGUOI_THUA_KE',
+          assetCode: 'TS-01',
+          certificateNumber: 'CS12345',
+          sheetNumber: '1',
+          plotNumber: '10',
+          area: 500,
+          address: 'Ấp Nô Lựa, Xã Nhị Trường',
+        },
+      ],
+    };
+
+    const { resolvedContext } = wordTemplateDataDictionaryService.resolveLoanData(loan, []);
+
+    // Chủ sở hữu 1
+    expect(resolvedContext['CHU_SO_HUU_1.HO_TEN']).toBe('Lê Văn Người Vay');
+    expect(resolvedContext['CHU_SO_HUU_1']).toBe('Lê Văn Người Vay');
+    expect(resolvedContext['CHU_SO_HUU.HO_TEN']).toBe('Lê Văn Người Vay');
+
+    // Chủ sở hữu 2
+    expect(resolvedContext['CHU_SO_HUU_2.HO_TEN']).toBe('Nguyễn Thị Đồng Sở Hữu');
+    expect(resolvedContext['CHU_SO_HUU_2']).toBe('Nguyễn Thị Đồng Sở Hữu');
+    expect(resolvedContext['CHU_SO_HUU_2_HO_TEN']).toBe('Nguyễn Thị Đồng Sở Hữu');
+    expect(resolvedContext['CHU_SO_HUU_THU_HAI.HO_TEN']).toBe('Nguyễn Thị Đồng Sở Hữu');
+    expect(resolvedContext['CHU_SO_HUU_THU_HAI']).toBe('Nguyễn Thị Đồng Sở Hữu');
+    expect(resolvedContext['CHU_SO_HUU_2.DANH_XUNG']).toBe('Bà');
+    expect(resolvedContext['CHU_SO_HUU_2.SO_CCCD']).toBe('084190002222');
+    expect(resolvedContext['CHU_SO_HUU_2.DIA_CHI']).toBe('Ấp Nô Lựa, Xã Nhị Trường');
+    expect(resolvedContext['CHU_SO_HUU_2.NAM_SINH']).toBe('1990');
+
+    // Cờ boolean
+    expect(resolvedContext.CO_CHU_SO_HUU_2).toBe(true);
+    expect(resolvedContext.CO_CHU_SO_HUU_THU_HAI).toBe(true);
+
+    // Cấp TAI_SAN
+    expect(resolvedContext['TAI_SAN.CHU_SO_HUU_1']).toBe('Lê Văn Người Vay');
+    expect(resolvedContext['TAI_SAN.CHU_SO_HUU_2']).toBe('Nguyễn Thị Đồng Sở Hữu');
+    expect(resolvedContext['TAI_SAN.CHU_SO_HUU_THU_HAI']).toBe('Nguyễn Thị Đồng Sở Hữu');
+  });
+
+  it('Trường hợp 2: Khoản vay có 2 tài sản với 2 chủ sở hữu khác nhau', () => {
+    const loan = {
+      member,
+      heir,
+      collaterals: [
+        {
+          ownerType: 'NGUOI_VAY_CA_NHAN',
+          assetCode: 'TS-01',
+          certificateNumber: 'CS11111',
+          sheetNumber: '1',
+          plotNumber: '10',
+          area: 500,
+          address: 'Ấp Nô Lựa, Xã Nhị Trường',
+        },
+        {
+          ownerType: 'NGUOI_THUA_KE_CA_NHAN',
+          assetCode: 'TS-02',
+          certificateNumber: 'CS22222',
+          sheetNumber: '2',
+          plotNumber: '20',
+          area: 600,
+          address: 'Ấp Nô Lựa, Xã Nhị Trường',
+        },
+      ],
+    };
+
+    const { resolvedContext } = wordTemplateDataDictionaryService.resolveLoanData(loan, []);
+
+    expect(resolvedContext['CHU_SO_HUU_1.HO_TEN']).toBe('Lê Văn Người Vay');
+    expect(resolvedContext['CHU_SO_HUU_2.HO_TEN']).toBe('Nguyễn Thị Đồng Sở Hữu');
+    expect(resolvedContext['CHU_SO_HUU_2']).toBe('Nguyễn Thị Đồng Sở Hữu');
+    expect(resolvedContext['CHU_SO_HUU_THU_HAI.HO_TEN']).toBe('Nguyễn Thị Đồng Sở Hữu');
+    expect(resolvedContext.CO_CHU_SO_HUU_2).toBe(true);
+  });
+
+  it('Trường hợp 3: Khoản vay chỉ có 1 chủ sở hữu duy nhất và KHÔNG có người thừa kế', () => {
+    const loan = {
+      member,
+      heir: null,
+      collaterals: [
+        {
+          ownerType: 'NGUOI_VAY_CA_NHAN',
+          assetCode: 'TS-01',
+          certificateNumber: 'CS11111',
+          sheetNumber: '1',
+          plotNumber: '10',
+          area: 500,
+          address: 'Ấp Nô Lựa, Xã Nhị Trường',
+        },
+      ],
+    };
+
+    const { resolvedContext } = wordTemplateDataDictionaryService.resolveLoanData(loan, []);
+
+    expect(resolvedContext['CHU_SO_HUU_1.HO_TEN']).toBe('Lê Văn Người Vay');
+    expect(resolvedContext['CHU_SO_HUU_2.HO_TEN']).toBe('');
+    expect(resolvedContext['CHU_SO_HUU_2']).toBe('');
+    expect(resolvedContext['CHU_SO_HUU_THU_HAI']).toBe('');
+    expect(resolvedContext.CO_CHU_SO_HUU_2).toBe(false);
+    expect(resolvedContext.CO_CHU_SO_HUU_THU_HAI).toBe(false);
+  });
+
+  it('Trường hợp 4: Vòng lặp DANH_SACH_TAI_SAN cung cấp biến CHU_SO_HUU_1 và CHU_SO_HUU_2', () => {
+    const loan = {
+      member,
+      heir,
+      collaterals: [
+        {
+          ownerType: 'NGUOI_VAY_VA_NGUOI_THUA_KE',
+          assetCode: 'TS-01',
+          certificateNumber: 'CS12345',
+          sheetNumber: '1',
+          plotNumber: '10',
+          area: 500,
+          address: 'Ấp Nô Lựa, Xã Nhị Trường',
+        },
+      ],
+    };
+
+    const { resolvedContext } = wordTemplateDataDictionaryService.resolveLoanData(loan, []);
+    const items = resolvedContext.DANH_SACH_TAI_SAN;
+
+    expect(items).toBeDefined();
+    expect(items.length).toBe(1);
+    expect(items[0].CHU_SO_HUU_1).toBe('Lê Văn Người Vay');
+    expect(items[0].CHU_SO_HUU_2).toBe('Nguyễn Thị Đồng Sở Hữu');
+    expect(items[0].CHU_SO_HUU_THU_HAI).toBe('Nguyễn Thị Đồng Sở Hữu');
+    expect(items[0].CO_CHU_SO_HUU_2).toBe(true);
+  });
+});
+

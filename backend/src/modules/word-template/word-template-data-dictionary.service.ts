@@ -207,6 +207,14 @@ export class WordTemplateDataDictionaryService {
           { path: 'collaterals_summary.totalValuationAmountWords', label: 'Tổng giá trị định giá sau làm tròn bằng chữ', dataType: 'CURRENCY_WORDS', sampleValue: 'Sáu trăm bảy mươi ba triệu đồng' },
           { path: 'collaterals_summary.firstAssetAddress', label: 'Địa chỉ tài sản đầu tiên', dataType: 'TEXT', sampleValue: 'Ấp Nô Lựa, Xã Nhị Trường, Tỉnh Vĩnh Long' },
           { path: 'collaterals_summary.firstAssetOwner', label: 'Chủ sở hữu tài sản đầu tiên', dataType: 'TEXT', sampleValue: 'Nguyễn Văn An' },
+          { path: 'CHU_SO_HUU.HO_TEN', label: 'Họ tên chủ sở hữu tài sản (người đầu tiên)', dataType: 'TEXT', sampleValue: 'Nguyễn Văn An' },
+          { path: 'CHU_SO_HUU_1.HO_TEN', label: 'Họ tên chủ sở hữu thứ nhất', dataType: 'TEXT', sampleValue: 'Nguyễn Văn An' },
+          { path: 'CHU_SO_HUU_2.HO_TEN', label: 'Họ tên chủ sở hữu thứ hai (nếu có 2 người cùng sở hữu)', dataType: 'TEXT', sampleValue: 'Trần Thị Bích' },
+          { path: 'CHU_SO_HUU_2', label: 'Tên chủ sở hữu thứ hai (viết gọn)', dataType: 'TEXT', sampleValue: 'Trần Thị Bích' },
+          { path: 'CHU_SO_HUU_2.DANH_XUNG', label: 'Danh xưng chủ sở hữu thứ hai (Ông/Bà)', dataType: 'TEXT', sampleValue: 'Bà' },
+          { path: 'CHU_SO_HUU_2.SO_CCCD', label: 'Số CCCD chủ sở hữu thứ hai', dataType: 'TEXT', sampleValue: '084192005678' },
+          { path: 'CHU_SO_HUU_2.DIA_CHI', label: 'Địa chỉ thường trú chủ sở hữu thứ hai', dataType: 'TEXT', sampleValue: 'Ấp Nô Lựa, Xã Nhị Trường' },
+          { path: 'CO_CHU_SO_HUU_2', label: 'Khoản vay có 2 chủ sở hữu cùng đứng tên tài sản (True/False)', dataType: 'BOOLEAN', sampleValue: true },
         ],
       },
       {
@@ -1102,6 +1110,63 @@ export class WordTemplateDataDictionaryService {
       QUAN_HE: firstOwner.relationship,
     };
 
+    const secondOwner = uniqueOwnersList[1] || extendedOwnersList[1] || null;
+    const hasSecondOwner = Boolean(secondOwner && secondOwner.fullName && secondOwner.fullName.trim() !== '');
+    const secondOwnerObj = secondOwner
+      ? {
+          ...secondOwner,
+          fullName: secondOwner.fullName || '',
+          ho_ten: secondOwner.fullName || '',
+          HO_TEN: secondOwner.fullName || '',
+          gender: secondOwner.gender || '',
+          genderTitle: secondOwner.genderTitle || '',
+          XUNG_HO: secondOwner.genderTitle || '',
+          DANH_XUNG: secondOwner.genderTitle || '',
+          danh_xung: secondOwner.genderTitle || '',
+          LOAI_GIAY_TO: secondOwner.idType || '',
+          loai_giay_to: secondOwner.idType || '',
+          SO_GIAY_TO: secondOwner.idNumber || '',
+          so_giay_to: secondOwner.idNumber || '',
+          SO_CCCD: secondOwner.idNumber || '',
+          so_cccd: secondOwner.idNumber || '',
+          NGAY_CAP: secondOwner.idIssueDate || '',
+          ngay_cap: secondOwner.idIssueDate || '',
+          NOI_CAP: secondOwner.idIssuePlace || '',
+          noi_cap: secondOwner.idIssuePlace || '',
+          DIA_CHI: secondOwner.address || '',
+          dia_chi: secondOwner.address || '',
+          NAM_SINH: secondOwner.yearOfBirth ? String(secondOwner.yearOfBirth) : '',
+          nam_sinh: secondOwner.yearOfBirth ? String(secondOwner.yearOfBirth) : '',
+          QUAN_HE: secondOwner.relationship || '',
+          quan_he: secondOwner.relationship || '',
+        }
+      : {
+          fullName: '',
+          ho_ten: '',
+          HO_TEN: '',
+          gender: '',
+          genderTitle: '',
+          XUNG_HO: '',
+          DANH_XUNG: '',
+          danh_xung: '',
+          LOAI_GIAY_TO: '',
+          loai_giay_to: '',
+          SO_GIAY_TO: '',
+          so_giay_to: '',
+          SO_CCCD: '',
+          so_cccd: '',
+          NGAY_CAP: '',
+          ngay_cap: '',
+          NOI_CAP: '',
+          noi_cap: '',
+          DIA_CHI: '',
+          dia_chi: '',
+          NAM_SINH: '',
+          nam_sinh: '',
+          QUAN_HE: '',
+          quan_he: '',
+        };
+
     // 1. Xác định danh xưng khoản vay (KHOAN_VAY.DANH_XUNG)
     // - Tài sản là 1 người: căn cứ vào giới tính mà ghi là Ông/Bà/Hộ Ông/Hộ Bà + : + Tên của họ (ví dụ: Ông: Lê Văn A)
     // - Tài sản là từ 2 người khác nhau: hiển thị là Ông (Bà): + Tên 1 + Tên 2 (ví dụ: Ông (Bà): Nguyễn A + Nguyễn Thị B). Nếu Hộ thì Hộ Ông (Bà).
@@ -1248,6 +1313,10 @@ export class WordTemplateDataDictionaryService {
           address: c.address || '',
           CHU_SO_HUU: c.ownerName || '',
           ownerName: c.ownerName || '',
+          CHU_SO_HUU_1: firstOwner.fullName,
+          CHU_SO_HUU_2: secondOwnerObj.HO_TEN,
+          CHU_SO_HUU_THU_HAI: secondOwnerObj.HO_TEN,
+          CO_CHU_SO_HUU_2: hasSecondOwner,
         };
       });
 
@@ -1800,6 +1869,13 @@ export class WordTemplateDataDictionaryService {
         chu_so_huu_nam_sinh: ownerYearOfBirth,
         CHU_SO_HUU_QUAN_HE: ownerRelationship,
         chu_so_huu_quan_he: ownerRelationship,
+        CHU_SO_HUU_1: firstOwner.fullName,
+        CHU_SO_HUU_1_HO_TEN: firstOwner.fullName,
+        CHU_SO_HUU_2: secondOwnerObj.HO_TEN,
+        CHU_SO_HUU_2_HO_TEN: secondOwnerObj.HO_TEN,
+        CHU_SO_HUU_THU_HAI: secondOwnerObj.HO_TEN,
+        CO_CHU_SO_HUU_2: hasSecondOwner,
+        CO_CHU_SO_HUU_THU_HAI: hasSecondOwner,
 
         // Thành viên hộ
         householdMembers: cHouseholdMembers,
@@ -2431,6 +2507,11 @@ export class WordTemplateDataDictionaryService {
         DIA_CHI: firstCollateral?.address || '',
         CHU_SO_HUU: firstOwner.fullName,
         CHU_SO_HUU_HO_TEN: firstOwner.fullName,
+        CHU_SO_HUU_1: firstOwner.fullName,
+        CHU_SO_HUU_1_HO_TEN: firstOwner.fullName,
+        CHU_SO_HUU_2: secondOwnerObj.HO_TEN,
+        CHU_SO_HUU_2_HO_TEN: secondOwnerObj.HO_TEN,
+        CHU_SO_HUU_THU_HAI: secondOwnerObj.HO_TEN,
         CHU_SO_HUU_XUNG_HO: firstOwner.genderTitle,
         CHU_SO_HUU_DANH_XUNG: firstOwner.genderTitle,
         CHU_SO_HUU_LOAI_GIAY_TO: firstOwner.idType,
@@ -2442,6 +2523,8 @@ export class WordTemplateDataDictionaryService {
         CHU_SO_HUU_NAM_SINH: firstOwner.yearOfBirth,
         CHU_SO_HUU_QUAN_HE: firstOwner.relationship,
         CHU_SO_HUU_DAU_TIEN: firstOwnerObj,
+        CHU_SO_HUU_THU_2: secondOwnerObj,
+        CO_CHU_SO_HUU_2: hasSecondOwner,
         NGAY_CAP: firstCollateral?.issueDate ? dayjs(firstCollateral.issueDate).format('DD/MM/YYYY') : '',
         NOI_CAP: firstCollateral?.issuePlace || '',
         LOAI_GIAY_CHUNG_NHAN: firstCertificateType,
@@ -2813,6 +2896,61 @@ export class WordTemplateDataDictionaryService {
       CHU_SO_HUU_DIA_CHI: firstOwner.address,
       CHU_SO_HUU_NAM_SINH: firstOwner.yearOfBirth,
       CHU_SO_HUU_QUAN_HE: firstOwner.relationship,
+
+      // Chủ sở hữu 1 (đầu tiên)
+      'CHU_SO_HUU_1.HO_TEN': firstOwner.fullName,
+      'CHU_SO_HUU_1.XUNG_HO': firstOwner.genderTitle,
+      'CHU_SO_HUU_1.DANH_XUNG': firstOwner.genderTitle,
+      'CHU_SO_HUU_1.LOAI_GIAY_TO': firstOwner.idType,
+      'CHU_SO_HUU_1.SO_GIAY_TO': firstOwner.idNumber,
+      'CHU_SO_HUU_1.SO_CCCD': firstOwner.idNumber,
+      'CHU_SO_HUU_1.NGAY_CAP': firstOwner.idIssueDate,
+      'CHU_SO_HUU_1.NOI_CAP': firstOwner.idIssuePlace,
+      'CHU_SO_HUU_1.DIA_CHI': firstOwner.address,
+      'CHU_SO_HUU_1.NAM_SINH': firstOwner.yearOfBirth,
+      'CHU_SO_HUU_1.QUAN_HE': firstOwner.relationship,
+      CHU_SO_HUU_1: firstOwner.fullName,
+      CHU_SO_HUU_1_HO_TEN: firstOwner.fullName,
+      'CHU_SO_HUU_THU_NHAT.HO_TEN': firstOwner.fullName,
+      CHU_SO_HUU_THU_NHAT: firstOwner.fullName,
+      'TAI_SAN.CHU_SO_HUU_1': firstOwner.fullName,
+      'TAI_SAN.CHU_SO_HUU_THU_NHAT': firstOwner.fullName,
+
+      // Chủ sở hữu 2 (thứ hai)
+      'CHU_SO_HUU_2.HO_TEN': secondOwnerObj.HO_TEN,
+      'CHU_SO_HUU_2.XUNG_HO': secondOwnerObj.XUNG_HO,
+      'CHU_SO_HUU_2.DANH_XUNG': secondOwnerObj.DANH_XUNG,
+      'CHU_SO_HUU_2.LOAI_GIAY_TO': secondOwnerObj.LOAI_GIAY_TO,
+      'CHU_SO_HUU_2.SO_GIAY_TO': secondOwnerObj.SO_GIAY_TO,
+      'CHU_SO_HUU_2.SO_CCCD': secondOwnerObj.SO_CCCD,
+      'CHU_SO_HUU_2.NGAY_CAP': secondOwnerObj.NGAY_CAP,
+      'CHU_SO_HUU_2.NOI_CAP': secondOwnerObj.NOI_CAP,
+      'CHU_SO_HUU_2.DIA_CHI': secondOwnerObj.DIA_CHI,
+      'CHU_SO_HUU_2.NAM_SINH': secondOwnerObj.NAM_SINH,
+      'CHU_SO_HUU_2.QUAN_HE': secondOwnerObj.QUAN_HE,
+      CHU_SO_HUU_2: secondOwnerObj.HO_TEN,
+      CHU_SO_HUU_2_HO_TEN: secondOwnerObj.HO_TEN,
+      CHU_SO_HUU_2_XUNG_HO: secondOwnerObj.XUNG_HO,
+      CHU_SO_HUU_2_DANH_XUNG: secondOwnerObj.DANH_XUNG,
+      CHU_SO_HUU_2_SO_CCCD: secondOwnerObj.SO_CCCD,
+      CHU_SO_HUU_2_SO_GIAY_TO: secondOwnerObj.SO_GIAY_TO,
+      CHU_SO_HUU_2_NGAY_CAP: secondOwnerObj.NGAY_CAP,
+      CHU_SO_HUU_2_NOI_CAP: secondOwnerObj.NOI_CAP,
+      CHU_SO_HUU_2_DIA_CHI: secondOwnerObj.DIA_CHI,
+      CHU_SO_HUU_2_NAM_SINH: secondOwnerObj.NAM_SINH,
+      'CHU_SO_HUU_THU_HAI.HO_TEN': secondOwnerObj.HO_TEN,
+      CHU_SO_HUU_THU_HAI: secondOwnerObj.HO_TEN,
+      CHU_SO_HUU_THU_HAI_HO_TEN: secondOwnerObj.HO_TEN,
+      'CHU_SO_HUU_THU_2.HO_TEN': secondOwnerObj.HO_TEN,
+      CHU_SO_HUU_THU_2: secondOwnerObj.HO_TEN,
+      'TAI_SAN.CHU_SO_HUU_2': secondOwnerObj.HO_TEN,
+      'TAI_SAN.CHU_SO_HUU_THU_HAI': secondOwnerObj.HO_TEN,
+
+      // Cờ boolean kiểm tra có chủ sở hữu thứ 2
+      CO_CHU_SO_HUU_2: hasSecondOwner,
+      CO_CHU_SO_HUU_THU_HAI: hasSecondOwner,
+      'CHU_SO_HUU.CO_CHU_SO_HUU_2': hasSecondOwner,
+      'CHU_SO_HUU.CO_CHU_SO_HUU_THU_HAI': hasSecondOwner,
 
       // Cờ điều kiện chủ sở hữu tài sản
       CO_MOT_CHU_SO_HUU: hasSingleOwner,
@@ -3229,6 +3367,12 @@ export class WordTemplateDataDictionaryService {
             DIA_CHI: '',
           },
       CHU_SO_HUU: firstOwnerObj,
+      CHU_SO_HUU_1: firstOwnerObj,
+      CHU_SO_HUU_2: secondOwnerObj,
+      CHU_SO_HUU_THU_NHAT: firstOwnerObj,
+      CHU_SO_HUU_THU_HAI: secondOwnerObj,
+      CO_CHU_SO_HUU_2: hasSecondOwner,
+      CO_CHU_SO_HUU_THU_HAI: hasSecondOwner,
       CO_NGUOI_THUA_KE: coNguoiThuaKe,
       CO_NGUO_THUA_KE: coNguoiThuaKe,
       hasHeir: coNguoiThuaKe,
@@ -3436,7 +3580,7 @@ export class WordTemplateDataDictionaryService {
   }
 
   private formatIdType(type?: string | null): string {
-    if (type === 'CAN_CUOC') return 'Thẻ căn cước';
+    if (type === 'CAN_CUOC') return 'Căn cước';
     if (type === 'CHUNG_MINH_NHAN_DAN') return 'Chứng minh nhân dân';
     return 'Căn cước công dân';
   }

@@ -176,6 +176,10 @@ export class WordTemplateService {
     return wordTemplateRepository.update(id, dto);
   }
 
+  public async reorderTemplates(items: { id: string; sortOrder: number }[]) {
+    return wordTemplateRepository.reorderTemplates(items);
+  }
+
   public async saveMappings(templateId: string, mappings: WordTemplateMappingDto[]) {
     await this.getTemplateById(templateId);
     return wordTemplateRepository.replaceMappings(templateId, mappings);

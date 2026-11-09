@@ -92,8 +92,8 @@ export const createLoanSchema = z.object({
     .number({ required_error: 'Số tiền vay là bắt buộc' })
     .positive('Số tiền vay phải lớn hơn 0'),
   loanStartDate: dateStringSchema.optional(),
-  contractNumber: z.string().trim().optional(),
-  contractDate: dateStringSchema.optional(),
+  contractNumber: z.string().trim().nullable().optional(),
+  contractDate: dateStringSchema.nullable().optional(),
   heir: heirSchema.optional(),
   relatedPersons: z.array(createRelatedPersonSchema).optional(),
   loanPlan: loanPlanSchema.optional(),
@@ -102,7 +102,14 @@ export const createLoanSchema = z.object({
   collaterals: z.array(createCollateralSchema).optional(),
 });
 
-export const updateLoanSchema = createLoanSchema.partial().omit({ memberId: true });
+export const updateMortgageContractSchema = mortgageContractSchema.partial();
+
+export const updateLoanSchema = createLoanSchema
+  .partial()
+  .omit({ memberId: true })
+  .extend({
+    mortgageContract: updateMortgageContractSchema.optional().nullable(),
+  });
 
 export const updateLoanStatusSchema = z.object({
   status: z.nativeEnum(LoanStatus, {

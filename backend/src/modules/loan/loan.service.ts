@@ -146,7 +146,10 @@ export class LoanService {
     }
 
     // 1b. Kiểm tra tính duy nhất của Số khế ước (contractNumber)
-    await this.ensureUniqueContractNumber(dto.contractNumber);
+    dto.contractNumber = dto.contractNumber?.trim() ? dto.contractNumber.trim() : null;
+    if (dto.contractNumber) {
+      await this.ensureUniqueContractNumber(dto.contractNumber);
+    }
 
     // 1c. Kiểm tra Phương án vay (nếu có gửi kèm)
     this.validateAndNormalizeLoanPlan(dto.loanPlan, dto.loanAmount);
@@ -314,10 +317,20 @@ export class LoanService {
       return createdLoan;
     } catch (err) {
       if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+        const target = (err.meta as any)?.target;
+        const isContractNumberTarget = Array.isArray(target)
+          ? target.includes('contractNumber')
+          : typeof target === 'string' && target.includes('contractNumber');
+        if (isContractNumberTarget && dto.contractNumber) {
+          throw AppError.conflict(
+            `Số khế ước "${dto.contractNumber}" vừa được sử dụng bởi một hồ sơ khác. Vui lòng nhập số khế ước khác.`,
+            ErrorCode.LOAN_CONTRACT_NUMBER_EXISTS,
+            [{ field: 'contractNumber', message: 'Số khế ước đã tồn tại trong hệ thống' }]
+          );
+        }
         throw AppError.conflict(
-          `Số khế ước "${dto.contractNumber}" vừa được sử dụng bởi một hồ sơ khác. Vui lòng nhập số khế ước khác.`,
-          ErrorCode.LOAN_CONTRACT_NUMBER_EXISTS,
-          [{ field: 'contractNumber', message: 'Số khế ước đã tồn tại trong hệ thống' }]
+          `Dữ liệu đã tồn tại trong hệ thống (${Array.isArray(target) ? target.join(', ') : target || 'khóa trùng lặp'}).`,
+          ErrorCode.CONFLICT
         );
       }
       throw err;
@@ -376,7 +389,10 @@ export class LoanService {
 
     // 1. Kiểm tra trùng Số khế ước (nếu thay đổi, loại trừ chính id hiện tại)
     if (dto.contractNumber !== undefined) {
-      await this.ensureUniqueContractNumber(dto.contractNumber, id);
+      dto.contractNumber = dto.contractNumber?.trim() ? dto.contractNumber.trim() : null;
+      if (dto.contractNumber) {
+        await this.ensureUniqueContractNumber(dto.contractNumber, id);
+      }
     }
 
     if (dto.heir) {
@@ -437,10 +453,20 @@ export class LoanService {
       return await this.repo.update(id, dto, effectiveLoanAmount, timeline);
     } catch (err) {
       if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+        const target = (err.meta as any)?.target;
+        const isContractNumberTarget = Array.isArray(target)
+          ? target.includes('contractNumber')
+          : typeof target === 'string' && target.includes('contractNumber');
+        if (isContractNumberTarget && dto.contractNumber) {
+          throw AppError.conflict(
+            `Số khế ước "${dto.contractNumber}" đã tồn tại ở một khoản vay khác.`,
+            ErrorCode.LOAN_CONTRACT_NUMBER_EXISTS,
+            [{ field: 'contractNumber', message: 'Số khế ước đã tồn tại trong hệ thống' }]
+          );
+        }
         throw AppError.conflict(
-          `Số khế ước "${dto.contractNumber}" đã tồn tại ở một khoản vay khác.`,
-          ErrorCode.LOAN_CONTRACT_NUMBER_EXISTS,
-          [{ field: 'contractNumber', message: 'Số khế ước đã tồn tại trong hệ thống' }]
+          `Dữ liệu đã tồn tại trong hệ thống (${Array.isArray(target) ? target.join(', ') : target || 'khóa trùng lặp'}).`,
+          ErrorCode.CONFLICT
         );
       }
       throw err;
@@ -492,6 +518,17 @@ export class LoanService {
             `Số tiền vay (${loan.loanAmount.toLocaleString('vi-VN')} VNĐ) vượt quá 70% tổng giá trị định giá tài sản thế chấp (${totalCollateralValue.toLocaleString('vi-VN')} VNĐ × 70% = ${maxAllowedLoanAmount.toLocaleString('vi-VN')} VNĐ).`,
             ErrorCode.LOAN_MORTGAGE_LIMIT_EXCEEDED
           );
+        }
+
+        // Hồ sơ thế chấp nếu >= 140.000.000đ mà chưa nhập người liên quan thì không cho hoàn thành hồ sơ (chỉ cho lưu nháp)
+        if (loan.loanAmount >= 140_000_000) {
+          const activeRelatedPersons = (loan.relatedPersons || []).filter((rp) => !rp.isDeleted);
+          if (activeRelatedPersons.length === 0) {
+            throw AppError.badRequest(
+              'Hồ sơ thế chấp từ 140.000.000 đồng trở lên bắt buộc phải khai báo Người liên quan trước khi hoàn thành hồ sơ (chỉ được lưu nháp).',
+              ErrorCode.BAD_REQUEST
+            );
+          }
         }
       }
     }

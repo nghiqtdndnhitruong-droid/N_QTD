@@ -56,6 +56,7 @@ export interface CreateWordTemplateDto {
   category: string;
   loanTypeScope?: LoanTypeScope;
   description?: string;
+  sortOrder?: number;
 }
 
 export interface UpdateWordTemplateDto {
@@ -64,6 +65,11 @@ export interface UpdateWordTemplateDto {
   loanTypeScope?: LoanTypeScope;
   description?: string;
   isActive?: boolean;
+  sortOrder?: number;
+}
+
+export interface ReorderTemplatesDto {
+  items: { id: string; sortOrder: number }[];
 }
 
 export interface SaveMappingsDto {

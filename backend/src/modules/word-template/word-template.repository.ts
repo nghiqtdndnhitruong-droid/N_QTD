@@ -38,8 +38,18 @@ export class WordTemplateRepository {
           select: { mappings: true, versions: true },
         },
       },
-      orderBy: [{ category: 'asc' }, { createdAt: 'desc' }],
+      orderBy: [{ sortOrder: 'asc' }, { category: 'asc' }, { createdAt: 'desc' }],
     });
+  }
+
+  public async reorderTemplates(items: { id: string; sortOrder: number }[]) {
+    const updates = items.map((item) =>
+      prisma.wordTemplate.update({
+        where: { id: item.id },
+        data: { sortOrder: item.sortOrder },
+      })
+    );
+    return prisma.$transaction(updates);
   }
 
   public async findById(id: string) {

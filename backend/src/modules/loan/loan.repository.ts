@@ -1,6 +1,7 @@
 import { prisma } from '../../config/database';
-import { CollateralCertificateType, Loan, LoanStatus, LoanType, Prisma } from '@prisma/client';
+import { CollateralCertificateType, Loan, LoanStatus, LoanTermType, LoanType, Prisma } from '@prisma/client';
 import { CreateLoanDto, LoanFilterQuery, UpdateLoanDto } from './loan.types';
+import { LOAN_CONSTANTS } from '../../shared/constants';
 import { ResolvedLocationSnapshot } from '../area/area.types';
 import { parsePagination } from '../../shared/utils/pagination.util';
 
@@ -121,6 +122,7 @@ export class LoanRepository {
           equals: contractNumber.trim(),
           mode: 'insensitive',
         },
+        isDeleted: { not: true },
         ...(excludeLoanId && { id: { not: excludeLoanId } }),
       },
     });
@@ -327,6 +329,14 @@ export class LoanRepository {
     }
 
     if (data.loanAmount !== undefined) updateData.loanAmount = data.loanAmount;
+    if (data.loanType !== undefined) updateData.loanType = data.loanType;
+    if (data.termType !== undefined) {
+      updateData.termType = data.termType;
+      updateData.termMonths =
+        data.termType === LoanTermType.NGAN_HAN
+          ? LOAN_CONSTANTS.SHORT_TERM_MONTHS
+          : LOAN_CONSTANTS.MEDIUM_TERM_MONTHS;
+    }
     if (data.loanStartDate !== undefined) {
       updateData.loanStartDate = data.loanStartDate ? new Date(data.loanStartDate) : new Date();
     }
@@ -394,18 +404,33 @@ export class LoanRepository {
 
     if (data.mortgageContract !== undefined) {
       if (data.mortgageContract) {
+        const currentLoan = await prisma.loan.findUnique({
+          where: { id },
+          select: { mortgageContract: true },
+        });
+        const currentMortgage = currentLoan?.mortgageContract;
+
         const expiryRaw =
-          data.mortgageContract.contractExpiryDate || data.mortgageContract.contractDuration;
+          data.mortgageContract.contractExpiryDate !== undefined
+            ? data.mortgageContract.contractExpiryDate
+            : (data.mortgageContract.contractDuration || currentMortgage?.contractExpiryDate);
         const parsedExpiry =
           expiryRaw && !Number.isNaN(Date.parse(String(expiryRaw))) ? new Date(expiryRaw) : null;
 
         updateData.mortgageContract = {
-          contractNumber: data.mortgageContract.contractNumber,
-          contractDuration: data.mortgageContract.contractDuration ?? null,
+          contractNumber:
+            data.mortgageContract.contractNumber ?? currentMortgage?.contractNumber ?? '',
+          contractDuration:
+            data.mortgageContract.contractDuration !== undefined
+              ? data.mortgageContract.contractDuration
+              : currentMortgage?.contractDuration ?? null,
           contractExpiryDate: parsedExpiry,
-          committeeAuthDate: data.mortgageContract.committeeAuthDate
-            ? new Date(data.mortgageContract.committeeAuthDate)
-            : null,
+          committeeAuthDate:
+            data.mortgageContract.committeeAuthDate !== undefined
+              ? (data.mortgageContract.committeeAuthDate
+                  ? new Date(data.mortgageContract.committeeAuthDate)
+                  : null)
+              : currentMortgage?.committeeAuthDate ?? null,
         };
       } else {
         updateData.mortgageContract = null;
@@ -486,6 +511,7 @@ export class LoanRepository {
     await prisma.loan.update({
       where: { id },
       data: {
+        contractNumber: null, // Giải phóng số khế ước để có thể cấp lại cho khoản vay mới
         isDeleted: true,
         deletedAt: new Date(),
         deletedReason: reason || 'Hủy/Xóa hồ sơ vay chưa phát sinh giao dịch giải ngân',

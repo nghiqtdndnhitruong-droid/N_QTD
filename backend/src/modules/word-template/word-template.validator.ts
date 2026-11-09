@@ -19,6 +19,7 @@ export const createWordTemplateSchema = z.object({
     .max(100, 'Nhóm biểu mẫu tối đa 100 ký tự'),
   loanTypeScope: z.enum(['ALL', 'THE_CHAP', 'TIN_CHAP']).default('ALL'),
   description: z.string().trim().max(1000).optional(),
+  sortOrder: z.number().int().optional(),
 });
 
 export const updateWordTemplateSchema = z.object({
@@ -27,6 +28,7 @@ export const updateWordTemplateSchema = z.object({
   loanTypeScope: z.enum(['ALL', 'THE_CHAP', 'TIN_CHAP']).optional(),
   description: z.string().trim().max(1000).optional(),
   isActive: z.boolean().optional(),
+  sortOrder: z.number().int().optional(),
 });
 
 export const mappingItemSchema = z.object({

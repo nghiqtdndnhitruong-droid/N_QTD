@@ -45,7 +45,7 @@ describe('Word Template Keywords: NGUOI_VAY.LOAI_GIAY_TO, NGAY, THANG, NAM', () 
     expect(resolvedContext['NAM']).toBe(now.format('YYYY'));
   });
 
-  it('2. Format CAN_CUOC thành Thẻ căn cước', () => {
+  it('2. Format CAN_CUOC thành Căn cước', () => {
     const loanCanCuoc = {
       ...mockLoan,
       member: {
@@ -59,7 +59,7 @@ describe('Word Template Keywords: NGUOI_VAY.LOAI_GIAY_TO, NGAY, THANG, NAM', () 
     ];
 
     const { resolvedContext } = wordTemplateDataDictionaryService.resolveLoanData(loanCanCuoc, mappings as any);
-    expect(resolvedContext['NGUOI_VAY.LOAI_GIAY_TO']).toBe('Thẻ căn cước');
+    expect(resolvedContext['NGUOI_VAY.LOAI_GIAY_TO']).toBe('Căn cước');
   });
 
   it('3. Sinh file docx với các biến {{NGUOI_VAY.LOAI_GIAY_TO}}, {{NGAY}}, {{THANG}}, {{NAM}}', () => {

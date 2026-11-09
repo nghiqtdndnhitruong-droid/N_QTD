@@ -11,8 +11,8 @@ import {
 } from '../types/enums';
 
 export const ID_DOCUMENT_TYPE_LABELS: Record<IdDocumentType, string> = {
-  CAN_CUOC: 'Thẻ căn cước',
-  CAN_CUOC_CONG_DAN: 'Căn cước công dân (CCCD)',
+  CAN_CUOC: 'Căn cước',
+  CAN_CUOC_CONG_DAN: 'Căn cước công dân',
 };
 
 export const GENDER_LABELS: Record<Gender, string> = {

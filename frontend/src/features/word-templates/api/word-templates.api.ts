@@ -88,6 +88,12 @@ export async function updateWordTemplateApi(
   return res.data.data!;
 }
 
+export async function reorderWordTemplatesApi(
+  items: { id: string; sortOrder: number }[],
+): Promise<void> {
+  await httpClient.put<ApiResponse<void>>('/word-templates/reorder', { items });
+}
+
 export async function saveWordTemplateMappingsApi(
   id: string,
   mappings: WordTemplateMapping[],

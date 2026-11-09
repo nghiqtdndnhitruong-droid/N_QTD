@@ -97,7 +97,7 @@ describe('Word Template Owner Enhancements (TAI_SAN.CHU_SO_HUU & DANH_SACH_CHU_S
 
     expect(resolvedContext['TAI_SAN.CHU_SO_HUU']).toBe('Nguyễn Thị Bích');
     expect(resolvedContext['CHU_SO_HUU_XUNG_HO']).toBe('Bà');
-    expect(resolvedContext['CHU_SO_HUU_LOAI_GIAY_TO']).toBe('Thẻ căn cước');
+    expect(resolvedContext['CHU_SO_HUU_LOAI_GIAY_TO']).toBe('Căn cước');
     expect(resolvedContext['CHU_SO_HUU_SO_GIAY_TO']).toBe('084190002222');
     expect(resolvedContext['CO_MOT_CHU_SO_HUU']).toBe(true);
     expect(resolvedContext['CHU_SO_HUU_LA_NGUOI_THUA_KE']).toBe(true);
@@ -324,7 +324,7 @@ describe('Word Template Owner Enhancements (TAI_SAN.CHU_SO_HUU & DANH_SACH_CHU_S
     // Người 2: Người thừa kế
     expect(cshList[1].HO_TEN).toBe('Nguyễn Thị Bích');
     expect(cshList[1].XUNG_HO).toBe('Bà');
-    expect(cshList[1].LOAI_GIAY_TO).toBe('Thẻ căn cước');
+    expect(cshList[1].LOAI_GIAY_TO).toBe('Căn cước');
     expect(cshList[1].SO_GIAY_TO).toBe('084190002222');
     expect(cshList[1].NOI_CAP).toBe('Công an tỉnh Vĩnh Long');
     expect(cshList[1].DIA_CHI).toBe('Ấp Nô Lựa, Xã Nhị Trường');
@@ -382,7 +382,7 @@ describe('Word Template Owner Enhancements (TAI_SAN.CHU_SO_HUU & DANH_SACH_CHU_S
     expect(resolvedContext.NGUOI_THUA_KE.GIOI_TINH).toBe('Nữ');
     expect(resolvedContext.NGUOI_THUA_KE.HO_TEN).toBe('Nguyễn Thị Bích');
     expect(resolvedContext.NGUOI_THUA_KE.NAM_SINH).toBe('1992');
-    expect(resolvedContext.NGUOI_THUA_KE.LOAI_GIAY_TO).toBe('Thẻ căn cước');
+    expect(resolvedContext.NGUOI_THUA_KE.LOAI_GIAY_TO).toBe('Căn cước');
     expect(resolvedContext.NGUOI_THUA_KE.SO_GIAY_TO).toBe('084190002222');
     expect(resolvedContext.NGUOI_THUA_KE.SO_CCCD).toBe('084190002222');
     expect(resolvedContext.NGUOI_THUA_KE.NGAY_CAP).toBe('10/05/2022');
@@ -398,7 +398,7 @@ describe('Word Template Owner Enhancements (TAI_SAN.CHU_SO_HUU & DANH_SACH_CHU_S
     expect(resolvedContext['NGUOI_THUA_KE.GIOI_TINH']).toBe('Nữ');
     expect(resolvedContext['NGUOI_THUA_KE.HO_TEN']).toBe('Nguyễn Thị Bích');
     expect(resolvedContext['NGUOI_THUA_KE.NAM_SINH']).toBe('1992');
-    expect(resolvedContext['NGUOI_THUA_KE.LOAI_GIAY_TO']).toBe('Thẻ căn cước');
+    expect(resolvedContext['NGUOI_THUA_KE.LOAI_GIAY_TO']).toBe('Căn cước');
     expect(resolvedContext['NGUOI_THUA_KE.SO_GIAY_TO']).toBe('084190002222');
     expect(resolvedContext['NGUOI_THUA_KE.SO_CCCD']).toBe('084190002222');
     expect(resolvedContext['NGUOI_THUA_KE.NGAY_CAP']).toBe('10/05/2022');

@@ -3,7 +3,6 @@ import { Link, useNavigate, useParams } from 'react-router';
 import {
   ArrowLeft,
   CheckCircle2,
-  Copy,
   FilePenLine,
   FileText,
   Printer,
@@ -59,8 +58,8 @@ import { RelatedPersonsSection } from '../components/related-persons-section';
 import { RepaymentsSection } from '../components/repayments-section';
 import { TemplateExportDialog } from '@/features/word-templates/components/template-export-dialog';
 import { CollateralOwnerType } from '../types/loan.types';
+import { LoanContractModal } from '../components/loan-contract-modal';
 import {
-  useCloneLoan,
   useDeleteLoan,
   useLoanDetail,
   useLoanSummary,
@@ -74,13 +73,13 @@ export function LoanDetailPage() {
   const [statusTarget, setStatusTarget] = useState<LoanStatus | null>(null);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [contractModalOpen, setContractModalOpen] = useState(false);
 
   const { data: loan, isLoading, error, refetch } = useLoanDetail(id);
   const { data: valuations = [] } = useLoanValuations(id);
   const { data: summary, isLoading: isSummaryLoading } = useLoanSummary(id);
   const statusMutation = useUpdateLoanStatus(id ?? '');
   const deleteLoanMutation = useDeleteLoan();
-  const cloneLoanMutation = useCloneLoan();
 
   const hasHouseholdCollateral = useMemo(() => {
     const collaterals = loan?.collaterals ?? [];
@@ -142,22 +141,17 @@ export function LoanDetailPage() {
     }
   };
 
-  const handleCloneLoan = async () => {
-    try {
-      const cloned = await cloneLoanMutation.mutateAsync({ sourceLoanId: loan.id });
-      notifySuccess('Đã sao chép hồ sơ khoản vay thành công!');
-      navigate(`/loans/new?draft=${cloned.id}`);
-    } catch (err) {
-      notifyApiError(err);
-    }
-  };
-
   const handlePrintDocument = (docLabel: string) => {
     notifyInfo(
       `Đang yêu cầu in biểu mẫu: ${docLabel}`,
       'Kết nối endpoint GET /api/v1/loans/:id/documents/:type để tải file DOCX/PDF chuẩn của Quỹ.',
     );
   };
+
+  const isMissingRelatedPerson =
+    loan?.loanType === LoanType.THE_CHAP &&
+    (loan?.loanAmount ?? 0) >= 140_000_000 &&
+    (loan?.relatedPersons?.length ?? 0) === 0;
 
   return (
     <div className="space-y-6">
@@ -231,18 +225,6 @@ export function LoanDetailPage() {
               </DropdownMenu>
             </Can>
 
-            <Can perm="loan:create">
-              <Button
-                variant="outline"
-                size="sm"
-                leftIcon={<Copy className="h-4 w-4" />}
-                isLoading={cloneLoanMutation.isPending}
-                onClick={handleCloneLoan}
-              >
-                Sao chép khoản vay
-              </Button>
-            </Can>
-
             {isEditable && (
               <>
                 <Can perm="loan:update">
@@ -258,6 +240,12 @@ export function LoanDetailPage() {
                 <Can perm="loan:change-status">
                   <Button
                     size="sm"
+                    disabled={isMissingRelatedPerson}
+                    title={
+                      isMissingRelatedPerson
+                        ? 'Hồ sơ thế chấp từ 140.000.000đ trở lên cần nhập người liên quan trước khi hoàn thành hồ sơ (chỉ cho phép lưu nháp).'
+                        : undefined
+                    }
                     leftIcon={<CheckCircle2 className="h-4 w-4" />}
                     onClick={() => setStatusTarget(LoanStatus.DA_HOAN_THANH_HO_SO)}
                   >
@@ -334,21 +322,63 @@ export function LoanDetailPage() {
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             {/* Thông tin khoản vay & Khế ước */}
             <Card>
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between pb-3">
                 <CardTitle>Thông tin Hợp đồng & Khế ước</CardTitle>
+                <Can perm="loan:update">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    leftIcon={<FilePenLine className="h-3.5 w-3.5" />}
+                    onClick={() => setContractModalOpen(true)}
+                  >
+                    Cập nhật Khế ước / Chứng thực
+                  </Button>
+                </Can>
               </CardHeader>
               <CardContent>
                 <DescriptionList columns={2}>
                   <DescriptionItem
                     label="Số khế ước nhận nợ"
-                    value={loan.contractNumber || 'Chưa cấp số khế ước'}
+                    value={
+                      loan.contractNumber ? (
+                        <span>{loan.contractNumber}</span>
+                      ) : (
+                        <span className="text-amber-700 font-medium">Chưa cấp số khế ước</span>
+                      )
+                    }
                     mono
                   />
                   <DescriptionItem
                     label="Ngày lập khế ước"
-                    value={formatDateVN(loan.contractDate)}
+                    value={
+                      loan.contractDate ? (
+                        <span>{formatDateVN(loan.contractDate)}</span>
+                      ) : (
+                        <span className="text-slate-400 italic">Chưa cấp ngày khế ước</span>
+                      )
+                    }
                     mono
                   />
+                  {loan.loanType === LoanType.THE_CHAP && (
+                    <>
+                      <DescriptionItem
+                        label="Số hợp đồng thế chấp"
+                        value={loan.mortgageContract?.contractNumber || 'Chưa lưu HĐTC'}
+                        mono
+                      />
+                      <DescriptionItem
+                        label="Ngày chứng thực ủy ban"
+                        value={
+                          loan.mortgageContract?.committeeAuthDate ? (
+                            <span>{formatDateVN(loan.mortgageContract.committeeAuthDate)}</span>
+                          ) : (
+                            <span className="text-amber-700 font-medium">Chưa chứng thực ủy ban</span>
+                          )
+                        }
+                        mono
+                      />
+                    </>
+                  )}
                   <DescriptionItem
                     label="Hình thức vay"
                     value={LOAN_TYPE_LABELS[loan.loanType]}
@@ -696,6 +726,13 @@ export function LoanDetailPage() {
         loanId={loan.id}
         contractNumber={loan.contractNumber}
         loanType={loan.loanType}
+      />
+
+      <LoanContractModal
+        open={contractModalOpen}
+        onOpenChange={setContractModalOpen}
+        loan={loan}
+        onSuccess={() => void refetch()}
       />
     </div>
   );

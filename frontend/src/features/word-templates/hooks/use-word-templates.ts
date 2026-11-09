@@ -6,6 +6,7 @@ import {
   uploadWordTemplateApi,
   uploadWordTemplateVersionApi,
   updateWordTemplateApi,
+  reorderWordTemplatesApi,
   saveWordTemplateMappingsApi,
   deleteWordTemplateApi,
   downloadOriginalTemplateApi,
@@ -93,6 +94,17 @@ export function useUpdateWordTemplate() {
       updateWordTemplateApi(id, data),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: wordTemplateKeys.detail(variables.id) });
+      queryClient.invalidateQueries({ queryKey: wordTemplateKeys.lists() });
+    },
+  });
+}
+
+export function useReorderWordTemplates() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (items: { id: string; sortOrder: number }[]) =>
+      reorderWordTemplatesApi(items),
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: wordTemplateKeys.lists() });
     },
   });

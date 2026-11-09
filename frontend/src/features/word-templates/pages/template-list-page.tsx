@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import {
+  ArrowDown,
+  ArrowUp,
   BookOpen,
   Download,
   FileCode,
@@ -22,6 +24,7 @@ import {
   useWordTemplates,
   useDeleteWordTemplate,
   useUpdateWordTemplate,
+  useReorderWordTemplates,
   useDownloadOriginalTemplate,
 } from '../hooks/use-word-templates';
 import { TemplateUploadModal } from '../components/template-upload-modal';
@@ -44,6 +47,32 @@ export function TemplateListPage() {
   const deleteMutation = useDeleteWordTemplate();
   const updateMutation = useUpdateWordTemplate();
   const downloadMutation = useDownloadOriginalTemplate();
+  const reorderMutation = useReorderWordTemplates();
+
+  const handleMove = async (index: number, direction: 'UP' | 'DOWN') => {
+    const targetIndex = direction === 'UP' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= templates.length) return;
+
+    const currentItem = templates[index];
+    const targetItem = templates[targetIndex];
+    if (!currentItem || !targetItem) return;
+
+    const newTemplates = [...templates];
+    newTemplates[index] = targetItem;
+    newTemplates[targetIndex] = currentItem;
+
+    const reorderedItems = newTemplates.map((t, idx) => ({
+      id: t.id,
+      sortOrder: idx,
+    }));
+
+    try {
+      await reorderMutation.mutateAsync(reorderedItems);
+      notifySuccess(`Đã di chuyển biểu mẫu "${currentItem.title}" ${direction === 'UP' ? 'lên trên' : 'xuống dưới'}`);
+    } catch (err) {
+      notifyApiError(err);
+    }
+  };
 
   // Danh sách các nhóm biểu mẫu duy nhất
   const categories = useMemo(() => {
@@ -208,7 +237,7 @@ export function TemplateListPage() {
         </Card>
       ) : (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {templates.map((template) => (
+          {templates.map((template, index) => (
             <Card
               key={template.id}
               className={`flex flex-col justify-between transition-shadow hover:shadow-md ${
@@ -227,9 +256,32 @@ export function TemplateListPage() {
                       {template.isActive ? 'Đang sử dụng' : 'Ngừng sử dụng'}
                     </Badge>
                   </button>
-                  <span className="font-mono text-[11px] font-semibold text-slate-400">
-                    v{template.currentVersion}
-                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <div className="flex items-center rounded border border-slate-200 bg-white">
+                      <button
+                        type="button"
+                        disabled={index === 0 || reorderMutation.isPending}
+                        onClick={() => handleMove(index, 'UP')}
+                        className="p-1 text-slate-500 hover:text-primary-700 disabled:opacity-25 disabled:cursor-not-allowed"
+                        title="Di chuyển lên trên"
+                      >
+                        <ArrowUp className="h-3.5 w-3.5" />
+                      </button>
+                      <div className="h-3 w-[1px] bg-slate-200" />
+                      <button
+                        type="button"
+                        disabled={index === templates.length - 1 || reorderMutation.isPending}
+                        onClick={() => handleMove(index, 'DOWN')}
+                        className="p-1 text-slate-500 hover:text-primary-700 disabled:opacity-25 disabled:cursor-not-allowed"
+                        title="Di chuyển xuống dưới"
+                      >
+                        <ArrowDown className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                    <span className="font-mono text-[11px] font-semibold text-slate-400">
+                      v{template.currentVersion}
+                    </span>
+                  </div>
                 </div>
 
                 <div className="mt-3">

@@ -51,6 +51,9 @@ router.post('/export-loan', (req, res, next) =>
   wordTemplateController.exportLoan(req, res, next),
 );
 
+// Sắp xếp thứ tự hiển thị các mẫu template
+router.put('/reorder', (req, res, next) => wordTemplateController.reorder(req, res, next));
+
 // 5. Chi tiết, chỉnh sửa & phiên bản
 router.get('/:id', (req, res, next) => wordTemplateController.getById(req, res, next));
 router.put('/:id', (req, res, next) => wordTemplateController.update(req, res, next));

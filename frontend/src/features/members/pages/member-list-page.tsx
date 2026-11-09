@@ -323,7 +323,7 @@ export function MemberListPage() {
             >
               <option value="">Tất cả loại giấy tờ</option>
               <option value={IdDocumentType.CAN_CUOC_CONG_DAN}>Căn cước công dân</option>
-              <option value={IdDocumentType.CAN_CUOC}>Thẻ căn cước</option>
+              <option value={IdDocumentType.CAN_CUOC}>Căn cước</option>
             </select>
           </>
         }

@@ -597,6 +597,7 @@ model WordTemplate {
   loanTypeScope    String                @default("ALL") // "ALL" | "THE_CHAP" | "TIN_CHAP"
   description      String?
   isActive         Boolean               @default(true)
+  sortOrder        Int                   @default(0)   // Thứ tự hiển thị / sắp xếp trong danh sách tải xuống
   currentVersion   Int                   @default(1)
 
   // File Word hiện tại
@@ -614,6 +615,7 @@ model WordTemplate {
 
   @@index([category])
   @@index([isActive])
+  @@index([sortOrder])
   @@map("word_templates")
 }
 

@@ -118,6 +118,22 @@ export class WordTemplateController {
     }
   }
 
+  public async reorder(req: Request, res: Response, next: NextFunction) {
+    try {
+      const items = req.body.items as { id: string; sortOrder: number }[];
+      if (!Array.isArray(items)) {
+        throw AppError.badRequest('Danh sách sắp xếp không hợp lệ (cần mảng items)');
+      }
+      await wordTemplateService.reorderTemplates(items);
+      res.json({
+        success: true,
+        message: 'Đã cập nhật thứ tự biểu mẫu thành công.',
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+
   public async saveMappings(req: Request, res: Response, next: NextFunction) {
     try {
       const id = getParamId(req);

@@ -8,8 +8,10 @@ import {
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import {
+  ArrowDown,
   ArrowLeft,
   ArrowRight,
+  ArrowUp,
   CheckCircle2,
   Copy,
   FileSpreadsheet,
@@ -634,12 +636,18 @@ export function LoanCreatePage() {
     ? isLoanEligibleForRelatedPerson(draftLoan.loanType, draftLoan.loanAmount)
     : false;
 
+  const isMissingRelatedPerson =
+    draftLoan?.loanType === LoanType.THE_CHAP &&
+    (draftLoan?.loanAmount ?? 0) >= 140_000_000 &&
+    (draftLoan?.relatedPersons?.length ?? 0) === 0;
+
   const isDossierReady =
-    draftLoan?.loanType === LoanType.TIN_CHAP
+    (draftLoan?.loanType === LoanType.TIN_CHAP
       ? hasRequiredAssets
       : hasRequiredAssets &&
         totalCollateralValuation >= minRequiredValuation &&
-        Boolean(draftLoan?.mortgageContract);
+        Boolean(draftLoan?.mortgageContract)) &&
+    !isMissingRelatedPerson;
 
   const handleCompleteDossier = async () => {
     if (!draftLoanId) return;
@@ -760,7 +768,7 @@ export function LoanCreatePage() {
                 name="loanType"
                 label="Hình thức vay vốn"
                 required
-                disabled={Boolean(draftLoanId)}
+                disabled={Boolean(draftLoan && draftLoan.status !== LoanStatus.DANG_TAO)}
                 options={[
                   {
                     value: LoanType.THE_CHAP,
@@ -784,7 +792,7 @@ export function LoanCreatePage() {
                 name="termType"
                 label="Kỳ hạn khoản vay"
                 required
-                disabled={Boolean(draftLoanId)}
+                disabled={Boolean(draftLoan && draftLoan.status !== LoanStatus.DANG_TAO)}
                 options={[
                   {
                     value: LoanTermType.NGAN_HAN,
@@ -1144,7 +1152,7 @@ export function LoanCreatePage() {
                         placeholder="VD: Mua giống, phân bón, nhân công..."
                       />
                     </div>
-                    <div className="flex items-end gap-2 sm:col-span-5">
+                    <div className="flex items-end gap-1.5 sm:col-span-5">
                       <FormCurrencyField
                         control={planForm.control}
                         name={`expenses.${index}.amount`}
@@ -1153,6 +1161,33 @@ export function LoanCreatePage() {
                         showWords={false}
                         wrapperClassName="flex-1"
                       />
+                      <div className="flex items-center rounded border border-slate-200 bg-white mb-0.5">
+                        <button
+                          type="button"
+                          disabled={index === 0}
+                          title="Di chuyển lên trên"
+                          onClick={() => {
+                            setIsTemplateManuallyEdited(true);
+                            expensesArray.swap(index, index - 1);
+                          }}
+                          className="p-1.5 text-slate-500 hover:text-primary-700 disabled:opacity-25 disabled:cursor-not-allowed"
+                        >
+                          <ArrowUp className="h-3.5 w-3.5" />
+                        </button>
+                        <div className="h-3.5 w-[1px] bg-slate-200" />
+                        <button
+                          type="button"
+                          disabled={index === expensesArray.fields.length - 1}
+                          title="Di chuyển xuống dưới"
+                          onClick={() => {
+                            setIsTemplateManuallyEdited(true);
+                            expensesArray.swap(index, index + 1);
+                          }}
+                          className="p-1.5 text-slate-500 hover:text-primary-700 disabled:opacity-25 disabled:cursor-not-allowed"
+                        >
+                          <ArrowDown className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
                       {expensesArray.fields.length > 1 && (
                         <Button
                           type="button"
@@ -1163,7 +1198,7 @@ export function LoanCreatePage() {
                             setIsTemplateManuallyEdited(true);
                             expensesArray.remove(index);
                           }}
-                          className="text-danger-600"
+                          className="text-danger-600 mb-0.5"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -1207,7 +1242,7 @@ export function LoanCreatePage() {
                         placeholder="VD: Thu hoạch nông sản vụ 1..."
                       />
                     </div>
-                    <div className="flex items-end gap-2 sm:col-span-5">
+                    <div className="flex items-end gap-1.5 sm:col-span-5">
                       <FormCurrencyField
                         control={planForm.control}
                         name={`revenues.${index}.amount`}
@@ -1216,6 +1251,33 @@ export function LoanCreatePage() {
                         showWords={false}
                         wrapperClassName="flex-1"
                       />
+                      <div className="flex items-center rounded border border-slate-200 bg-white mb-0.5">
+                        <button
+                          type="button"
+                          disabled={index === 0}
+                          title="Di chuyển lên trên"
+                          onClick={() => {
+                            setIsTemplateManuallyEdited(true);
+                            revenuesArray.swap(index, index - 1);
+                          }}
+                          className="p-1.5 text-slate-500 hover:text-primary-700 disabled:opacity-25 disabled:cursor-not-allowed"
+                        >
+                          <ArrowUp className="h-3.5 w-3.5" />
+                        </button>
+                        <div className="h-3.5 w-[1px] bg-slate-200" />
+                        <button
+                          type="button"
+                          disabled={index === revenuesArray.fields.length - 1}
+                          title="Di chuyển xuống dưới"
+                          onClick={() => {
+                            setIsTemplateManuallyEdited(true);
+                            revenuesArray.swap(index, index + 1);
+                          }}
+                          className="p-1.5 text-slate-500 hover:text-primary-700 disabled:opacity-25 disabled:cursor-not-allowed"
+                        >
+                          <ArrowDown className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
                       {revenuesArray.fields.length > 1 && (
                         <Button
                           type="button"
@@ -1226,7 +1288,7 @@ export function LoanCreatePage() {
                             setIsTemplateManuallyEdited(true);
                             revenuesArray.remove(index);
                           }}
-                          className="text-danger-600"
+                          className="text-danger-600 mb-0.5"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -1482,15 +1544,15 @@ export function LoanCreatePage() {
                         className={`h-4 w-4 ${
                           (draftLoan.relatedPersons?.length ?? 0) > 0
                             ? 'text-success-600'
-                            : 'text-slate-400'
+                            : 'text-danger-600'
                         }`}
                       />
                       <span>
                         Người liên quan (vay thế chấp ≥ 140tr):{' '}
-                        <strong>
+                        <strong className={isMissingRelatedPerson ? 'text-danger-700' : ''}>
                           {(draftLoan.relatedPersons?.length ?? 0) > 0
                             ? `Đã khai báo ${draftLoan.relatedPersons?.length} người liên quan`
-                            : 'Chưa bổ sung (không bắt buộc khi lập hồ sơ, có thể bổ sung sau)'}
+                            : 'Chưa khai báo (Bắt buộc nhập người liên quan để hoàn thành hồ sơ, chỉ được lưu nháp)'}
                         </strong>
                       </span>
                     </div>
@@ -1509,6 +1571,13 @@ export function LoanCreatePage() {
               </Button>
               <Button
                 disabled={!isDossierReady}
+                title={
+                  isMissingRelatedPerson
+                    ? 'Hồ sơ thế chấp ≥ 140.000.000đ cần nhập người liên quan trước khi hoàn thành hồ sơ (chỉ cho phép lưu nháp).'
+                    : !isDossierReady
+                      ? 'Hồ sơ chưa đủ điều kiện để hoàn thành.'
+                      : undefined
+                }
                 onClick={() => setConfirmCompleteOpen(true)}
                 leftIcon={<CheckCircle2 className="h-4 w-4" />}
               >
