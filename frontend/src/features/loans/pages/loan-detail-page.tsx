@@ -79,19 +79,20 @@ export function LoanDetailPage() {
   const statusMutation = useUpdateLoanStatus(id ?? '');
   const deleteLoanMutation = useDeleteLoan();
 
-  if (isLoading) return <DetailPageSkeleton />;
-  if (error || !loan) return <ErrorState error={error} onRetry={() => void refetch()} />;
-
-  const isEditable = loan.status === LoanStatus.DANG_TAO;
-  const isRelatedPersonEligible = isLoanEligibleForRelatedPerson(loan.loanType, loan.loanAmount);
   const hasHouseholdCollateral = useMemo(() => {
     const collaterals = loan?.collaterals ?? [];
     return collaterals.some(
       (c) =>
         c.ownerType === CollateralOwnerType.NGUOI_VAY_HO ||
-        c.ownerType === CollateralOwnerType.NGUOI_THUA_KE_HO
+        c.ownerType === CollateralOwnerType.NGUOI_THUA_KE_HO,
     );
   }, [loan?.collaterals]);
+
+  if (isLoading) return <DetailPageSkeleton />;
+  if (error || !loan) return <ErrorState error={error} onRetry={() => void refetch()} />;
+
+  const isEditable = loan.status === LoanStatus.DANG_TAO;
+  const isRelatedPersonEligible = isLoanEligibleForRelatedPerson(loan.loanType, loan.loanAmount);
   const valuationsCount = loan.valuations?.length ?? valuations.length;
   const activeDisbursements = (loan.disbursements ?? []).filter((d) => !d.isDeleted);
   const activeRepayments = (loan.repayments ?? []).filter((r) => !r.isDeleted);
