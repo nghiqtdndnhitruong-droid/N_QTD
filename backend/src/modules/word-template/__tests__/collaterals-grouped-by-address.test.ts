@@ -62,7 +62,7 @@ describe('DANH_SACH_TAI_SAN Grouped by Address', () => {
     expect(ts0.SO_TO).toBe('12'); // Trùng tờ bản đồ -> không lặp dấu ;
     expect(ts0.SO_THUA).toBe('101; 102'); // Khác thửa -> nối dấu ;
     expect(ts0.DIA_CHI).toBe('Ấp Nô Lựa, Xã Nhị Trường');
-    expect(ts0.DIEN_TICH).toBe('1.000 m²; 1.500 m²');
+    expect(ts0.DIEN_TICH).toBe('1000 m²; 1500 m²');
     expect(ts0.MUC_DICH_SU_DUNG).toBe('Đất ở tại nông thôn');
 
     // Truy cập theo index ngoài vòng lặp

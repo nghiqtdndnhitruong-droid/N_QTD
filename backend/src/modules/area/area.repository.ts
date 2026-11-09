@@ -217,7 +217,69 @@ export class AreaRepository {
     ]);
     return { members, collaterals };
   }
+
+  // ==========================================
+  // AREA GROUP (Phân nhóm địa bàn cấp Xã)
+  // ==========================================
+  async findAreaGroups() {
+    return prisma.areaGroup.findMany({
+      orderBy: { createdAt: 'asc' },
+    });
+  }
+
+  async findAreaGroupById(id: string) {
+    return prisma.areaGroup.findUnique({
+      where: { id },
+    });
+  }
+
+  async findAreaGroupByCode(code: string) {
+    return prisma.areaGroup.findUnique({
+      where: { code },
+    });
+  }
+
+  async createAreaGroup(data: {
+    code: string;
+    name: string;
+    description?: string | null;
+    communeIds: string[];
+    isActive?: boolean;
+  }) {
+    return prisma.areaGroup.create({
+      data: {
+        code: data.code,
+        name: data.name,
+        description: data.description,
+        communeIds: data.communeIds,
+        isActive: data.isActive ?? true,
+      },
+    });
+  }
+
+  async updateAreaGroup(
+    id: string,
+    data: {
+      code?: string;
+      name?: string;
+      description?: string | null;
+      communeIds?: string[];
+      isActive?: boolean;
+    }
+  ) {
+    return prisma.areaGroup.update({
+      where: { id },
+      data,
+    });
+  }
+
+  async deleteAreaGroup(id: string) {
+    return prisma.areaGroup.delete({
+      where: { id },
+    });
+  }
 }
 
 export const areaRepository = new AreaRepository();
+
 

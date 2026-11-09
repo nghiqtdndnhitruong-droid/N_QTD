@@ -1,3 +1,4 @@
+import { describe, it } from 'vitest';
 import { safeExpressionEvaluator } from '../safe-evaluator';
 import { templateAstParser } from '../template-ast-parser';
 import { wordTemplateCompiler } from '../word-template-compiler';
@@ -137,8 +138,14 @@ export function runTemplateEngineTests() {
   }
 }
 
+describe('Template Engine', () => {
+  it('runs all template engine assertion tests', () => {
+    runTemplateEngineTests();
+  });
+});
+
 // Chạy test nếu gọi trực tiếp
-if (require.main === module) {
+if (typeof require !== 'undefined' && require.main === module) {
   runTemplateEngineTests();
 }
 

@@ -132,6 +132,21 @@ model Hamlet {
   @@map("hamlets")
 }
 
+model AreaGroup {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  code        String   @unique
+  name        String
+  description String?
+  communeIds  String[] @db.ObjectId
+  isActive    Boolean  @default(true)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([name])
+  @@map("area_groups")
+}
+
 // ============================================================
 // AUDIT LOG (Nhật ký thao tác nghiệp vụ)
 // ============================================================

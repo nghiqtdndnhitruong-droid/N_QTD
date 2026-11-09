@@ -51,3 +51,32 @@ export interface UpdateHamletPayload {
   isActive?: boolean;
 }
 
+export interface AreaGroup {
+  id: string;
+  code: string;
+  name: string;
+  description?: string | null;
+  communeIds: string[];
+  communes?: Array<{ id: string; name: string; code: string }>;
+  isActive: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CreateAreaGroupPayload {
+  code?: string;
+  name: string;
+  description?: string;
+  communeIds?: string[];
+  isActive?: boolean;
+}
+
+export interface UpdateAreaGroupPayload {
+  code?: string;
+  name?: string;
+  description?: string;
+  communeIds?: string[];
+  isActive?: boolean;
+}
+
+

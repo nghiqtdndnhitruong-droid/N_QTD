@@ -1,3 +1,4 @@
+import { describe, it } from 'vitest';
 import PizZip from 'pizzip';
 import { wordTemplateGeneratorService } from '../../word-template-generator.service';
 
@@ -92,6 +93,12 @@ export function testEndToEndDocxGeneration() {
   console.log('  ✓ End-to-end DOCX Generation PASS 100%!\n');
 }
 
-if (require.main === module) {
+describe('End-to-end DOCX Generation', () => {
+  it('generates DOCX with Table Repeater and conditions', () => {
+    testEndToEndDocxGeneration();
+  });
+});
+
+if (typeof require !== 'undefined' && require.main === module) {
   testEndToEndDocxGeneration();
 }

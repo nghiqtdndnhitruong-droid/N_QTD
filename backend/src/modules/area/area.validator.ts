@@ -38,3 +38,24 @@ export const areaSearchQuerySchema = z.object({
   includeInactive: z.coerce.boolean().optional(),
 });
 
+export const createAreaGroupSchema = z.object({
+  code: z.string().trim().min(1).max(50).optional(),
+  name: z
+    .string({ required_error: 'Tên nhóm địa bàn là bắt buộc' })
+    .trim()
+    .min(2, 'Tên nhóm phải có ít nhất 2 ký tự')
+    .max(120, 'Tên nhóm không vượt quá 120 ký tự'),
+  description: z.string().trim().max(500).optional(),
+  communeIds: z.array(objectIdSchema).optional().default([]),
+  isActive: z.boolean().optional(),
+});
+
+export const updateAreaGroupSchema = z.object({
+  code: z.string().trim().min(1).max(50).optional(),
+  name: z.string().trim().min(2, 'Tên nhóm phải có ít nhất 2 ký tự').max(120).optional(),
+  description: z.string().trim().max(500).optional(),
+  communeIds: z.array(objectIdSchema).optional(),
+  isActive: z.boolean().optional(),
+});
+
+

@@ -1,10 +1,12 @@
 import { AreaRepository, areaRepository } from './area.repository';
 import {
+  CreateAreaGroupDto,
   CreateCommuneDto,
   CreateHamletDto,
   CreateProvinceDto,
   LocationSelectionInput,
   ResolvedLocationSnapshot,
+  UpdateAreaGroupDto,
   UpdateHamletDto,
 } from './area.types';
 import { AppError } from '../../shared/errors/app-error';
@@ -381,6 +383,89 @@ export class AreaService {
       addressDetail: trimmedDetail,
       address: fallbackAddress?.trim() || trimmedDetail || '',
     };
+  }
+
+  // ==========================================
+  // AREA GROUP (Phân nhóm địa bàn cấp Xã)
+  // ==========================================
+  async getAreaGroups() {
+    const [groups, allCommunes] = await Promise.all([
+      this.repo.findAreaGroups(),
+      prisma.commune.findMany({ select: { id: true, name: true, code: true } }),
+    ]);
+
+    const communeMap = new Map(allCommunes.map((c) => [c.id, c]));
+
+    return groups.map((g) => {
+      const populatedCommunes = (g.communeIds || [])
+        .map((cid) => communeMap.get(cid))
+        .filter(Boolean) as Array<{ id: string; name: string; code: string }>;
+
+      return {
+        ...g,
+        communes: populatedCommunes,
+      };
+    });
+  }
+
+  async createAreaGroup(dto: CreateAreaGroupDto) {
+    const rawName = dto.name.trim();
+    if (rawName.length < 2) {
+      throw AppError.badRequest('Tên nhóm phải có ít nhất 2 ký tự');
+    }
+
+    let code = (dto.code ? slugifyCode(dto.code) : slugifyCode(rawName)).toUpperCase();
+    if (!code) {
+      code = `NHOM_${Date.now().toString().slice(-4)}`;
+    }
+
+    const existing = await this.repo.findAreaGroupByCode(code);
+    if (existing) {
+      throw AppError.conflict(`Mã nhóm "${code}" đã tồn tại trên hệ thống`);
+    }
+
+    return this.repo.createAreaGroup({
+      code,
+      name: rawName,
+      description: dto.description?.trim() || null,
+      communeIds: dto.communeIds || [],
+      isActive: dto.isActive ?? true,
+    });
+  }
+
+  async updateAreaGroup(id: string, dto: UpdateAreaGroupDto) {
+    const existing = await this.repo.findAreaGroupById(id);
+    if (!existing) {
+      throw AppError.notFound('Không tìm thấy nhóm địa bàn');
+    }
+
+    let code = existing.code;
+    if (dto.code) {
+      code = slugifyCode(dto.code).toUpperCase();
+      if (code !== existing.code) {
+        const dup = await this.repo.findAreaGroupByCode(code);
+        if (dup && dup.id !== id) {
+          throw AppError.conflict(`Mã nhóm "${code}" đã tồn tại trên hệ thống`);
+        }
+      }
+    }
+
+    return this.repo.updateAreaGroup(id, {
+      code,
+      name: dto.name?.trim() || existing.name,
+      description: dto.description !== undefined ? dto.description?.trim() || null : existing.description,
+      communeIds: dto.communeIds !== undefined ? dto.communeIds : existing.communeIds,
+      isActive: dto.isActive !== undefined ? dto.isActive : existing.isActive,
+    });
+  }
+
+  async deleteAreaGroup(id: string) {
+    const existing = await this.repo.findAreaGroupById(id);
+    if (!existing) {
+      throw AppError.notFound('Không tìm thấy nhóm địa bàn');
+    }
+    await this.repo.deleteAreaGroup(id);
+    return { success: true, message: `Đã xóa nhóm "${existing.name}" thành công` };
   }
 }
 

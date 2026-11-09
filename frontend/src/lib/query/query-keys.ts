@@ -60,6 +60,7 @@ export const queryKeys = {
     provinces: () => ['areas', 'provinces'] as const,
     communes: (provinceId: string) => ['areas', 'communes', provinceId] as const,
     hamlets: (communeId: string) => ['areas', 'hamlets', communeId] as const,
+    groups: () => ['areas', 'groups'] as const,
     searchHamlets: (filters: Record<string, unknown>) => ['areas', 'hamlets-search', filters] as const,
   },
 } as const;

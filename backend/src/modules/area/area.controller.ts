@@ -123,6 +123,55 @@ export class AreaController {
     };
     res.status(200).json(response);
   };
+
+  // ==========================================
+  // AREA GROUP CONTROLLER
+  // ==========================================
+  getAreaGroups = async (req: Request, res: Response): Promise<void> => {
+    const groups = await this.service.getAreaGroups();
+    const response: ApiResponse<typeof groups> = {
+      success: true,
+      message: 'Lấy danh sách nhóm địa bàn thành công',
+      data: groups,
+      timestamp: new Date().toISOString(),
+    };
+    res.status(200).json(response);
+  };
+
+  createAreaGroup = async (req: Request, res: Response): Promise<void> => {
+    const group = await this.service.createAreaGroup(req.body);
+    const response: ApiResponse<typeof group> = {
+      success: true,
+      message: `Tạo nhóm "${group.name}" thành công`,
+      data: group,
+      timestamp: new Date().toISOString(),
+    };
+    res.status(201).json(response);
+  };
+
+  updateAreaGroup = async (req: Request, res: Response): Promise<void> => {
+    const id = String(req.params.id);
+    const updated = await this.service.updateAreaGroup(id, req.body);
+    const response: ApiResponse<typeof updated> = {
+      success: true,
+      message: `Cập nhật nhóm "${updated.name}" thành công`,
+      data: updated,
+      timestamp: new Date().toISOString(),
+    };
+    res.status(200).json(response);
+  };
+
+  deleteAreaGroup = async (req: Request, res: Response): Promise<void> => {
+    const id = String(req.params.id);
+    const result = await this.service.deleteAreaGroup(id);
+    const response: ApiResponse<typeof result> = {
+      success: true,
+      message: result.message,
+      data: result,
+      timestamp: new Date().toISOString(),
+    };
+    res.status(200).json(response);
+  };
 }
 
 export const areaController = new AreaController();

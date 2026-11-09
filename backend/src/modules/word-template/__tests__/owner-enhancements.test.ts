@@ -624,7 +624,7 @@ describe('Word Template Owner Enhancements (TAI_SAN.CHU_SO_HUU & DANH_SACH_CHU_S
     // Giấy chứng nhận -> Số vào sổ cấp Giấy chứng nhận: CS234
     // Vào sổ cấp giấy chứng nhận quyền sử dụng đất Số -> Vào sổ cấp giấy chứng nhận quyền sử dụng đất Số: CS312
     const expectedCombinedClause =
-      'Số vào sổ cấp GCN: CS123, Số vào sổ cấp Giấy chứng nhận: CS234, Vào sổ cấp giấy chứng nhận quyền sử dụng đất Số: CS312';
+      'Số vào sổ cấp GCN: CS123; Số vào sổ cấp Giấy chứng nhận: CS234; Vào sổ cấp giấy chứng nhận quyền sử dụng đất Số: CS312';
 
     expect(resolvedContext['TAI_SAN.SO_VAO_SO_CAP_GCN_GOP']).toBe(expectedCombinedClause);
     expect(resolvedContext['SO_VAO_SO_CAP_GCN_GOP']).toBe(expectedCombinedClause);

@@ -241,6 +241,12 @@ export class WordTemplateDataDictionaryService {
           { path: 'TAI_SAN.SO_LUONG_TAI_SAN', label: 'Tổng số lượng tài sản', dataType: 'NUMBER', sampleValue: 2 },
           { path: 'TAI_SAN.TONG_SO_TAI_SAN', label: 'Tổng số lượng tài sản (alias)', dataType: 'NUMBER', sampleValue: 2 },
           { path: 'TAI_SAN.IS_KHAC_DIA_CHI', label: 'Các tài sản ở khác địa chỉ (True/False)', dataType: 'BOOLEAN', sampleValue: false },
+          { path: 'TAI_SAN.MA_NHOM', label: 'Mã nhóm địa bàn của tài sản (NHOM_1, NHOM_2...)', dataType: 'TEXT', sampleValue: 'NHOM_1' },
+          { path: 'TAI_SAN.TEN_NHOM', label: 'Tên nhóm địa bàn của tài sản (Nhóm 1, Nhóm 2...)', dataType: 'TEXT', sampleValue: 'Nhóm 1' },
+          { path: 'TAI_SAN.DANH_SACH_NHOM_GOP', label: 'Danh sách các nhóm địa bàn gộp (nối dấu ;)', dataType: 'TEXT', sampleValue: 'Nhóm 1; Nhóm 2' },
+          { path: 'CO_TRONG_NHOM_1', label: 'Điều kiện: Tài sản/Địa chỉ thuộc Nhóm 1 (True/False)', dataType: 'BOOLEAN', sampleValue: true },
+          { path: 'CO_TRONG_NHOM_2', label: 'Điều kiện: Tài sản/Địa chỉ thuộc Nhóm 2 (True/False)', dataType: 'BOOLEAN', sampleValue: false },
+          { path: 'CO_TRONG_NHOM_3', label: 'Điều kiện: Tài sản/Địa chỉ thuộc Nhóm 3 (True/False)', dataType: 'BOOLEAN', sampleValue: false },
         ],
       },
       {
@@ -609,12 +615,13 @@ export class WordTemplateDataDictionaryService {
   public resolveLoanData(
     loan: any,
     mappings: WordTemplateMappingDto[],
+    areaGroups?: any[],
   ): {
     resolvedContext: Record<string, any>;
     warnings: KeywordValidationWarning[];
   } {
     const warnings: KeywordValidationWarning[] = [];
-    const rawData = this.buildRawLoanData(loan);
+    const rawData = this.buildRawLoanData(loan, areaGroups);
 
     // Context cuối cùng truyền cho docxtemplater: gán sẵn các biến hệ thống mặc định, danh sách và đối tượng lồng nhau
     const resolvedContext: Record<string, any> = {
@@ -798,13 +805,104 @@ export class WordTemplateDataDictionaryService {
     };
   }
 
-  public buildRawLoanData(loan: any) {
+  public buildRawLoanData(loan: any, areaGroupsInput?: any[]) {
     const member = loan.member || {};
     const collaterals = loan.collaterals || [];
     const relatedPersons = loan.relatedPersons || [];
     const heir = loan.heir || null;
     const mortgage = loan.mortgageContract || null;
     const now = dayjs();
+    const areaGroups: any[] = areaGroupsInput || loan.areaGroups || [];
+
+    // Xử lý phân nhóm địa bàn cấp Xã
+    const effectiveAreaGroups =
+      areaGroups && areaGroups.length > 0
+        ? areaGroups
+        : [
+            { id: 'default-g1', code: 'NHOM_1', name: 'Nhóm 1', communeNames: ['Nhị Trường'] },
+            { id: 'default-g2', code: 'NHOM_2', name: 'Nhóm 2', communeNames: ['Tập Sơn'] },
+            { id: 'default-g3', code: 'NHOM_3', name: 'Nhóm 3', communeNames: ['Long Hiệp'] },
+          ];
+
+    const matchesGroup = (item: any, group: any): boolean => {
+      if (!item || !group) return false;
+      const itemCommuneId = item.communeId ? String(item.communeId) : '';
+      const groupCommuneIds = (group.communeIds || []).map((id: any) => String(id));
+      if (itemCommuneId && groupCommuneIds.includes(itemCommuneId)) {
+        return true;
+      }
+
+      const groupCommuneNames: string[] = [];
+      if (Array.isArray(group.communes)) {
+        for (const c of group.communes) {
+          if (c?.name) groupCommuneNames.push(c.name);
+        }
+      }
+      if (Array.isArray(group.communeNames)) {
+        for (const cn of group.communeNames) {
+          if (cn) groupCommuneNames.push(cn);
+        }
+      }
+
+      const itemCommuneName = (item.communeName || '').toLowerCase().trim();
+      const itemAddress = (item.address || '').toLowerCase().trim();
+
+      for (const cName of groupCommuneNames) {
+        const rawC = cName.toLowerCase().replace(/^(xã|phường|thị trấn)\s+/i, '').trim();
+        if (rawC.length >= 2) {
+          if (itemCommuneName && (itemCommuneName.includes(rawC) || rawC.includes(itemCommuneName))) {
+            return true;
+          }
+          if (itemAddress && itemAddress.includes(rawC)) {
+            return true;
+          }
+        }
+      }
+
+      const groupNameClean = (group.name || '')
+        .toLowerCase()
+        .replace(/^(nhóm|vùng|khu vực)\s+/i, '')
+        .trim();
+      if (groupNameClean && groupNameClean.length >= 3 && itemAddress.includes(groupNameClean)) {
+        return true;
+      }
+
+      return false;
+    };
+
+    // Kiểm tra nhóm cho từng tài sản và cho khoản vay
+    const loanTargetItems = collaterals.length > 0 ? collaterals : (member ? [member] : []);
+    const loanGroupConditions: Record<string, boolean> = {
+      CO_TRONG_NHOM_1: false,
+      CO_TRONG_NHOM_2: false,
+      CO_TRONG_NHOM_3: false,
+      CO_TRONG_NHOM_4: false,
+      CO_TRONG_NHOM_5: false,
+      CO_TAI_SAN_NHOM_1: false,
+      CO_TAI_SAN_NHOM_2: false,
+      CO_TAI_SAN_NHOM_3: false,
+    };
+
+    const allMatchedLoanGroups: any[] = [];
+
+    effectiveAreaGroups.forEach((g: any, gIdx: number) => {
+      const isMatched = loanTargetItems.some((it: any) => matchesGroup(it, g));
+      if (isMatched && !allMatchedLoanGroups.some((mg) => mg.id === g.id || mg.code === g.code)) {
+        allMatchedLoanGroups.push(g);
+      }
+
+      const codeKey = (g.code || `NHOM_${gIdx + 1}`).toUpperCase().trim();
+      const numMatch = codeKey.match(/\d+/) || (g.name || '').match(/\d+/);
+      const groupNum = numMatch ? numMatch[0] : String(gIdx + 1);
+
+      loanGroupConditions[`CO_TRONG_NHOM_${groupNum}`] = isMatched;
+      loanGroupConditions[`CO_TAI_SAN_NHOM_${groupNum}`] = isMatched;
+      loanGroupConditions[`CO_TRONG_${codeKey}`] = isMatched;
+      loanGroupConditions[`CO_TAI_SAN_${codeKey}`] = isMatched;
+      loanGroupConditions[`CO_${codeKey}`] = isMatched;
+    });
+
+    const firstMatchedLoanGroup = allMatchedLoanGroups[0] || null;
 
     // Tính toán tổng hợp tài sản
     let totalCollateralArea = 0;
@@ -828,10 +926,10 @@ export class WordTemplateDataDictionaryService {
     const mergedPlotNumbers = mergeAssetValues(collaterals, (c: any) => c.plotNumber);
     const mergedSheetNumbers = mergeAssetValues(collaterals, (c: any) => c.sheetNumber);
     const mergedAreas = mergeAssetValues(collaterals, (c: any) =>
-      c.area ? `${Number(c.area).toLocaleString('vi-VN')} m²` : ''
+      c.area ? `${formatAreaDisplay(c.area)} m²` : ''
     );
     const mergedActualAreas = mergeAssetValues(collaterals, (c: any) =>
-      c.actualArea ? `${Number(c.actualArea).toLocaleString('vi-VN')} m²` : ''
+      c.actualArea ? `${formatAreaDisplay(c.actualArea)} m²` : ''
     );
     const mergedAddresses = mergeAssetValues(collaterals, (c: any) => c.address);
     // Trích xuất thông tin chủ sở hữu từng tài sản
@@ -1092,8 +1190,8 @@ export class WordTemplateDataDictionaryService {
 
       const flooredPrice = Math.floor(Number(rawPrice) / 1_000_000) * 1_000_000;
 
-      const areaFormatted = areaNum.toLocaleString('vi-VN');
-      const actualAreaFormatted = actualAreaNum !== null ? actualAreaNum.toLocaleString('vi-VN') : '';
+      const areaFormatted = formatAreaDisplay(areaNum);
+      const actualAreaFormatted = actualAreaNum !== null ? formatAreaDisplay(actualAreaNum) : '';
       const pricePerSqMeterFormatted = pricePerSqMeterNum.toLocaleString('vi-VN');
       const totalPriceBeforeRoundFormatted = computedBeforeRound.toLocaleString('vi-VN');
       const totalPriceFormatted = flooredPrice.toLocaleString('vi-VN');
@@ -1133,13 +1231,13 @@ export class WordTemplateDataDictionaryService {
           sheetNumber: String(c.sheetNumber ?? ''),
           SO_THUA: String(c.plotNumber ?? ''),
           plotNumber: String(c.plotNumber ?? ''),
-          DIEN_TICH: cArea.toLocaleString('vi-VN'),
-          DIEN_TICH_SO: cArea,
-          area: cArea.toLocaleString('vi-VN'),
+          DIEN_TICH: formatAreaDisplay(cArea),
+          DIEN_TICH_SO: formatAreaDisplay(cArea),
+          area: formatAreaDisplay(cArea),
           areaNumber: cArea,
-          DIEN_TICH_THUC_TE: cActualArea !== null ? cActualArea.toLocaleString('vi-VN') : '',
-          DIEN_TICH_THUC_TE_SO: cActualArea,
-          actualArea: cActualArea !== null ? cActualArea.toLocaleString('vi-VN') : '',
+          DIEN_TICH_THUC_TE: cActualArea !== null ? formatAreaDisplay(cActualArea) : '',
+          DIEN_TICH_THUC_TE_SO: cActualArea !== null ? formatAreaDisplay(cActualArea) : '',
+          actualArea: cActualArea !== null ? formatAreaDisplay(cActualArea) : '',
           actualAreaNumber: cActualArea,
           DON_GIA: pricePerSqMeterFormatted,
           DON_GIA_SO: pricePerSqMeterNum,
@@ -1341,16 +1439,7 @@ export class WordTemplateDataDictionaryService {
     const firstCertificateType = this.formatCertificateType(firstCollateral?.certificateType);
 
     // Cụm câu kết hợp Loại GCN và Số GCN (tự động phân nhánh "Số vào sổ cấp..." hoặc giữ nguyên "Vào sổ cấp... Số:")
-    const certClauses: string[] = [];
-    const seenClauses = new Set<string>();
-    for (const c of collaterals) {
-      const clause = this.formatCertificateClause(c);
-      if (!seenClauses.has(clause)) {
-        seenClauses.add(clause);
-        certClauses.push(clause);
-      }
-    }
-    const mergedCertificateClauses = certClauses.length > 0 ? certClauses.join(', ') : '...................';
+    const mergedCertificateClauses = this.formatMergedCertificateClauses(collaterals);
     const firstCertificateClause = firstCollateral ? this.formatCertificateClause(firstCollateral) : '...................';
 
     const firstUseRestrictions = firstCollateral?.useRestrictions?.trim() || '...................';
@@ -1400,24 +1489,44 @@ export class WordTemplateDataDictionaryService {
       const address = mergeAssetValues(groupCollaterals, (c: any) => c.address);
 
       // Cụm câu số vào sổ cấp GCN
-      const groupCertClauses: string[] = [];
-      const seenGroupClauses = new Set<string>();
-      for (const c of groupCollaterals) {
-        const clause = this.formatCertificateClause(c);
-        if (clause && !seenGroupClauses.has(clause)) {
-          seenGroupClauses.add(clause);
-          groupCertClauses.push(clause);
-        }
-      }
-      const certClause = groupCertClauses.length > 0 ? groupCertClauses.join(', ') : '...................';
+      const certClause = this.formatMergedCertificateClauses(groupCollaterals);
+
+      // Phân nhóm địa bàn cho nhóm tài sản này
+      const itemMatchedGroups = effectiveAreaGroups.filter((g: any) =>
+        groupCollaterals.some((c: any) => matchesGroup(c, g))
+      );
+      const itemFirstGroup = itemMatchedGroups[0] || null;
+      const itemGroupConditions: Record<string, boolean> = {
+        CO_TRONG_NHOM_1: false,
+        CO_TRONG_NHOM_2: false,
+        CO_TRONG_NHOM_3: false,
+        CO_TRONG_NHOM_4: false,
+        CO_TRONG_NHOM_5: false,
+        CO_TAI_SAN_NHOM_1: false,
+        CO_TAI_SAN_NHOM_2: false,
+        CO_TAI_SAN_NHOM_3: false,
+      };
+
+      effectiveAreaGroups.forEach((g: any, gIdx: number) => {
+        const isMatched = groupCollaterals.some((c: any) => matchesGroup(c, g));
+        const codeKey = (g.code || `NHOM_${gIdx + 1}`).toUpperCase().trim();
+        const numMatch = codeKey.match(/\d+/) || (g.name || '').match(/\d+/);
+        const groupNum = numMatch ? numMatch[0] : String(gIdx + 1);
+
+        itemGroupConditions[`CO_TRONG_NHOM_${groupNum}`] = isMatched;
+        itemGroupConditions[`CO_TAI_SAN_NHOM_${groupNum}`] = isMatched;
+        itemGroupConditions[`CO_NHOM_${groupNum}`] = isMatched;
+        itemGroupConditions[`CO_TRONG_${codeKey}`] = isMatched;
+        itemGroupConditions[`CO_TAI_SAN_${codeKey}`] = isMatched;
+      });
 
       // Diện tích và định giá
       const groupAreaSum = groupCollaterals.reduce((sum, c) => sum + (Number(c.area) || 0), 0);
       const area = mergeAssetValues(groupCollaterals, (c: any) =>
-        c.area ? `${Number(c.area).toLocaleString('vi-VN')} m²` : ''
+        c.area ? `${formatAreaDisplay(c.area)} m²` : ''
       );
       const actualArea = mergeAssetValues(groupCollaterals, (c: any) =>
-        c.actualArea ? `${Number(c.actualArea).toLocaleString('vi-VN')} m²` : ''
+        c.actualArea ? `${formatAreaDisplay(c.actualArea)} m²` : ''
       );
       const pricePerSqMeter = mergeAssetValues(groupCollaterals, (c: any) =>
         c.pricePerSqMeter ? `${Number(c.pricePerSqMeter).toLocaleString('vi-VN')} đ` : ''
@@ -1598,10 +1707,10 @@ export class WordTemplateDataDictionaryService {
         DIEN_TICH_GOP: area,
         areaWords: areaToWords(groupAreaSum),
         DIEN_TICH_CHU: areaToWords(groupAreaSum),
-        TONG_DIEN_TICH: `${groupAreaSum.toLocaleString('vi-VN')} m²`,
+        TONG_DIEN_TICH: `${formatAreaDisplay(groupAreaSum)} m²`,
         TONG_DIEN_TICH_CHU: areaToWords(groupAreaSum),
         areaNumber: groupAreaSum,
-        DIEN_TICH_SO: groupAreaSum,
+        DIEN_TICH_SO: formatAreaDisplay(groupAreaSum),
 
         // Diện tích thực tế
         actualArea,
@@ -1699,6 +1808,14 @@ export class WordTemplateDataDictionaryService {
         CO_THANH_VIEN_HO: hasCHouseholdMembers,
         co_thanh_vien_ho: hasCHouseholdMembers,
         'TAI_SAN.CO_THANH_VIEN_HO': hasCHouseholdMembers,
+
+        // Phân nhóm địa bàn cấp Xã
+        MA_NHOM: itemFirstGroup?.code || '',
+        ma_nhom: itemFirstGroup?.code || '',
+        TEN_NHOM: itemFirstGroup?.name || '',
+        ten_nhom: itemFirstGroup?.name || '',
+        DANH_SACH_NHOM_GOP: itemMatchedGroups.map((g: any) => g.name).join('; '),
+        ...itemGroupConditions,
 
         // Danh sách tài sản con trong nhóm
         groupCollaterals,
@@ -2216,7 +2333,7 @@ export class WordTemplateDataDictionaryService {
       },
       collaterals_summary: {
         totalCount: collaterals.length,
-        totalArea: `${totalCollateralArea.toLocaleString('vi-VN')} m²`,
+        totalArea: `${formatAreaDisplay(totalCollateralArea)} m²`,
         totalAreaWords: areaToWords(totalCollateralArea),
         totalValuationAmount: `${totalCollateralValuation.toLocaleString('vi-VN')} đ`,
         totalValuationAmountRounded: `${totalCollateralValuationRounded.toLocaleString('vi-VN')} đ`,
@@ -2266,12 +2383,18 @@ export class WordTemplateDataDictionaryService {
         IS_KHAC_DIA_CHI: isKhacDiaChi,
         LA_KHAC_DIA_CHI: isKhacDiaChi,
 
+        // Phân nhóm địa bàn cấp Xã
+        MA_NHOM: firstMatchedLoanGroup?.code || '',
+        TEN_NHOM: firstMatchedLoanGroup?.name || '',
+        DANH_SACH_NHOM_GOP: allMatchedLoanGroups.map((g: any) => g.name).join('; '),
+        ...loanGroupConditions,
+
         // Tổng diện tích tất cả tài sản
-        TONG_DIEN_TICH: `${totalCollateralArea.toLocaleString('vi-VN')} m²`,
-        TONG_DIEN_TICH_SO: totalCollateralArea.toLocaleString('vi-VN'),
+        TONG_DIEN_TICH: `${formatAreaDisplay(totalCollateralArea)} m²`,
+        TONG_DIEN_TICH_SO: formatAreaDisplay(totalCollateralArea),
         TONG_DIEN_TICH_CHU: areaToWords(totalCollateralArea),
-        TONG_DIEN_TICH_DAT: `${totalCollateralArea.toLocaleString('vi-VN')} m²`,
-        TONG_DIEN_TICH_TAI_SAN: `${totalCollateralArea.toLocaleString('vi-VN')} m²`,
+        TONG_DIEN_TICH_DAT: `${formatAreaDisplay(totalCollateralArea)} m²`,
+        TONG_DIEN_TICH_TAI_SAN: `${formatAreaDisplay(totalCollateralArea)} m²`,
 
         // Tổng định giá tất cả tài sản
         TONG_DINH_GIA: `${totalCollateralValuationRounded.toLocaleString('vi-VN')} đ`,
@@ -2304,7 +2427,7 @@ export class WordTemplateDataDictionaryService {
         SO_THUA: firstCollateral?.plotNumber || '',
         SO_TO: firstCollateral?.sheetNumber || '',
         TO_BAN_DO: firstCollateral?.sheetNumber || '',
-        DIEN_TICH: firstCollateral?.area ? `${Number(firstCollateral.area).toLocaleString('vi-VN')} m²` : '',
+        DIEN_TICH: firstCollateral?.area ? `${formatAreaDisplay(firstCollateral.area)} m²` : '',
         DIA_CHI: firstCollateral?.address || '',
         CHU_SO_HUU: firstOwner.fullName,
         CHU_SO_HUU_HO_TEN: firstOwner.fullName,
@@ -2481,7 +2604,7 @@ export class WordTemplateDataDictionaryService {
       'TAI_SAN.TONG_SO_TAI_SAN': nested.collaterals_summary.totalCount,
       'TAI_SAN.SO_LUONG': nested.collaterals_summary.totalCount,
       TONG_DIEN_TICH: nested.collaterals_summary.totalArea,
-      TONG_DIEN_TICH_SO: totalCollateralArea.toLocaleString('vi-VN'),
+      TONG_DIEN_TICH_SO: formatAreaDisplay(totalCollateralArea),
       TONG_DIEN_TICH_CHU: nested.collaterals_summary.totalAreaWords,
       TONG_DIEN_TICH_DAT: nested.collaterals_summary.totalArea,
       TONG_DIEN_TICH_TAI_SAN: nested.collaterals_summary.totalArea,
@@ -2528,6 +2651,19 @@ export class WordTemplateDataDictionaryService {
       MUC_CHO_VAY_TOI_DA_70_CHU: valuation70Words,
       'KHOAN_VAY.MUC_CHO_VAY_TOI_DA_70': valuation70Formatted,
       'KHOAN_VAY.MUC_CHO_VAY_TOI_DA_70_CHU': valuation70Words,
+
+      // Phân nhóm địa bàn cấp Xã
+      'TAI_SAN.MA_NHOM': firstMatchedLoanGroup?.code || '',
+      MA_NHOM: firstMatchedLoanGroup?.code || '',
+      'TAI_SAN.TEN_NHOM': firstMatchedLoanGroup?.name || '',
+      TEN_NHOM: firstMatchedLoanGroup?.name || '',
+      TEN_NHOM_DIA_BAN: firstMatchedLoanGroup?.name || '',
+      'TAI_SAN.DANH_SACH_NHOM_GOP': allMatchedLoanGroups.map((g: any) => g.name).join('; '),
+      DANH_SACH_NHOM_GOP: allMatchedLoanGroups.map((g: any) => g.name).join('; '),
+      ...loanGroupConditions,
+      ...Object.fromEntries(Object.entries(loanGroupConditions).map(([k, v]) => [`TAI_SAN.${k}`, v])),
+      ...Object.fromEntries(Object.entries(loanGroupConditions).map(([k, v]) => [`KHOAN_VAY.${k}`, v])),
+
       NGAY_HIEN_TAI: nested.fund.currentDay,
       THANG_HIEN_TAI: nested.fund.currentMonth,
       NAM_HIEN_TAI: nested.fund.currentYear,
@@ -3028,6 +3164,10 @@ export class WordTemplateDataDictionaryService {
         don_gia_dinh_gia: donGiaThiTruongFormatted,
         DON_GIA_DINH_GIA: donGiaThiTruongFormatted,
         don_gia_thi_truong: donGiaThiTruongFormatted,
+        MA_NHOM: firstMatchedLoanGroup?.code || '',
+        TEN_NHOM: firstMatchedLoanGroup?.name || '',
+        DANH_SACH_NHOM_GOP: allMatchedLoanGroups.map((g: any) => g.name).join('; '),
+        ...loanGroupConditions,
         DANH_SACH_DINH_GIA: valuationsList,
         DANH_SACH_CHU_SO_HUU: uniqueOwnersList,
         DANH_SACH_NGUOI_SO_HUU: uniqueOwnersList,
@@ -3344,6 +3484,54 @@ export class WordTemplateDataDictionaryService {
     // Các trường hợp khác: "GCN", "Giấy chứng nhận", "Giấy chứng nhận quyền sử dụng đất"
     return `Số vào sổ cấp ${certType}: ${certNum}`;
   }
+
+  /**
+   * Định dạng cụm câu GCN gộp:
+   * Nếu các tài sản có cùng Loại GCN (ví dụ đều là GCN) thì chỉ hiển thị tiền tố một lần:
+   * Ví dụ: "Số vào sổ cấp GCN: CS04421; CS04418"
+   * Chỉ lặp lại khi khác loại GCN.
+   */
+  public formatMergedCertificateClauses(items: any[]): string {
+    if (!items || items.length === 0) return '...................';
+
+    const groups = new Map<string, string[]>();
+
+    for (const c of items) {
+      const certType = this.formatCertificateType(c?.certificateType);
+      const certNum = c?.certificateNumber ? String(c.certificateNumber).trim() : '...................';
+      const lower = certType.toLowerCase().trim();
+      const prefix = lower.startsWith('vào sổ cấp')
+        ? `${certType}: `
+        : `Số vào sổ cấp ${certType}: `;
+
+      if (!groups.has(prefix)) {
+        groups.set(prefix, []);
+      }
+      const nums = groups.get(prefix)!;
+      if (!nums.includes(certNum)) {
+        nums.push(certNum);
+      }
+    }
+
+    if (groups.size === 0) return '...................';
+
+    const clauses: string[] = [];
+    for (const [prefix, nums] of groups.entries()) {
+      clauses.push(`${prefix}${nums.join('; ')}`);
+    }
+
+    return clauses.join('; ');
+  }
+}
+
+/**
+ * Hiển thị số diện tích không có dấu chấm phân cách hàng nghìn, giữ dấu phẩy thập phân (ví dụ: 1992,5 m2)
+ */
+export function formatAreaDisplay(val: number | string | null | undefined): string {
+  if (val === null || val === undefined || val === '') return '';
+  const num = Number(val);
+  if (isNaN(num)) return String(val);
+  return num.toLocaleString('vi-VN', { useGrouping: false });
 }
 
 export const wordTemplateDataDictionaryService = new WordTemplateDataDictionaryService();

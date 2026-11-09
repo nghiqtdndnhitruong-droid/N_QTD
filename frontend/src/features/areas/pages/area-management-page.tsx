@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { MapPin, Pencil, Plus, Search, Trash2 } from 'lucide-react';
+import { Layers, MapPin, Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import { PageHeader } from '@/components/layout';
 import {
   Badge,
@@ -17,7 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui';
-import { SelectInput, TextInput } from '@/components/form';
+import { SelectInput, TextareaInput, TextInput } from '@/components/form';
 import {
   ConfirmDialog,
   EmptyState,
@@ -26,14 +26,26 @@ import {
   notifySuccess,
   Skeleton,
 } from '@/components/feedback';
-import { useAreaTree, useDeleteHamlet, useUpdateHamlet } from '../hooks/use-areas';
+import {
+  useAreaGroups,
+  useAreaTree,
+  useCreateAreaGroup,
+  useDeleteAreaGroup,
+  useDeleteHamlet,
+  useUpdateAreaGroup,
+  useUpdateHamlet,
+} from '../hooks/use-areas';
 import { QuickCreateHamletDialog } from '../components/quick-create-hamlet-dialog';
-import type { Hamlet } from '../types/area.types';
+import type { AreaGroup, Hamlet } from '../types/area.types';
 
 export function AreaManagementPage() {
   const { data: tree = [], isLoading, isError, error, refetch } = useAreaTree();
+  const { data: areaGroups = [], isLoading: isLoadingGroups } = useAreaGroups();
   const updateHamletMutation = useUpdateHamlet();
   const deleteHamletMutation = useDeleteHamlet();
+  const createGroupMutation = useCreateAreaGroup();
+  const updateGroupMutation = useUpdateAreaGroup();
+  const deleteGroupMutation = useDeleteAreaGroup();
 
   const [selectedCommuneId, setSelectedCommuneId] = useState<string>('');
   const [searchKeyword, setSearchKeyword] = useState('');
@@ -47,8 +59,93 @@ export function AreaManagementPage() {
     (Hamlet & { communeName: string; provinceName: string }) | null
   >(null);
 
+  const [groupModalOpen, setGroupModalOpen] = useState(false);
+  const [editingGroup, setEditingGroup] = useState<AreaGroup | null>(null);
+  const [groupFormName, setGroupFormName] = useState('');
+  const [groupFormCode, setGroupFormCode] = useState('');
+  const [groupFormDescription, setGroupFormDescription] = useState('');
+  const [groupFormCommuneIds, setGroupFormCommuneIds] = useState<string[]>([]);
+  const [deletingGroup, setDeletingGroup] = useState<AreaGroup | null>(null);
+
   const province = tree[0];
   const communes = useMemo(() => province?.communes ?? [], [province]);
+
+  const communeGroupMap = useMemo(() => {
+    const map = new Map<string, string[]>();
+    for (const g of areaGroups) {
+      for (const cid of g.communeIds || []) {
+        if (!map.has(cid)) map.set(cid, []);
+        map.get(cid)!.push(g.name);
+      }
+    }
+    return map;
+  }, [areaGroups]);
+
+  const handleOpenCreateGroup = () => {
+    setEditingGroup(null);
+    setGroupFormName(`Nhóm ${areaGroups.length + 1}`);
+    setGroupFormCode(`NHOM_${areaGroups.length + 1}`);
+    setGroupFormDescription('');
+    setGroupFormCommuneIds([]);
+    setGroupModalOpen(true);
+  };
+
+  const handleOpenEditGroup = (group: AreaGroup) => {
+    setEditingGroup(group);
+    setGroupFormName(group.name);
+    setGroupFormCode(group.code);
+    setGroupFormDescription(group.description || '');
+    setGroupFormCommuneIds(group.communeIds || []);
+    setGroupModalOpen(true);
+  };
+
+  const handleToggleCommuneInGroup = (communeId: string) => {
+    setGroupFormCommuneIds((prev) =>
+      prev.includes(communeId) ? prev.filter((id) => id !== communeId) : [...prev, communeId]
+    );
+  };
+
+  const handleSaveGroup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!groupFormName.trim() || groupFormName.trim().length < 2) return;
+    try {
+      if (editingGroup) {
+        await updateGroupMutation.mutateAsync({
+          id: editingGroup.id,
+          payload: {
+            name: groupFormName.trim(),
+            code: groupFormCode.trim() || undefined,
+            description: groupFormDescription.trim() || undefined,
+            communeIds: groupFormCommuneIds,
+          },
+        });
+        notifySuccess(`Đã cập nhật "${groupFormName.trim()}" thành công`);
+      } else {
+        await createGroupMutation.mutateAsync({
+          name: groupFormName.trim(),
+          code: groupFormCode.trim() || undefined,
+          description: groupFormDescription.trim() || undefined,
+          communeIds: groupFormCommuneIds,
+        });
+        notifySuccess(`Đã tạo "${groupFormName.trim()}" thành công`);
+      }
+      setGroupModalOpen(false);
+    } catch (err) {
+      notifyApiError(err);
+    }
+  };
+
+  const handleConfirmDeleteGroup = async () => {
+    if (!deletingGroup) return;
+    try {
+      await deleteGroupMutation.mutateAsync(deletingGroup.id);
+      notifySuccess(`Đã xóa nhóm "${deletingGroup.name}"`);
+      setDeletingGroup(null);
+    } catch (err) {
+      setDeletingGroup(null);
+      notifyApiError(err);
+    }
+  };
 
   const flatHamlets = useMemo(() => {
     const rows: Array<Hamlet & { communeName: string; provinceName: string }> = [];
@@ -149,9 +246,16 @@ export function AreaManagementPage() {
                       </div>
                       <CardTitle className="mt-0.5 text-base">{commune.name}</CardTitle>
                     </div>
-                    <Badge tone="primary" dot>
-                      {commune.hamlets.length} ấp
-                    </Badge>
+                    <div className="flex flex-col items-end gap-1">
+                      <Badge tone="primary" dot>
+                        {commune.hamlets.length} ấp
+                      </Badge>
+                      {communeGroupMap.get(commune.id)?.map((grpName) => (
+                        <Badge key={grpName} tone="neutral" className="text-[11px] font-normal">
+                          {grpName}
+                        </Badge>
+                      ))}
+                    </div>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div className="flex flex-wrap gap-1.5 min-h-[28px]">
@@ -194,6 +298,120 @@ export function AreaManagementPage() {
               );
             })}
           </div>
+
+          {/* Card Phân nhóm địa bàn cấp Xã */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Layers className="h-5 w-5 text-primary-600" />
+                  <CardTitle>Phân nhóm địa bàn cấp Xã ({areaGroups.length} nhóm)</CardTitle>
+                </div>
+                <CardDescription className="mt-1">
+                  Phân chia các xã thành các nhóm độc lập để phục vụ kiểm tra điều kiện sinh mẫu hợp đồng và văn bản Word.
+                  Từ khóa điều kiện tự động:{' '}
+                  <code className="rounded bg-slate-100 px-1 py-0.5 text-xs text-primary-700">CO_TRONG_NHOM_1</code>,{' '}
+                  <code className="rounded bg-slate-100 px-1 py-0.5 text-xs text-primary-700">CO_TRONG_NHOM_2</code>,...
+                </CardDescription>
+              </div>
+              <Button
+                size="sm"
+                variant="secondary"
+                leftIcon={<Plus className="h-4 w-4" />}
+                onClick={handleOpenCreateGroup}
+              >
+                Thêm nhóm Xã
+              </Button>
+            </CardHeader>
+            <CardContent>
+              {isLoadingGroups ? (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <Skeleton className="h-24" />
+                  <Skeleton className="h-24" />
+                </div>
+              ) : areaGroups.length === 0 ? (
+                <div className="rounded-lg border border-dashed border-slate-200 p-6 text-center">
+                  <p className="text-sm text-slate-500">
+                    Chưa có nhóm địa bàn nào. Hãy tạo nhóm cấp Xã để sử dụng điều kiện kiểm tra nhóm trong mẫu Word.
+                  </p>
+                  <Button
+                    size="sm"
+                    className="mt-3"
+                    leftIcon={<Plus className="h-4 w-4" />}
+                    onClick={handleOpenCreateGroup}
+                  >
+                    Tạo nhóm đầu tiên
+                  </Button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
+                  {areaGroups.map((group) => (
+                    <div
+                      key={group.id}
+                      className="flex flex-col justify-between rounded-lg border border-slate-200 bg-white p-3.5 shadow-sm transition-all hover:border-slate-300"
+                    >
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="font-semibold text-slate-900">{group.name}</span>
+                          <Badge tone="info" className="font-mono text-xs">
+                            {group.code}
+                          </Badge>
+                        </div>
+                        {group.description && (
+                          <p className="text-xs text-slate-500 line-clamp-2">
+                            {group.description}
+                          </p>
+                        )}
+                        <div className="pt-1">
+                          <div className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">
+                            Xã thuộc nhóm:
+                          </div>
+                          <div className="mt-1 flex flex-wrap gap-1">
+                            {(group.communes || []).length === 0 ? (
+                              <span className="text-xs italic text-slate-400">
+                                Chưa gán xã nào
+                              </span>
+                            ) : (
+                              (group.communes || []).map((c) => (
+                                <Badge key={c.id} tone="primary">
+                                  {c.name}
+                                </Badge>
+                              ))
+                            )}
+                          </div>
+                        </div>
+                        <div className="pt-1">
+                          <span className="text-[11px] text-slate-500">
+                            Từ khóa Word: <code className="rounded bg-slate-100 px-1 py-0.5 text-xs text-primary-700">{`CO_TRONG_${group.code}`}</code>
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="mt-3 flex items-center justify-end gap-1 border-t border-slate-100 pt-2">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          leftIcon={<Pencil className="h-3.5 w-3.5" />}
+                          onClick={() => handleOpenEditGroup(group)}
+                        >
+                          Sửa
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-danger-600"
+                          leftIcon={<Trash2 className="h-3.5 w-3.5" />}
+                          onClick={() => setDeletingGroup(group)}
+                        >
+                          Xóa
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
           {/* Bảng danh sách Ấp chi tiết */}
           <Card>
@@ -353,6 +571,105 @@ export function AreaManagementPage() {
         tone="danger"
         isLoading={deleteHamletMutation.isPending}
         onConfirm={handleConfirmDelete}
+      />
+
+      {/* Dialog tạo/sửa Nhóm địa bàn */}
+      <Dialog open={groupModalOpen} onOpenChange={(o) => !o && setGroupModalOpen(false)}>
+        <DialogContent size="md">
+          <DialogHeader>
+            <DialogTitle>
+              {editingGroup ? `Chỉnh sửa ${editingGroup.name}` : 'Tạo nhóm địa bàn cấp Xã mới'}
+            </DialogTitle>
+            <DialogDescription>
+              Nhóm các Xã quản lý để kiểm tra điều kiện sinh văn bản theo địa bàn (ví dụ: CO_TRONG_NHOM_1).
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSaveGroup}>
+            <DialogBody className="space-y-4">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <TextInput
+                  label="Tên nhóm"
+                  required
+                  placeholder="Ví dụ: Nhóm 1, Địa bàn mở rộng"
+                  value={groupFormName}
+                  onChange={(e) => setGroupFormName(e.target.value)}
+                />
+                <TextInput
+                  label="Mã nhóm (Từ khóa)"
+                  placeholder="Ví dụ: NHOM_1, NHOM_2"
+                  value={groupFormCode}
+                  onChange={(e) => setGroupFormCode(e.target.value)}
+                  hint="Sẽ tạo từ khóa điều kiện Word: CO_TRONG_<MÃ>"
+                />
+              </div>
+
+              <TextareaInput
+                label="Mô tả / Ghi chú"
+                rows={2}
+                placeholder="Mô tả mục đích nhóm..."
+                value={groupFormDescription}
+                onChange={(e) => setGroupFormDescription(e.target.value)}
+              />
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold uppercase tracking-wider text-slate-700">
+                  Chọn các Xã thuộc nhóm (chỉ áp dụng cấp Xã)
+                </label>
+                <div className="grid grid-cols-1 gap-2 pt-1 sm:grid-cols-2">
+                  {communes.map((c) => {
+                    const isChecked = groupFormCommuneIds.includes(c.id);
+                    return (
+                      <label
+                        key={c.id}
+                        className={`flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors ${
+                          isChecked
+                            ? 'border-primary-500 bg-primary-50/50'
+                            : 'border-slate-200 hover:bg-slate-50'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+                          checked={isChecked}
+                          onChange={() => handleToggleCommuneInGroup(c.id)}
+                        />
+                        <div className="flex-1">
+                          <div className="text-sm font-medium text-slate-900">{c.name}</div>
+                          <div className="text-xs text-slate-500">
+                            {c.hamlets.length} ấp trực thuộc
+                          </div>
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            </DialogBody>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setGroupModalOpen(false)}>
+                Hủy
+              </Button>
+              <Button
+                type="submit"
+                isLoading={createGroupMutation.isPending || updateGroupMutation.isPending}
+              >
+                {editingGroup ? 'Lưu thay đổi' : 'Tạo nhóm'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Xác nhận xóa Nhóm */}
+      <ConfirmDialog
+        open={Boolean(deletingGroup)}
+        onOpenChange={(o) => !o && setDeletingGroup(null)}
+        title={`Xóa "${deletingGroup?.name ?? ''}"?`}
+        description="Bạn có chắc chắn muốn xóa nhóm địa bàn này? Các xã thuộc nhóm sẽ không bị xóa mà chỉ được gỡ khỏi nhóm."
+        confirmText="Xóa nhóm"
+        tone="danger"
+        isLoading={deleteGroupMutation.isPending}
+        onConfirm={handleConfirmDeleteGroup}
       />
     </div>
   );

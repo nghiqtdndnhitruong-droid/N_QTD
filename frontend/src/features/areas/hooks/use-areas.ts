@@ -1,7 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/query';
 import { areasApi } from '../api/areas.api';
-import type { CreateHamletPayload, UpdateHamletPayload } from '../types/area.types';
+import type {
+  CreateAreaGroupPayload,
+  CreateHamletPayload,
+  UpdateAreaGroupPayload,
+  UpdateHamletPayload,
+} from '../types/area.types';
 
 export function useAreaTree(includeInactive = false) {
   return useQuery({
@@ -68,4 +73,44 @@ export function useDeleteHamlet() {
     },
   });
 }
+
+export function useAreaGroups() {
+  return useQuery({
+    queryKey: queryKeys.areas.groups(),
+    queryFn: () => areasApi.getAreaGroups(),
+    staleTime: 30_000,
+  });
+}
+
+export function useCreateAreaGroup() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: CreateAreaGroupPayload) => areasApi.createAreaGroup(payload),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: queryKeys.areas.groups() });
+    },
+  });
+}
+
+export function useUpdateAreaGroup() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: UpdateAreaGroupPayload }) =>
+      areasApi.updateAreaGroup(id, payload),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: queryKeys.areas.groups() });
+    },
+  });
+}
+
+export function useDeleteAreaGroup() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => areasApi.deleteAreaGroup(id),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: queryKeys.areas.groups() });
+    },
+  });
+}
+
 

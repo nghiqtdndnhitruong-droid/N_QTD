@@ -229,14 +229,17 @@ export class WordTemplateService {
     templateId: string,
     loanId: string,
   ): Promise<TemplatePreviewResult> {
-    const template = await this.getTemplateById(templateId);
-    const loan = await loanRepository.findById(loanId);
+    const [template, loan, areaGroups] = await Promise.all([
+      this.getTemplateById(templateId),
+      loanRepository.findById(loanId),
+      prisma.areaGroup.findMany({ where: { isActive: true } }),
+    ]);
     if (!loan) {
       throw AppError.notFound(`Không tìm thấy hồ sơ khoản vay ID: ${loanId}`);
     }
 
     const { resolvedContext, warnings } =
-      wordTemplateDataDictionaryService.resolveLoanData(loan, template.mappings as any);
+      wordTemplateDataDictionaryService.resolveLoanData(loan, template.mappings as any, areaGroups);
 
     return {
       templateId: template.id,
@@ -287,9 +290,11 @@ export class WordTemplateService {
       }
       const templateBuffer = fs.readFileSync(template.currentFilePath);
 
+      const areaGroups = await prisma.areaGroup.findMany({ where: { isActive: true } });
+
       // Ánh xạ dữ liệu
       const { resolvedContext, warnings } =
-        wordTemplateDataDictionaryService.resolveLoanData(loan, template.mappings as any);
+        wordTemplateDataDictionaryService.resolveLoanData(loan, template.mappings as any, areaGroups);
 
       // Render docx
       const outputBuffer = wordTemplateGeneratorService.generateDocx(

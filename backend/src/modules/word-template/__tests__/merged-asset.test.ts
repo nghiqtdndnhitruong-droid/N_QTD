@@ -130,9 +130,9 @@ describe('Word Template Merged Asset Logic', () => {
       expect(taiSanObj.DIA_CHI_GOP).toBe('Ấp Nô Lựa, Xã Nhị Trường');
 
       // Tổng diện tích tất cả tài sản: 1000 + 1500 = 2500 m²
-      expect(resolvedContext.TONG_DIEN_TICH).toBe('2.500 m²');
-      expect(resolvedContext['TAI_SAN.TONG_DIEN_TICH']).toBe('2.500 m²');
-      expect(taiSanObj.TONG_DIEN_TICH).toBe('2.500 m²');
+      expect(resolvedContext.TONG_DIEN_TICH).toBe('2500 m²');
+      expect(resolvedContext['TAI_SAN.TONG_DIEN_TICH']).toBe('2500 m²');
+      expect(taiSanObj.TONG_DIEN_TICH).toBe('2500 m²');
       expect(resolvedContext.TONG_DIEN_TICH_CHU).toContain('mét vuông');
       expect(taiSanObj.TONG_DIEN_TICH_CHU).toContain('mét vuông');
     });

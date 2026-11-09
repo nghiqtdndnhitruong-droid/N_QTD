@@ -1,14 +1,33 @@
 import { apiDelete, apiGet, apiPost, apiPut } from '@/lib/http';
 import type {
+  AreaGroup,
   AreaTreeProvince,
   Commune,
+  CreateAreaGroupPayload,
   CreateHamletPayload,
   Hamlet,
   Province,
+  UpdateAreaGroupPayload,
   UpdateHamletPayload,
 } from '../types/area.types';
 
 export const areasApi = {
+  getAreaGroups(): Promise<AreaGroup[]> {
+    return apiGet<AreaGroup[]>('/areas/groups');
+  },
+
+  createAreaGroup(payload: CreateAreaGroupPayload): Promise<AreaGroup> {
+    return apiPost<AreaGroup, CreateAreaGroupPayload>('/areas/groups', payload);
+  },
+
+  updateAreaGroup(id: string, payload: UpdateAreaGroupPayload): Promise<AreaGroup> {
+    return apiPut<AreaGroup, UpdateAreaGroupPayload>(`/areas/groups/${id}`, payload);
+  },
+
+  deleteAreaGroup(id: string): Promise<{ success: boolean; message: string }> {
+    return apiDelete<{ success: boolean; message: string }>(`/areas/groups/${id}`);
+  },
+
   getTree(includeInactive = false): Promise<AreaTreeProvince[]> {
     return apiGet<AreaTreeProvince[]>('/areas/tree', {
       params: includeInactive ? { includeInactive: true } : undefined,

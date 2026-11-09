@@ -51,3 +51,32 @@ export type AreaTreeProvince = Province & {
   })[];
 };
 
+export interface CreateAreaGroupDto {
+  code?: string;
+  name: string;
+  description?: string;
+  communeIds?: string[];
+  isActive?: boolean;
+}
+
+export interface UpdateAreaGroupDto {
+  code?: string;
+  name?: string;
+  description?: string;
+  communeIds?: string[];
+  isActive?: boolean;
+}
+
+export interface AreaGroupResponse {
+  id: string;
+  code: string;
+  name: string;
+  description?: string | null;
+  communeIds: string[];
+  communes?: Array<{ id: string; name: string; code: string }>;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+

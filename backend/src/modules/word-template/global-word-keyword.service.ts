@@ -2712,6 +2712,77 @@ export class GlobalWordKeywordService {
           DIA_CHI: 'address',
         },
       },
+      // 12. Phân nhóm địa bàn cấp Xã
+      {
+        keyword: 'CO_TRONG_NHOM_1',
+        displayName: 'Địa chỉ/Tài sản thuộc Nhóm 1 (CO_TRONG_NHOM_1)',
+        category: 'TAI_SAN',
+        dataPath: 'flatVariables.CO_TRONG_NHOM_1',
+        dataType: 'BOOLEAN',
+      },
+      {
+        keyword: 'CO_TRONG_NHOM_2',
+        displayName: 'Địa chỉ/Tài sản thuộc Nhóm 2 (CO_TRONG_NHOM_2)',
+        category: 'TAI_SAN',
+        dataPath: 'flatVariables.CO_TRONG_NHOM_2',
+        dataType: 'BOOLEAN',
+      },
+      {
+        keyword: 'CO_TRONG_NHOM_3',
+        displayName: 'Địa chỉ/Tài sản thuộc Nhóm 3 (CO_TRONG_NHOM_3)',
+        category: 'TAI_SAN',
+        dataPath: 'flatVariables.CO_TRONG_NHOM_3',
+        dataType: 'BOOLEAN',
+      },
+      {
+        keyword: 'CO_TAI_SAN_NHOM_1',
+        displayName: 'Hồ sơ có tài sản thuộc Nhóm 1 (CO_TAI_SAN_NHOM_1)',
+        category: 'TAI_SAN',
+        dataPath: 'flatVariables.CO_TAI_SAN_NHOM_1',
+        dataType: 'BOOLEAN',
+      },
+      {
+        keyword: 'CO_TAI_SAN_NHOM_2',
+        displayName: 'Hồ sơ có tài sản thuộc Nhóm 2 (CO_TAI_SAN_NHOM_2)',
+        category: 'TAI_SAN',
+        dataPath: 'flatVariables.CO_TAI_SAN_NHOM_2',
+        dataType: 'BOOLEAN',
+      },
+      {
+        keyword: 'CO_TAI_SAN_NHOM_3',
+        displayName: 'Hồ sơ có tài sản thuộc Nhóm 3 (CO_TAI_SAN_NHOM_3)',
+        category: 'TAI_SAN',
+        dataPath: 'flatVariables.CO_TAI_SAN_NHOM_3',
+        dataType: 'BOOLEAN',
+      },
+      {
+        keyword: 'TAI_SAN.MA_NHOM',
+        displayName: 'Mã nhóm địa bàn của tài sản (TAI_SAN.MA_NHOM)',
+        category: 'TAI_SAN',
+        dataPath: 'TAI_SAN.MA_NHOM',
+        dataType: 'TEXT',
+      },
+      {
+        keyword: 'TAI_SAN.TEN_NHOM',
+        displayName: 'Tên nhóm địa bàn của tài sản (TAI_SAN.TEN_NHOM)',
+        category: 'TAI_SAN',
+        dataPath: 'TAI_SAN.TEN_NHOM',
+        dataType: 'TEXT',
+      },
+      {
+        keyword: 'TAI_SAN.DANH_SACH_NHOM_GOP',
+        displayName: 'Danh sách các nhóm địa bàn gộp (TAI_SAN.DANH_SACH_NHOM_GOP)',
+        category: 'TAI_SAN',
+        dataPath: 'TAI_SAN.DANH_SACH_NHOM_GOP',
+        dataType: 'TEXT',
+      },
+      {
+        keyword: 'TAI_SAN.LOAI_VA_SO_GCN_GOP',
+        displayName: 'Cụm câu Loại và Số GCN gộp (TAI_SAN.LOAI_VA_SO_GCN_GOP)',
+        category: 'TAI_SAN',
+        dataPath: 'TAI_SAN.LOAI_VA_SO_GCN_GOP',
+        dataType: 'TEXT',
+      },
     ];
 
     const existingKeywords = await prisma.globalWordKeyword.findMany({
