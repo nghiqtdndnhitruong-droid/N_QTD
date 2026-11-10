@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { InterestRateService, interestRateService } from './interest-rate.service';
 import { ApiResponse, PaginatedResponse } from '../../shared/types';
-import { InterestRateConfig, LoanTermType } from '@prisma/client';
+import { InterestRateConfig, LoanTermType, LoanType } from '@prisma/client';
 
 export class InterestRateController {
   constructor(private readonly service: InterestRateService = interestRateService) {}
@@ -15,6 +15,30 @@ export class InterestRateController {
       timestamp: new Date().toISOString(),
     };
     res.status(201).json(response);
+  };
+
+  update = async (req: Request, res: Response): Promise<void> => {
+    const id = String(req.params.id);
+    const config = await this.service.update(id, req.body);
+    const response: ApiResponse<InterestRateConfig> = {
+      success: true,
+      message: 'Cập nhật cấu hình bảng lãi suất thành công',
+      data: config,
+      timestamp: new Date().toISOString(),
+    };
+    res.status(200).json(response);
+  };
+
+  delete = async (req: Request, res: Response): Promise<void> => {
+    const id = String(req.params.id);
+    await this.service.delete(id);
+    const response: ApiResponse<{ id: string }> = {
+      success: true,
+      message: 'Đã xóa cấu hình bảng lãi suất thành công',
+      data: { id },
+      timestamp: new Date().toISOString(),
+    };
+    res.status(200).json(response);
   };
 
   getById = async (req: Request, res: Response): Promise<void> => {
@@ -42,8 +66,9 @@ export class InterestRateController {
   };
 
   getCurrentEffective = async (req: Request, res: Response): Promise<void> => {
-    const termType = req.query.termType as LoanTermType;
-    const config = await this.service.getCurrentEffectiveConfig(termType);
+    const loanType = req.query.loanType as LoanType | undefined;
+    const termType = req.query.termType as LoanTermType | undefined;
+    const config = await this.service.getCurrentEffectiveConfig({ loanType, termType });
     const response: ApiResponse<InterestRateConfig> = {
       success: true,
       message: 'Lấy bảng lãi suất hiện hành thành công',

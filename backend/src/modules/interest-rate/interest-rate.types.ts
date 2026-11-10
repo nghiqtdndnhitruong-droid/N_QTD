@@ -1,4 +1,4 @@
-import { LoanTermType, InterestRateConfig } from '@prisma/client';
+import { LoanTermType, LoanType, InterestRateConfig } from '@prisma/client';
 import { PaginationQuery } from '../../shared/types';
 
 export interface InterestRateTierDto {
@@ -9,13 +9,24 @@ export interface InterestRateTierDto {
 
 export interface CreateInterestRateConfigDto {
   effectiveDate: string | Date;
-  termType: LoanTermType;
+  loanType?: LoanType;
+  termType?: LoanTermType | null;
   tiers: InterestRateTierDto[];
   isActive?: boolean;
   note?: string;
 }
 
+export interface UpdateInterestRateConfigDto {
+  effectiveDate?: string | Date;
+  loanType?: LoanType;
+  termType?: LoanTermType | null;
+  tiers?: InterestRateTierDto[];
+  isActive?: boolean;
+  note?: string;
+}
+
 export interface InterestRateFilterQuery extends PaginationQuery {
+  loanType?: LoanType;
   termType?: LoanTermType;
   isActive?: boolean;
 }

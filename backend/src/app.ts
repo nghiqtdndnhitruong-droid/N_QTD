@@ -15,6 +15,8 @@ import { disbursementRoutes } from './modules/disbursement/disbursement.routes';
 import { repaymentRoutes } from './modules/repayment/repayment.routes';
 import { areaRoutes } from './modules/area/area.routes';
 import { wordTemplateRoutes } from './modules/word-template/word-template.routes';
+import { authRoutes } from './modules/auth/auth.routes';
+import { userRoutes } from './modules/user/user.routes';
 
 const app: Application = express();
 
@@ -62,6 +64,8 @@ apiRouter.use('/disbursements', disbursementRoutes);
 apiRouter.use('/repayments', repaymentRoutes);
 apiRouter.use('/areas', areaRoutes);
 apiRouter.use('/word-templates', wordTemplateRoutes);
+apiRouter.use('/auth', authRoutes);
+apiRouter.use('/users', userRoutes);
 
 app.use(env.apiPrefix, apiRouter);
 

@@ -330,6 +330,7 @@ export class LoanRepository {
 
     if (data.loanAmount !== undefined) updateData.loanAmount = data.loanAmount;
     if (data.loanType !== undefined) updateData.loanType = data.loanType;
+    if (data.interestRate !== undefined) updateData.interestRate = data.interestRate;
     if (data.termType !== undefined) {
       updateData.termType = data.termType;
       updateData.termMonths =

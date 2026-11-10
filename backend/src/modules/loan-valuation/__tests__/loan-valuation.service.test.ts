@@ -21,6 +21,7 @@ describe('LoanValuationService', () => {
     };
     service = new LoanValuationService(mockRepo);
     vi.spyOn(prisma.collateral, 'findMany').mockResolvedValue([]);
+    vi.spyOn(prisma.collateral, 'update').mockResolvedValue({} as any);
     vi.spyOn(prisma.loanValuation, 'findMany').mockResolvedValue([]);
   });
 
@@ -115,5 +116,44 @@ describe('LoanValuationService', () => {
     await expect(service.create(validLoanId, dto)).rejects.toThrow(
       'Tài sản liên kết không tồn tại hoặc không thuộc khoản vay hiện tại'
     );
+  });
+
+  it('6. create & update: nếu có diện tích thực tế thì nhân theo diện tích thực tế, bỏ trống mới nhân diện tích pháp lý', async () => {
+    vi.spyOn(prisma.loan, 'findUnique').mockResolvedValue({
+      id: validLoanId,
+      isDeleted: false,
+    } as any);
+
+    const mockCollaterals = [
+      { id: c1Id, loanId: validLoanId, sheetNumber: '01', plotNumber: '10', area: 200, actualArea: null },
+    ] as any;
+    vi.spyOn(prisma.collateral, 'findMany').mockResolvedValue(mockCollaterals);
+    mockRepo.create.mockImplementation((_loanId: string, data: any) => Promise.resolve({ id: 'val1', ...data }));
+
+    // TH1: Có diện tích thực tế 150m2 (diện tích pháp lý 200m2), đơn giá 1.000.000đ/m2
+    // Giá tiền phải tính theo 150m2 = 150.000.000đ
+    const resWithActual = await service.create(validLoanId, {
+      collateralIds: [c1Id],
+      valuationType: ValuationType.THEO_NGHI_DINH_QUY,
+      area: 200,
+      actualArea: 150,
+      pricePerSqMeter: 1000000,
+    });
+    expect(resWithActual.actualArea).toBe(150);
+    expect(resWithActual.totalPriceBeforeRound).toBe(150000000);
+    expect(resWithActual.totalPrice).toBe(150000000);
+
+    // TH2: Bỏ trống diện tích thực tế (actualArea = null), diện tích pháp lý 200m2, đơn giá 1.000.000đ/m2
+    // Giá tiền phải tính theo 200m2 = 200.000.000đ
+    const resWithoutActual = await service.create(validLoanId, {
+      collateralIds: [c1Id],
+      valuationType: ValuationType.THEO_NGHI_DINH_QUY,
+      area: 200,
+      actualArea: null,
+      pricePerSqMeter: 1000000,
+    });
+    expect(resWithoutActual.actualArea).toBe(null);
+    expect(resWithoutActual.totalPriceBeforeRound).toBe(200000000);
+    expect(resWithoutActual.totalPrice).toBe(200000000);
   });
 });

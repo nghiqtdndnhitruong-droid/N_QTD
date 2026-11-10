@@ -294,5 +294,41 @@ describe('Feature: Merged usageForm calculation (Hình thức sử dụng gộp)
     expect(raw.nested.TAI_SAN.HINH_THUC_SU_DUNG_GOP).toBe('riêng: 300 m2; chung: 70 m2');
     expect(raw.nested.DANH_SACH_TAI_SAN[0].HINH_THUC_SU_DUNG).toBe('riêng: 300 m2; chung: 70 m2');
   });
+
+  it('gộp đúng khi các tài sản có cùng cấu trúc "riêng: 10m2; chung: không m2" (giữ nguyên chữ riêng, chung)', () => {
+    const collaterals = [
+      { usageForm: 'riêng: 10m2; chung: không m2' },
+      { usageForm: 'riêng: 20m2; chung: không m2' },
+    ];
+    const result = wordTemplateDataDictionaryService.formatMergedUsageForms(collaterals);
+    expect(result).toBe('riêng: 30 m2; chung: không m2');
+  });
+
+  it('gộp đúng khi các tài sản có cùng cấu trúc "sử dụng riêng: 10m2; sử dụng chung: Không m2"', () => {
+    const collaterals = [
+      { usageForm: 'sử dụng riêng: 10m2; sử dụng chung: Không m2' },
+      { usageForm: 'sử dụng riêng: 20m2; sử dụng chung: Không m2' },
+    ];
+    const result = wordTemplateDataDictionaryService.formatMergedUsageForms(collaterals);
+    expect(result).toBe('sử dụng riêng: 30 m2; sử dụng chung: Không m2');
+  });
+
+  it('KHÔNG tự gộp khi có 1 tài sản là chữ "Sử dụng riêng" và 1 tài sản là "riêng: 10m2; chung: Không m2"', () => {
+    const collaterals = [
+      { usageForm: 'Sử dụng riêng' },
+      { usageForm: 'riêng: 10m2; chung: Không m2' },
+    ];
+    const result = wordTemplateDataDictionaryService.formatMergedUsageForms(collaterals);
+    expect(result).toBe('Sử dụng riêng; riêng: 10m2; chung: Không m2');
+  });
+
+  it('KHÔNG tự gộp khi khác phong cách chữ giữa "Sử dụng riêng" và "riêng"', () => {
+    const collaterals = [
+      { usageForm: 'Sử dụng riêng: 10m2; Sử dụng chung: Không m2' },
+      { usageForm: 'riêng: 20m2; chung: không m2' },
+    ];
+    const result = wordTemplateDataDictionaryService.formatMergedUsageForms(collaterals);
+    expect(result).toBe('Sử dụng riêng: 10m2; Sử dụng chung: Không m2; riêng: 20m2; chung: không m2');
+  });
 });
 

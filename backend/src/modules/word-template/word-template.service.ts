@@ -553,6 +553,12 @@ export class WordTemplateService {
     // HĐ thế chấp
     if (k.includes('HD_THE_CHAP') || k.includes('MORTGAGE_CONTRACT'))
       return { path: 'mortgage.contractNumber', dataType: 'TEXT' };
+    if (k.includes('CHUNG_THUC')) {
+      if (k.includes('NGAY') && !k.endsWith('NGAY_CHUNG_THUC') && k !== 'NGAY_CHUNG_THUC') return { path: 'mortgage.committeeAuthDateDay', dataType: 'TEXT' };
+      if (k.includes('THANG')) return { path: 'mortgage.committeeAuthDateMonth', dataType: 'TEXT' };
+      if (k.includes('NAM')) return { path: 'mortgage.committeeAuthDateYear', dataType: 'TEXT' };
+      return { path: 'mortgage.committeeAuthDate', dataType: 'DATE' };
+    }
 
     // Định giá tài sản & Định giá khoản vay
     if (k.includes('NGAY_DINH_GIA') || k.includes('VALUATION_DATE')) {

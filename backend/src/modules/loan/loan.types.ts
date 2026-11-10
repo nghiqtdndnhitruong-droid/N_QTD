@@ -64,7 +64,9 @@ export interface CreateLoanDto {
   collaterals?: Omit<CreateCollateralDto, 'loanId'>[];
 }
 
-export interface UpdateLoanDto extends Partial<Omit<CreateLoanDto, 'memberId'>> {}
+export interface UpdateLoanDto extends Partial<Omit<CreateLoanDto, 'memberId'>> {
+  interestRate?: number;
+}
 
 export interface LoanFilterQuery extends PaginationQuery {
   memberId?: string;

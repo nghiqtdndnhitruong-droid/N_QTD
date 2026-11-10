@@ -34,8 +34,18 @@ describe('RBAC <Can /> component', () => {
     expect(screen.queryByText('Ban hành bảng lãi suất')).not.toBeInTheDocument();
   });
 
-  it('hiển thị nút quản trị sau khi chuyển vai trò sang ADMIN', () => {
-    useAuthStore.getState().switchMockRole('ADMIN');
+  it('hiển thị nút quản trị khi người dùng có vai trò ADMIN', () => {
+    useAuthStore.getState().setSession({
+      accessToken: 'test-admin-token',
+      user: {
+        id: 'u-admin',
+        username: 'ADMIN',
+        fullName: 'Quản trị viên',
+        title: 'Quản trị hệ thống',
+        roles: ['ADMIN'],
+        permissions: [...ROLE_PERMISSIONS.ADMIN],
+      },
+    });
 
     render(
       <Can perm="interest-rate:create">

@@ -24,6 +24,16 @@ enum Gender {
   NU    // Nữ
 }
 
+enum UserRole {
+  ADMIN
+  CREDIT_OFFICER
+}
+
+enum AccountStatus {
+  ACTIVE
+  LOCKED
+}
+
 enum LoanType {
   TIN_CHAP  // Tín chấp
   THE_CHAP  // Thế chấp
@@ -551,9 +561,10 @@ type InterestRateTier {
 
 model InterestRateConfig {
   id            String             @id @default(auto()) @map("_id") @db.ObjectId
+  loanType      LoanType?          @default(THE_CHAP) // Tín chấp / Thế chấp
+  termType      LoanTermType?      // Áp dụng cho Ngắn hạn / Trung hạn (Thế chấp), null đối với Tín chấp
   effectiveDate DateTime           // Ngày áp dụng
-  termType      LoanTermType       // Áp dụng cho Ngắn hạn / Trung hạn
-  tiers         InterestRateTier[] // Các bậc lãi suất
+  tiers         InterestRateTier[] // Các bậc lãi suất (Thế chấp: nhiều bậc theo số tiền; Tín chấp: 1 bậc duy nhất)
   isActive      Boolean            @default(true)
   note          String?            // Ghi chú
 
@@ -561,7 +572,7 @@ model InterestRateConfig {
   updatedAt     DateTime           @updatedAt
 
   @@index([effectiveDate])
-  @@index([termType, isActive])
+  @@index([loanType, termType, isActive])
   @@map("interest_rate_configs")
 }
 
@@ -714,4 +725,43 @@ model GlobalWordKeyword {
   @@index([category])
   @@map("global_word_keywords")
 }
+
+// ============================================================
+// USER & USER PROFILE (Tài khoản & Hồ sơ cán bộ)
+// ============================================================
+
+model User {
+  id           String        @id @default(auto()) @map("_id") @db.ObjectId
+  username     String        @unique // Tên đăng nhập (chữ hoa/thường chuẩn hóa, duy nhất)
+  passwordHash String        // Chuỗi băm mật khẩu bcrypt
+  role         UserRole      @default(CREDIT_OFFICER)
+  status       AccountStatus @default(ACTIVE) // ACTIVE | LOCKED
+  lastLoginAt  DateTime?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  profile      UserProfile?
+
+  @@map("users")
+}
+
+model UserProfile {
+  id           String          @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String          @unique @db.ObjectId
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  fullName     String          // Họ và tên
+  idType       IdDocumentType  @default(CAN_CUOC_CONG_DAN) // Loại giấy tờ
+  idNumber     String?         // Số giấy tờ
+  idIssueDate  DateTime?       // Ngày cấp
+  idIssuePlace String?         // Nơi cấp
+  yearOfBirth  Int?            // Năm sinh
+  gender       Gender?         @default(NAM) // Giới tính
+
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  @@map("user_profiles")
+}
+
 

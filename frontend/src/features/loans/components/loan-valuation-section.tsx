@@ -85,6 +85,8 @@ function computeGroupAggregation(
   selectedIds: string[],
   allCollaterals: Collateral[],
   pricePerSqMeter: number,
+  customActualArea?: number | null,
+  customArea?: number,
 ) {
   const selectedCollaterals = selectedIds
     .map((id) => allCollaterals.find((c) => c.id === id))
@@ -104,22 +106,28 @@ function computeGroupAggregation(
   const plotNumber = plotNumbers.join(', ');
 
   // C. Tổng diện tích pháp lý (chỉ tính mỗi tài sản 1 lần)
-  const area = selectedCollaterals.reduce((sum, c) => sum + (Number(c.area) || 0), 0);
+  const area =
+    customArea !== undefined && customArea > 0
+      ? customArea
+      : selectedCollaterals.reduce((sum, c) => sum + (Number(c.area) || 0), 0);
 
   // D. Tổng diện tích thực tế (chỉ cộng các tài sản có actualArea > 0)
-  const validActualAreas = selectedCollaterals.filter(
-    (c) => c.actualArea !== null && c.actualArea !== undefined && c.actualArea > 0,
-  );
-  const actualArea =
-    validActualAreas.length > 0
-      ? validActualAreas.reduce((sum, c) => sum + Number(c.actualArea), 0)
-      : null;
+  let actualArea: number | null = null;
+  if (customActualArea !== undefined) {
+    actualArea =
+      customActualArea !== null && Number(customActualArea) > 0 ? Number(customActualArea) : null;
+  } else {
+    const validActualAreas = selectedCollaterals.filter(
+      (c) => c.actualArea !== null && c.actualArea !== undefined && Number(c.actualArea) > 0,
+    );
+    actualArea =
+      validActualAreas.length > 0
+        ? validActualAreas.reduce((sum, c) => sum + Number(c.actualArea), 0)
+        : null;
+  }
 
-  // Diện tích hiệu dụng để tính tiền
-  const effectiveArea = selectedCollaterals.reduce((sum, c) => {
-    const eff = c.actualArea && c.actualArea > 0 ? Number(c.actualArea) : Number(c.area || 0);
-    return sum + eff;
-  }, 0);
+  // Diện tích hiệu dụng để tính tiền: nếu có diện tích thực tế > 0 thì dùng thực tế, ngược lại dùng diện tích pháp lý
+  const effectiveArea = actualArea && actualArea > 0 ? actualArea : area;
 
   const price = Number(pricePerSqMeter) || 0;
   const totalPriceBeforeRound = Math.round(effectiveArea * price);
@@ -217,9 +225,50 @@ export function LoanValuationSection({
   });
 
   const watchedCollateralIds = useWatch({ control, name: 'collateralIds' }) || [];
+  const watchedArea = useWatch({ control, name: 'area' });
+  const watchedActualArea = useWatch({ control, name: 'actualArea' });
   const watchedPricePerSqMeter = useWatch({ control, name: 'pricePerSqMeter' }) || 0;
   const watchedTotalPriceBeforeRound = useWatch({ control, name: 'totalPriceBeforeRound' }) || 0;
   const watchedTotalPrice = useWatch({ control, name: 'totalPrice' }) || 0;
+
+  // Tự động tính toán lại giá tiền trước và sau làm tròn khi diện tích pháp lý, diện tích thực tế hoặc đơn giá thay đổi
+  // Quy tắc: Nếu bỏ trống ô diện tích thực tế mới nhân bằng diện tích pháp lý, còn nếu có diện tích thực tế thì nhân với diện tích thực tế
+  useEffect(() => {
+    const numActualArea =
+      watchedActualArea !== null &&
+      watchedActualArea !== undefined &&
+      !Number.isNaN(Number(watchedActualArea)) &&
+      Number(watchedActualArea) > 0
+        ? Number(watchedActualArea)
+        : null;
+
+    const numArea =
+      watchedArea !== null &&
+      watchedArea !== undefined &&
+      !Number.isNaN(Number(watchedArea)) &&
+      Number(watchedArea) > 0
+        ? Number(watchedArea)
+        : 0;
+
+    const effArea = numActualArea !== null ? numActualArea : numArea;
+    const price = Number(watchedPricePerSqMeter) || 0;
+    const computedBeforeRound = Math.round(effArea * price);
+    const computedPrice = Math.floor(computedBeforeRound / 1_000_000) * 1_000_000;
+
+    if (computedBeforeRound !== watchedTotalPriceBeforeRound) {
+      setValue('totalPriceBeforeRound', computedBeforeRound, { shouldDirty: true });
+    }
+    if (computedPrice !== watchedTotalPrice) {
+      setValue('totalPrice', computedPrice, { shouldDirty: true });
+    }
+  }, [
+    watchedArea,
+    watchedActualArea,
+    watchedPricePerSqMeter,
+    watchedTotalPriceBeforeRound,
+    watchedTotalPrice,
+    setValue,
+  ]);
 
   // Khi danh sách tài sản hoặc đơn giá thay đổi -> tự động cập nhật tổng hợp và làm tròn xuống
   const handleCollateralSelectionChange = (assetId: string, checked: boolean) => {
@@ -263,9 +312,6 @@ export function LoanValuationSection({
 
   const handlePricePerSqMeterChange = (newPrice: number) => {
     setValue('pricePerSqMeter', newPrice, { shouldDirty: true, shouldValidate: true });
-    const agg = computeGroupAggregation(watchedCollateralIds, collaterals, newPrice);
-    setValue('totalPriceBeforeRound', agg.totalPriceBeforeRound, { shouldDirty: true });
-    setValue('totalPrice', agg.totalPrice, { shouldDirty: true });
   };
 
   // Áp nhanh đơn giá từ bảng giá đất
@@ -894,6 +940,11 @@ export function LoanValuationSection({
                       <span className="text-xl font-extrabold text-emerald-600 font-mono">
                         {formatVND(watchedTotalPrice)}
                       </span>
+                    </div>
+
+                    <div className="text-[11px] text-emerald-700/90 font-medium pt-1">
+                      Công thức: {formatArea(watchedActualArea && Number(watchedActualArea) > 0 ? Number(watchedActualArea) : Number(watchedArea || 0))} × {formatVND(watchedPricePerSqMeter)}/m²
+                      {watchedActualArea && Number(watchedActualArea) > 0 ? ' (nhân theo diện tích thực tế)' : ' (nhân theo diện tích pháp lý)'}
                     </div>
 
                     <div className="text-[11px] text-emerald-700/80 italic">

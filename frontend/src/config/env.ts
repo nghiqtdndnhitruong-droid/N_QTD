@@ -10,9 +10,7 @@ const envSchema = z.object({
 
 const parsed = envSchema.safeParse({
   apiBaseUrl: import.meta.env.VITE_API_BASE_URL || '/api/v1',
-  enableMock:
-    import.meta.env.DEV &&
-    (import.meta.env.VITE_ENABLE_MOCK === 'true' || import.meta.env.VITE_ENABLE_MOCK === undefined),
+  enableMock: import.meta.env.VITE_ENABLE_MOCK === 'true',
   appTitle: import.meta.env.VITE_APP_TITLE || 'Quỹ Tín Dụng Nhân Dân',
   isDev: Boolean(import.meta.env.DEV),
   isProd: Boolean(import.meta.env.PROD),

@@ -1,11 +1,11 @@
-import { env } from '@/config/env';
-import { apiGet, apiPost } from '@/lib/http';
+import { apiGet, apiPost, apiPut } from '@/lib/http';
 import {
-  ROLE_LABELS,
-  ROLE_PERMISSIONS,
   type AuthUser,
-  type UserRole,
+  type UserProfileData,
+  useAuthStore,
 } from '@/stores/auth.store';
+
+const TOKEN_KEY = 'qtd.accessToken';
 
 export interface LoginPayload {
   username: string;
@@ -18,115 +18,86 @@ export interface LoginResponse {
   user: AuthUser;
 }
 
-const MOCK_SESSION_KEY = 'qtd.devMockUserRole';
+export interface ChangePasswordPayload {
+  currentPassword: string;
+  newPassword: string;
+}
 
-const MOCK_USERS: Record<UserRole, { password: string; user: AuthUser }> = {
-  CREDIT_OFFICER: {
-    password: 'Password@123',
-    user: {
-      id: 'mock-user-cbtd-01',
-      username: 'cbtd',
-      fullName: 'Nguyễn Minh Tâm',
-      title: ROLE_LABELS.CREDIT_OFFICER,
-      roles: ['CREDIT_OFFICER'],
-      permissions: [...ROLE_PERMISSIONS.CREDIT_OFFICER],
-    },
-  },
-  ADMIN: {
-    password: 'Password@123',
-    user: {
-      id: 'mock-user-admin-01',
-      username: 'admin',
-      fullName: 'Trần Quốc Bảo',
-      title: ROLE_LABELS.ADMIN,
-      roles: ['ADMIN'],
-      permissions: [...ROLE_PERMISSIONS.ADMIN],
-    },
-  },
-};
+export interface UpdateProfilePayload {
+  fullName: string;
+  idType: 'CAN_CUOC_CONG_DAN' | 'CAN_CUOC';
+  idNumber?: string | null;
+  idIssueDate?: string | null;
+  idIssuePlace?: string | null;
+  yearOfBirth?: number | null;
+  gender?: 'NAM' | 'NU' | null;
+}
 
-/**
- * [MOCK AUTH] Backend hiện chưa có module /auth.
- * Khi VITE_ENABLE_MOCK=true (chỉ ở DEV), sử dụng phiên giả lập có đánh dấu rõ.
- * Khi Backend triển khai xong POST /api/v1/auth/login, chỉ cần tắt VITE_ENABLE_MOCK.
- */
 export async function loginApi(payload: LoginPayload): Promise<LoginResponse> {
-  if (env.enableMock) {
-    await new Promise((r) => setTimeout(r, 300));
-    const normalized = payload.username.trim().toLowerCase();
-    const role: UserRole | null =
-      normalized === 'admin'
-        ? 'ADMIN'
-        : normalized === 'cbtd' || normalized === 'canbo'
-          ? 'CREDIT_OFFICER'
-          : null;
-
-    const record = role ? MOCK_USERS[role] : null;
-    if (!record || payload.password !== record.password) {
-      throw new Error(
-        'Tên đăng nhập hoặc mật khẩu không đúng (Gợi ý DEV: cbtd / Password@123 hoặc admin / Password@123)',
-      );
-    }
-
+  const res = await apiPost<LoginResponse, LoginPayload>('/auth/login', payload);
+  if (res?.accessToken) {
     try {
-      window.sessionStorage.setItem(MOCK_SESSION_KEY, role!);
+      sessionStorage.setItem(TOKEN_KEY, res.accessToken);
     } catch {
-      // Bỏ qua
+      // Bỏ qua nếu môi trường không cho phép truy cập sessionStorage
     }
-
-    return {
-      accessToken: `mock-jwt-${role}-${Date.now()}`,
-      expiresIn: 86_400,
-      user: record.user,
-    };
   }
-
-  return apiPost<LoginResponse, LoginPayload>('/auth/login', payload);
+  return res;
 }
 
 export async function restoreSessionApi(): Promise<LoginResponse | null> {
-  if (env.enableMock) {
-    try {
-      const savedRole = (window.sessionStorage.getItem(MOCK_SESSION_KEY) as UserRole | null) ?? 'CREDIT_OFFICER';
-      const record = MOCK_USERS[savedRole] ?? MOCK_USERS.CREDIT_OFFICER;
-      return {
-        accessToken: `mock-jwt-${savedRole}`,
-        expiresIn: 86_400,
-        user: record.user,
-      };
-    } catch {
-      return {
-        accessToken: 'mock-jwt-CREDIT_OFFICER',
-        expiresIn: 86_400,
-        user: MOCK_USERS.CREDIT_OFFICER.user,
-      };
-    }
-  }
-
   try {
-    const refresh = await apiPost<{ accessToken: string; expiresIn: number }>('/auth/refresh');
-    const user = await apiGet<AuthUser>('/auth/me', {
-      headers: { Authorization: `Bearer ${refresh.accessToken}` },
-    });
+    let token: string | null = null;
+    try {
+      token = sessionStorage.getItem(TOKEN_KEY);
+    } catch {
+      // fallback
+    }
+    if (!token) {
+      token = useAuthStore.getState().accessToken;
+    }
+    if (!token) {
+      return null;
+    }
+
+    const user = await apiGet<AuthUser>('/auth/me');
     return {
-      accessToken: refresh.accessToken,
-      expiresIn: refresh.expiresIn,
+      accessToken: token,
+      expiresIn: 86400,
       user,
     };
   } catch {
+    try {
+      sessionStorage.removeItem(TOKEN_KEY);
+    } catch {
+      // ignore
+    }
     return null;
   }
 }
 
 export async function logoutApi(): Promise<void> {
-  if (env.enableMock) {
+  try {
+    await apiPost('/auth/logout');
+  } catch {
+    // Bỏ qua lỗi mạng khi logout
+  } finally {
     try {
-      window.sessionStorage.removeItem(MOCK_SESSION_KEY);
+      sessionStorage.removeItem(TOKEN_KEY);
     } catch {
-      // Bỏ qua
+      // ignore
     }
-    return;
   }
-  await apiPost('/auth/logout');
 }
 
+export async function getProfileApi(): Promise<UserProfileData> {
+  return apiGet<UserProfileData>('/auth/profile');
+}
+
+export async function updateProfileApi(payload: UpdateProfilePayload): Promise<UserProfileData> {
+  return apiPut<UserProfileData, UpdateProfilePayload>('/auth/profile', payload);
+}
+
+export async function changePasswordApi(payload: ChangePasswordPayload): Promise<{ message: string }> {
+  return apiPut<{ message: string }, ChangePasswordPayload>('/auth/change-password', payload);
+}

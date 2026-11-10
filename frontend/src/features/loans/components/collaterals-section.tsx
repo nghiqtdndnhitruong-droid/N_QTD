@@ -720,12 +720,6 @@ export function CollateralsSection({
                   unit="m²"
                   hint="Diện tích pháp lý trên sổ đỏ"
                 />
-                <FormTextField
-                  control={control}
-                  name="origin"
-                  label="Nguồn gốc sử dụng"
-                  placeholder="VD: Nhà nước giao đất có thu tiền sử dụng đất / Nhận chuyển nhượng..."
-                />
                 <FormDateField
                   control={control}
                   name="issueDate"
@@ -773,6 +767,13 @@ export function CollateralsSection({
                   name="useRestrictions"
                   label="Hạn chế sử dụng"
                   placeholder="VD: Không / Không có"
+                />
+                <FormTextField
+                  control={control}
+                  name="origin"
+                  label="Nguồn gốc sử dụng"
+                  placeholder="VD: Nhà nước giao đất có thu tiền sử dụng đất / Nhận chuyển nhượng..."
+                  wrapperClassName="sm:col-span-2"
                 />
               </div>
 

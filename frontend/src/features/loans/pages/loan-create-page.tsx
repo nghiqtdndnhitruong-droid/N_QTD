@@ -204,22 +204,32 @@ export function LoanCreatePage() {
     },
   });
 
+  const watchedLoanType = useWatch({ control: termsForm.control, name: 'loanType' });
   const watchedTermType = useWatch({ control: termsForm.control, name: 'termType' });
   const watchedLoanAmount = useWatch({ control: termsForm.control, name: 'loanAmount' });
+  const isUnsecuredLoan = (draftLoan?.loanType ?? watchedLoanType) === LoanType.TIN_CHAP;
+
   const { data: currentRateConfig } = useCurrentInterestRate(
-    watchedTermType ?? LoanTermType.NGAN_HAN,
+    isUnsecuredLoan
+      ? { loanType: LoanType.TIN_CHAP }
+      : {
+          loanType: LoanType.THE_CHAP,
+          termType: watchedTermType ?? LoanTermType.NGAN_HAN,
+        },
   );
 
-  // Tìm bậc lãi suất gợi ý tương ứng với số tiền vay
-  const matchedRateTier = currentRateConfig?.tiers.find(
-    (t) => watchedLoanAmount >= t.minAmount && watchedLoanAmount <= t.maxAmount,
-  );
+  // Tìm bậc lãi suất gợi ý tương ứng với số tiền vay (Tín chấp dùng 1 mốc duy nhất tiers[0])
+  const matchedRateTier = isUnsecuredLoan
+    ? currentRateConfig?.tiers?.[0]
+    : currentRateConfig?.tiers?.find(
+        (t) => watchedLoanAmount >= t.minAmount && watchedLoanAmount <= t.maxAmount,
+      );
 
   // Các thông số khoản vay hiệu lực để đồng bộ sang Phương án vay (Bước 4)
   const effectiveLoanAmount = draftLoan?.loanAmount ?? watchedLoanAmount ?? 0;
   const effectiveTermType = draftLoan?.termType ?? watchedTermType ?? LoanTermType.NGAN_HAN;
   const effectiveInterestRate =
-    draftLoan?.interestRate ?? matchedRateTier?.annualRate ?? 10.2;
+    matchedRateTier?.annualRate ?? draftLoan?.interestRate ?? (isUnsecuredLoan ? 12.0 : 10.2);
 
   // Form Bước 3: Người thừa kế
   const heirForm = useForm<HeirFormValues>({
@@ -550,6 +560,8 @@ export function LoanCreatePage() {
         setSearchParams({ draft: created.id }, { replace: true });
       } else {
         await updateLoanMutation.mutateAsync({
+          loanType: values.loanType,
+          termType: values.termType,
           loanAmount: values.loanAmount,
           contractNumber: values.contractNumber || undefined,
           contractDate: values.contractDate || undefined,
@@ -838,7 +850,9 @@ export function LoanCreatePage() {
                 }
               >
                 {matchedRateTier
-                  ? `Khớp bậc tiền vay từ ${formatVND(matchedRateTier.minAmount)} đến ${formatVND(matchedRateTier.maxAmount)}. Lãi suất chính thức sẽ được máy chủ khóa cố định ngay khi khởi tạo khoản vay.`
+                  ? isUnsecuredLoan
+                    ? 'Áp dụng mốc lãi suất tín chấp duy nhất của Quỹ cho toàn bộ khoản vay tín chấp.'
+                    : `Khớp bậc tiền vay từ ${formatVND(matchedRateTier.minAmount)} đến ${formatVND(matchedRateTier.maxAmount)}. Lãi suất chính thức sẽ được máy chủ khóa cố định ngay khi khởi tạo khoản vay.`
                   : 'Máy chủ sẽ tự động tra cứu bậc lãi suất hiệu lực ứng với số tiền và kỳ hạn vay.'}
               </Alert>
             </CardContent>

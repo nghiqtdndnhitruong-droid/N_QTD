@@ -174,7 +174,9 @@ export class LoanValuationService {
 
       // Lấy đơn giá và thông tin định giá mới nhất
       const latest = linkedValuations[linkedValuations.length - 1];
-      const effArea = c.actualArea && c.actualArea > 0 ? c.actualArea : c.area;
+      const effArea = (latest && latest.actualArea && latest.actualArea > 0 && linkedValuations.length === 1)
+        ? latest.actualArea
+        : (c.actualArea && c.actualArea > 0 ? c.actualArea : c.area);
       const calculatedValuation = latest
         ? Math.floor(Math.round(effArea * latest.pricePerSqMeter) / 1_000_000) * 1_000_000
         : (c.valuationAmount || 0);
@@ -185,6 +187,7 @@ export class LoanValuationService {
           valuationAmount: calculatedValuation,
           ...(latest && {
             pricePerSqMeter: latest.pricePerSqMeter,
+            ...(latest.actualArea !== undefined && linkedValuations.length === 1 && { actualArea: latest.actualArea }),
           }),
         },
       });
@@ -241,17 +244,23 @@ export class LoanValuationService {
       : aggregated.area;
 
     const actualArea = dto.actualArea !== undefined
-      ? dto.actualArea
+      ? (dto.actualArea !== null && Number(dto.actualArea) > 0 ? Number(dto.actualArea) : null)
       : aggregated.actualArea;
+
+    // Quy tắc: Nếu bỏ trống ô diện tích thực tế mới nhân bằng diện tích pháp lý, còn nếu có diện tích thực tế thì nhân với diện tích thực tế
+    const effectiveArea = actualArea && actualArea > 0 ? actualArea : area;
+    const price = Number(dto.pricePerSqMeter) || 0;
+    const computedPriceBeforeRound = Math.round(effectiveArea * price);
+    const computedPrice = Math.floor(computedPriceBeforeRound / 1_000_000) * 1_000_000;
 
     const totalPriceBeforeRound = dto.totalPriceBeforeRound !== undefined && dto.totalPriceBeforeRound > 0
       ? dto.totalPriceBeforeRound
-      : aggregated.totalPriceBeforeRound;
+      : computedPriceBeforeRound;
 
     // Luôn áp dụng công thức làm tròn xuống hàng triệu cho giá tiền sau cùng
     const totalPrice = dto.totalPrice !== undefined && dto.totalPrice > 0
       ? Math.floor(dto.totalPrice / 1_000_000) * 1_000_000
-      : aggregated.totalPrice;
+      : computedPrice;
 
     const created = await this.repo.create(loanId, {
       ...dto,
@@ -322,21 +331,35 @@ export class LoanValuationService {
       : (dto.collateralIds ? aggregated.area : existing.area);
 
     const actualArea = dto.actualArea !== undefined
-      ? dto.actualArea
+      ? (dto.actualArea !== null && Number(dto.actualArea) > 0 ? Number(dto.actualArea) : null)
       : (dto.collateralIds ? aggregated.actualArea : existing.actualArea);
 
     let totalPriceBeforeRound = existing.totalPriceBeforeRound ?? existing.totalPrice;
+    const effectiveArea = actualArea && actualArea > 0 ? actualArea : area;
+    const computedPriceBeforeRound = Math.round(effectiveArea * pricePerSqMeter);
+    const computedPrice = Math.floor(computedPriceBeforeRound / 1_000_000) * 1_000_000;
+
     if (dto.totalPriceBeforeRound !== undefined) {
       totalPriceBeforeRound = dto.totalPriceBeforeRound;
-    } else if (dto.collateralIds || dto.pricePerSqMeter !== undefined || dto.area !== undefined) {
-      totalPriceBeforeRound = aggregated.totalPriceBeforeRound;
+    } else if (
+      dto.collateralIds ||
+      dto.pricePerSqMeter !== undefined ||
+      dto.area !== undefined ||
+      dto.actualArea !== undefined
+    ) {
+      totalPriceBeforeRound = computedPriceBeforeRound;
     }
 
     let totalPrice = existing.totalPrice;
     if (dto.totalPrice !== undefined) {
       totalPrice = Math.floor(dto.totalPrice / 1_000_000) * 1_000_000;
-    } else if (dto.collateralIds || dto.pricePerSqMeter !== undefined || dto.area !== undefined) {
-      totalPrice = aggregated.totalPrice;
+    } else if (
+      dto.collateralIds ||
+      dto.pricePerSqMeter !== undefined ||
+      dto.area !== undefined ||
+      dto.actualArea !== undefined
+    ) {
+      totalPrice = computedPrice;
     }
 
     const updated = await this.repo.update(id, {

@@ -9,7 +9,15 @@ import { appRouter } from './router';
 
 // Kết nối httpClient với authStore (không tạo circular dependency)
 configureHttpAuth({
-  getAccessToken: () => useAuthStore.getState().accessToken,
+  getAccessToken: () => {
+    const memoryToken = useAuthStore.getState().accessToken;
+    if (memoryToken) return memoryToken;
+    try {
+      return sessionStorage.getItem('qtd.accessToken');
+    } catch {
+      return null;
+    }
+  },
   refreshAccessToken: async () => {
     const session = await restoreSessionApi();
     if (session) {
@@ -22,6 +30,11 @@ configureHttpAuth({
     return null;
   },
   onUnauthorized: () => {
+    try {
+      sessionStorage.removeItem('qtd.accessToken');
+    } catch {
+      // ignore
+    }
     useAuthStore.getState().clearSession();
   },
 });

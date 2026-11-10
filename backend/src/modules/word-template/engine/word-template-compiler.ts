@@ -81,12 +81,12 @@ export class WordTemplateCompiler {
       return match;
     });
 
-    // Thay thế các biến vị trí trong vòng lặp
-    compiled = compiled.replace(/\{\{@index\}\}/gi, '{{_index}}');
-    compiled = compiled.replace(/\{\{@number\}\}/gi, '{{_number}}');
-    compiled = compiled.replace(/\{\{@first\}\}/gi, '{{_first}}');
-    compiled = compiled.replace(/\{\{@last\}\}/gi, '{{_last}}');
-    compiled = compiled.replace(/\{\{@length\}\}/gi, '{{_length}}');
+    // Thay thế các biến vị trí trong vòng lặp (hỗ trợ cả {{@number}} và {{item.@number}})
+    compiled = compiled.replace(/\{\{(?:[a-zA-Z0-9_]+\.)?@index\}\}/gi, '{{_index}}');
+    compiled = compiled.replace(/\{\{(?:[a-zA-Z0-9_]+\.)?@number\}\}/gi, '{{_number}}');
+    compiled = compiled.replace(/\{\{(?:[a-zA-Z0-9_]+\.)?@first\}\}/gi, '{{_first}}');
+    compiled = compiled.replace(/\{\{(?:[a-zA-Z0-9_]+\.)?@last\}\}/gi, '{{_last}}');
+    compiled = compiled.replace(/\{\{(?:[a-zA-Z0-9_]+\.)?@length\}\}/gi, '{{_length}}');
 
     // Thay thế biến lặp: {{ts.MA_TAI_SAN}} -> {{MA_TAI_SAN}} khi nằm trong loop (chấp nhận khoảng trắng)
     for (const loop of loopConfigs) {
@@ -134,12 +134,21 @@ export class WordTemplateCompiler {
     const coll = safeExpressionEvaluator.getByPath(context, collectionPath);
     if (!Array.isArray(coll)) return;
 
+    const normalizedPath = collectionPath.toUpperCase().trim();
+    const isHouseholdMembers =
+      normalizedPath === 'DANH_SACH_THANH_VIEN_HO' ||
+      normalizedPath.endsWith('.DANH_SACH_THANH_VIEN_HO') ||
+      normalizedPath === 'HOUSEHOLDMEMBERS' ||
+      normalizedPath.endsWith('.HOUSEHOLDMEMBERS') ||
+      normalizedPath === 'THANH_VIEN_HO' ||
+      normalizedPath.endsWith('.THANH_VIEN_HO');
+
     const total = coll.length;
     for (let i = 0; i < total; i++) {
       const item = coll[i];
       if (item && typeof item === 'object') {
         item._index = i;
-        item._number = i + 1;
+        item._number = isHouseholdMembers ? (i + 3) : (item._number ?? (i + 1));
         item._first = i === 0;
         item._last = i === total - 1;
         item._length = total;

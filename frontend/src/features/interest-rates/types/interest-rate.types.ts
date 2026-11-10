@@ -1,4 +1,4 @@
-import type { ListQueryParams, LoanTermType } from '@/shared/types';
+import type { ListQueryParams, LoanTermType, LoanType } from '@/shared/types';
 
 export interface InterestRateTier {
   minAmount: number;
@@ -9,7 +9,8 @@ export interface InterestRateTier {
 export interface InterestRateConfig {
   id: string;
   effectiveDate: string;
-  termType: LoanTermType;
+  loanType: LoanType;
+  termType: LoanTermType | null;
   tiers: InterestRateTier[];
   isActive: boolean;
   note: string | null;
@@ -19,13 +20,24 @@ export interface InterestRateConfig {
 
 export interface CreateInterestRatePayload {
   effectiveDate: string;
-  termType: LoanTermType;
+  loanType: LoanType;
+  termType?: LoanTermType | null;
   tiers: InterestRateTier[];
   isActive?: boolean;
   note?: string;
 }
 
+export interface UpdateInterestRatePayload {
+  effectiveDate?: string;
+  loanType?: LoanType;
+  termType?: LoanTermType | null;
+  tiers?: InterestRateTier[];
+  isActive?: boolean;
+  note?: string;
+}
+
 export interface InterestRateListQuery extends ListQueryParams {
+  loanType?: LoanType;
   termType?: LoanTermType;
   isActive?: boolean;
 }

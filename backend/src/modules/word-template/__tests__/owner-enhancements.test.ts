@@ -734,7 +734,7 @@ describe('Word Template Owner Enhancements (TAI_SAN.CHU_SO_HUU & DANH_SACH_CHU_S
       'Nguồn thu từ sản xuất lúa: 91.752.000 đ; Nguồn thu từ chăn nuôi: 152.920.000 đ'
     );
   });
-  it('15. Tự động khử trùng lặp và giữ danh xưng cá nhân khi có tài sản Hộ và Cá nhân cùng 1 người', () => {
+  it('15. Tự động khử trùng lặp và giữ danh xưng Hộ Ông / Bà khi có tài sản Hộ và Cá nhân cùng 1 người', () => {
     // Trường hợp 1: Tài sản 1 là NGUOI_VAY_HO, Tài sản 2 là NGUOI_VAY_CA_NHAN
     const loan1 = {
       loanType: 'THE_CHAP',
@@ -749,11 +749,11 @@ describe('Word Template Owner Enhancements (TAI_SAN.CHU_SO_HUU & DANH_SACH_CHU_S
 
     expect(res1['DANH_SACH_CHU_SO_HUU']).toHaveLength(1);
     expect(res1['DANH_SACH_CHU_SO_HUU'][0].HO_TEN).toBe('Nguyễn Văn An');
-    expect(res1['DANH_SACH_CHU_SO_HUU'][0].DANH_XUNG).toBe('Ông');
-    expect(res1['DANH_SACH_CHU_SO_HUU'][0].XUNG_HO).toBe('Ông');
-    expect(res1['DANH_SACH_CHU_SO_HUU'][0].QUAN_HE).toBe('Người vay');
+    expect(res1['DANH_SACH_CHU_SO_HUU'][0].DANH_XUNG).toBe('Hộ Ông');
+    expect(res1['DANH_SACH_CHU_SO_HUU'][0].XUNG_HO).toBe('Hộ Ông');
+    expect(res1['DANH_SACH_CHU_SO_HUU'][0].QUAN_HE).toBe('Hộ người vay');
     expect(res1['TAI_SAN.CHU_SO_HUU']).toBe('Nguyễn Văn An');
-    expect(res1['CHU_SO_HUU_DANH_XUNG']).toBe('Ông');
+    expect(res1['CHU_SO_HUU_DANH_XUNG']).toBe('Hộ Ông');
     expect(res1['CHU_SO_HUU_GOP']).toBe('Nguyễn Văn An');
     expect(res1['CO_MOT_CHU_SO_HUU']).toBe(true);
     expect(res1['CO_NHIEU_CHU_SO_HUU']).toBe(false);
@@ -773,8 +773,8 @@ describe('Word Template Owner Enhancements (TAI_SAN.CHU_SO_HUU & DANH_SACH_CHU_S
 
     expect(res2['DANH_SACH_CHU_SO_HUU']).toHaveLength(1);
     expect(res2['DANH_SACH_CHU_SO_HUU'][0].HO_TEN).toBe('Nguyễn Văn An');
-    expect(res2['DANH_SACH_CHU_SO_HUU'][0].DANH_XUNG).toBe('Ông');
-    expect(res2['DANH_SACH_CHU_SO_HUU'][0].XUNG_HO).toBe('Ông');
+    expect(res2['DANH_SACH_CHU_SO_HUU'][0].DANH_XUNG).toBe('Hộ Ông');
+    expect(res2['DANH_SACH_CHU_SO_HUU'][0].XUNG_HO).toBe('Hộ Ông');
 
     // Trường hợp 3: Người thừa kế có 1 tài sản Hộ và 1 tài sản Cá nhân
     const loan3 = {
@@ -791,10 +791,10 @@ describe('Word Template Owner Enhancements (TAI_SAN.CHU_SO_HUU & DANH_SACH_CHU_S
 
     expect(res3['DANH_SACH_CHU_SO_HUU']).toHaveLength(1);
     expect(res3['DANH_SACH_CHU_SO_HUU'][0].HO_TEN).toBe('Nguyễn Thị Bích');
-    expect(res3['DANH_SACH_CHU_SO_HUU'][0].DANH_XUNG).toBe('Bà');
-    expect(res3['DANH_SACH_CHU_SO_HUU'][0].XUNG_HO).toBe('Bà');
+    expect(res3['DANH_SACH_CHU_SO_HUU'][0].DANH_XUNG).toBe('Hộ Bà');
+    expect(res3['DANH_SACH_CHU_SO_HUU'][0].XUNG_HO).toBe('Hộ Bà');
 
-    // Trường hợp 4: Cả 2 tài sản đều là Hộ -> giữ nguyên Hộ
+    // Trường hợp 4: Cả 2 tài sản đều là Hộ -> giữ nguyên Hộ nhưng xóa chữ Hộ trong HO_TEN
     const loan4 = {
       loanType: 'THE_CHAP',
       member: baseMember,
@@ -807,7 +807,7 @@ describe('Word Template Owner Enhancements (TAI_SAN.CHU_SO_HUU & DANH_SACH_CHU_S
     const res4 = wordTemplateDataDictionaryService.resolveLoanData(loan4 as any, []).resolvedContext;
 
     expect(res4['DANH_SACH_CHU_SO_HUU']).toHaveLength(1);
-    expect(res4['DANH_SACH_CHU_SO_HUU'][0].HO_TEN).toBe('Hộ Nguyễn Văn An');
+    expect(res4['DANH_SACH_CHU_SO_HUU'][0].HO_TEN).toBe('Nguyễn Văn An');
     expect(res4['DANH_SACH_CHU_SO_HUU'][0].DANH_XUNG).toBe('Hộ Ông');
 
     // Trường hợp 5: 3 tài sản gồm người vay (Hộ + Cá nhân) và bên thứ ba bảo lãnh
@@ -825,7 +825,7 @@ describe('Word Template Owner Enhancements (TAI_SAN.CHU_SO_HUU & DANH_SACH_CHU_S
 
     expect(res5['DANH_SACH_CHU_SO_HUU']).toHaveLength(2);
     expect(res5['DANH_SACH_CHU_SO_HUU'][0].HO_TEN).toBe('Nguyễn Văn An');
-    expect(res5['DANH_SACH_CHU_SO_HUU'][0].DANH_XUNG).toBe('Ông');
+    expect(res5['DANH_SACH_CHU_SO_HUU'][0].DANH_XUNG).toBe('Hộ Ông');
     expect(res5['DANH_SACH_CHU_SO_HUU'][1].HO_TEN).toBe('Lê Văn Cường');
     expect(res5['DANH_SACH_CHU_SO_HUU'][1].DANH_XUNG).toBe('Ông');
     expect(res5['TAI_SAN.CHU_SO_HUU_GOP']).toBe('Nguyễn Văn An và Lê Văn Cường');
@@ -907,7 +907,7 @@ describe('Word Template Owner Enhancements (TAI_SAN.CHU_SO_HUU & DANH_SACH_CHU_S
     const res6 = wordTemplateDataDictionaryService.resolveLoanData(loan6 as any, []).resolvedContext;
     expect(res6['KHOAN_VAY.DANH_XUNG']).toBe('Hộ Ông (Bà): Nguyễn Văn An + Lê Văn Cường');
 
-    // Case 7: 2 tài sản nhưng cùng 1 người (1 Hộ + 1 Cá nhân) -> khử trùng lặp còn 1 cá nhân -> "Ông: Nguyễn Văn An"
+    // Case 7: 2 tài sản nhưng cùng 1 người (1 Hộ + 1 Cá nhân) -> khử trùng lặp nhưng giữ danh xưng Hộ Ông -> "Hộ Ông: Nguyễn Văn An"
     const loan7 = {
       loanType: 'THE_CHAP',
       member: baseMember,
@@ -917,7 +917,7 @@ describe('Word Template Owner Enhancements (TAI_SAN.CHU_SO_HUU & DANH_SACH_CHU_S
       ],
     };
     const res7 = wordTemplateDataDictionaryService.resolveLoanData(loan7 as any, []).resolvedContext;
-    expect(res7['KHOAN_VAY.DANH_XUNG']).toBe('Ông: Nguyễn Văn An');
+    expect(res7['KHOAN_VAY.DANH_XUNG']).toBe('Hộ Ông: Nguyễn Văn An');
 
     // Case 8: Khoản vay tín chấp không có tài sản -> lấy theo người vay
     const loan8 = {

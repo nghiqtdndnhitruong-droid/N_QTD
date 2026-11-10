@@ -46,19 +46,50 @@ describe('Second Owner Keywords (CHU_SO_HUU_2 / CHU_SO_HUU_THU_HAI)', () => {
 
     // Chủ sở hữu 1
     expect(resolvedContext['CHU_SO_HUU_1.HO_TEN']).toBe('Lê Văn Người Vay');
+    expect(resolvedContext['CHU_SO_HUU_1.HO_TEN_IN_HOA']).toBe('LÊ VĂN NGƯỜI VAY');
+    expect(resolvedContext['CHU_SO_HUU_1.HO_TEN_VIET_HOA']).toBe('LÊ VĂN NGƯỜI VAY');
+    expect(resolvedContext['CHU_SO_HUU_1_HO_TEN_IN_HOA']).toBe('LÊ VĂN NGƯỜI VAY');
     expect(resolvedContext['CHU_SO_HUU_1']).toBe('Lê Văn Người Vay');
+    expect(resolvedContext['CHU_SO_HUU_1_HO_TEN']).toBe('Lê Văn Người Vay');
     expect(resolvedContext['CHU_SO_HUU.HO_TEN']).toBe('Lê Văn Người Vay');
+    expect(resolvedContext['CHU_SO_HUU.HO_TEN_IN_HOA']).toBe('LÊ VĂN NGƯỜI VAY');
+    expect(resolvedContext['CHU_SO_HUU_1.DANH_XUNG']).toBe('Ông');
+    expect(resolvedContext['CHU_SO_HUU_1.XUNG_HO']).toBe('Ông');
+    expect(resolvedContext['CHU_SO_HUU_1.NAM_SINH']).toBe('1985');
+    expect(resolvedContext['CHU_SO_HUU_1_NAM_SINH']).toBe('1985');
+    expect(resolvedContext['CHU_SO_HUU_1.LOAI_GIAY_TO']).toBe('Căn cước công dân');
+    expect(resolvedContext['CHU_SO_HUU_1.SO_GIAY_TO']).toBe('084085001111');
+    expect(resolvedContext['CHU_SO_HUU_1.SO_CCCD']).toBe('084085001111');
+    expect(resolvedContext['CHU_SO_HUU_1_SO_CCCD']).toBe('084085001111');
+    expect(resolvedContext['CHU_SO_HUU_1.NGAY_CAP']).toBe('15/05/2021');
+    expect(resolvedContext['CHU_SO_HUU_1.NOI_CAP']).toBe('Cục CSQLHC về TTXH');
+    expect(resolvedContext['CHU_SO_HUU_1.DIA_CHI']).toBe('Ấp Nô Lựa, Xã Nhị Trường');
+    expect(resolvedContext['CHU_SO_HUU_THU_NHAT.HO_TEN']).toBe('Lê Văn Người Vay');
+    expect(resolvedContext['CHU_SO_HUU_THU_NHAT.HO_TEN_IN_HOA']).toBe('LÊ VĂN NGƯỜI VAY');
+    expect(resolvedContext['CHU_SO_HUU_THU_NHAT.DANH_XUNG']).toBe('Ông');
+    expect(resolvedContext['CHU_SO_HUU_THU_NHAT.NAM_SINH']).toBe('1985');
+    expect(resolvedContext['CHU_SO_HUU_THU_NHAT.SO_CCCD']).toBe('084085001111');
+    expect(resolvedContext['CHU_SO_HUU_THU_1.HO_TEN']).toBe('Lê Văn Người Vay');
+    expect(resolvedContext['CHU_SO_HUU_THU_1.HO_TEN_IN_HOA']).toBe('LÊ VĂN NGƯỜI VAY');
+    expect(resolvedContext['TAI_SAN.CHU_SO_HUU_1.NAM_SINH']).toBe('1985');
+    expect(resolvedContext['TAI_SAN.CHU_SO_HUU_1.SO_CCCD']).toBe('084085001111');
+    expect(resolvedContext['TAI_SAN.CHU_SO_HUU_1.HO_TEN_IN_HOA']).toBe('LÊ VĂN NGƯỜI VAY');
 
     // Chủ sở hữu 2
     expect(resolvedContext['CHU_SO_HUU_2.HO_TEN']).toBe('Nguyễn Thị Đồng Sở Hữu');
+    expect(resolvedContext['CHU_SO_HUU_2.HO_TEN_IN_HOA']).toBe('NGUYỄN THỊ ĐỒNG SỞ HỮU');
+    expect(resolvedContext['CHU_SO_HUU_2.HO_TEN_VIET_HOA']).toBe('NGUYỄN THỊ ĐỒNG SỞ HỮU');
+    expect(resolvedContext['CHU_SO_HUU_2_HO_TEN_IN_HOA']).toBe('NGUYỄN THỊ ĐỒNG SỞ HỮU');
     expect(resolvedContext['CHU_SO_HUU_2']).toBe('Nguyễn Thị Đồng Sở Hữu');
     expect(resolvedContext['CHU_SO_HUU_2_HO_TEN']).toBe('Nguyễn Thị Đồng Sở Hữu');
     expect(resolvedContext['CHU_SO_HUU_THU_HAI.HO_TEN']).toBe('Nguyễn Thị Đồng Sở Hữu');
+    expect(resolvedContext['CHU_SO_HUU_THU_HAI.HO_TEN_IN_HOA']).toBe('NGUYỄN THỊ ĐỒNG SỞ HỮU');
     expect(resolvedContext['CHU_SO_HUU_THU_HAI']).toBe('Nguyễn Thị Đồng Sở Hữu');
     expect(resolvedContext['CHU_SO_HUU_2.DANH_XUNG']).toBe('Bà');
     expect(resolvedContext['CHU_SO_HUU_2.SO_CCCD']).toBe('084190002222');
     expect(resolvedContext['CHU_SO_HUU_2.DIA_CHI']).toBe('Ấp Nô Lựa, Xã Nhị Trường');
     expect(resolvedContext['CHU_SO_HUU_2.NAM_SINH']).toBe('1990');
+    expect(resolvedContext['TAI_SAN.CHU_SO_HUU_2.HO_TEN_IN_HOA']).toBe('NGUYỄN THỊ ĐỒNG SỞ HỮU');
 
     // Cờ boolean
     expect(resolvedContext.CO_CHU_SO_HUU_2).toBe(true);
@@ -155,7 +186,9 @@ describe('Second Owner Keywords (CHU_SO_HUU_2 / CHU_SO_HUU_THU_HAI)', () => {
     expect(items).toBeDefined();
     expect(items.length).toBe(1);
     expect(items[0].CHU_SO_HUU_1).toBe('Lê Văn Người Vay');
+    expect(items[0].CHU_SO_HUU_1_HO_TEN_IN_HOA).toBe('LÊ VĂN NGƯỜI VAY');
     expect(items[0].CHU_SO_HUU_2).toBe('Nguyễn Thị Đồng Sở Hữu');
+    expect(items[0].CHU_SO_HUU_2_HO_TEN_IN_HOA).toBe('NGUYỄN THỊ ĐỒNG SỞ HỮU');
     expect(items[0].CHU_SO_HUU_THU_HAI).toBe('Nguyễn Thị Đồng Sở Hữu');
     expect(items[0].CO_CHU_SO_HUU_2).toBe(true);
   });

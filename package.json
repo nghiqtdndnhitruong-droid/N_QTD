@@ -8,7 +8,8 @@
     "dev:backend": "npm --prefix backend run dev",
     "dev:frontend": "npm --prefix frontend run dev",
     "build": "npm --prefix backend run build && npm --prefix frontend run build",
-    "typecheck": "npm --prefix backend run typecheck && npm --prefix frontend run typecheck"
+    "typecheck": "npm --prefix backend run typecheck && npm --prefix frontend run typecheck",
+    "test": "npx vitest run backend/src && npm --prefix frontend run test"
   },
   "keywords": [
     "qtd",

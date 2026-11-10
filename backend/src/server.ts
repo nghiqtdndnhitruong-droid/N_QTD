@@ -1,10 +1,14 @@
 import { app } from './app';
 import { env, logger, connectDatabase, disconnectDatabase } from './config';
+import { authService } from './modules/auth/auth.service';
 
 async function bootstrap() {
   try {
     // 1. Kết nối cơ sở dữ liệu MongoDB
     await connectDatabase();
+
+    // 1.1 Khởi tạo tài khoản Admin an toàn (nếu chưa có)
+    await authService.seedDefaultAdmin();
 
     // 2. Khởi động Web Server
     const server = app.listen(env.port, () => {

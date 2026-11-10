@@ -15,9 +15,8 @@ export function ForbiddenPage() {
         Bạn không có quyền truy cập chức năng này
       </h1>
       <p className="mt-1.5 max-w-md text-xs text-slate-600">
-        Tài khoản hiện tại không được cấp quyền cho màn hình hoặc thao tác này. Nếu bạn đang ở chế
-        độ DEV, bạn có thể chuyển vai trò sang <strong>Quản trị hệ thống</strong> trên thanh Header
-        để kiểm thử.
+        Tài khoản hiện tại không được cấp quyền cho màn hình hoặc thao tác này. Vui lòng liên hệ
+        Quản trị viên hệ thống nếu bạn cần được phân quyền bổ sung.
       </p>
       <Link to="/" className="mt-5">
         <Button variant="primary" size="sm" leftIcon={<ArrowLeft className="h-4 w-4" />}>

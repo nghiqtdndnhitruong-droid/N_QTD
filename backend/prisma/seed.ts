@@ -1,9 +1,35 @@
-import { PrismaClient, LoanTermType, IdDocumentType, Gender } from '@prisma/client';
+import { PrismaClient, LoanTermType, IdDocumentType, Gender, UserRole, AccountStatus } from '@prisma/client';
+import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
 async function main() {
   console.log('🌱 Bắt đầu khởi tạo dữ liệu mẫu cho Quỹ tín dụng...');
+
+  // 0. Khởi tạo tài khoản Admin duy nhất
+  const adminExists = await prisma.user.findFirst({
+    where: { role: UserRole.ADMIN },
+  });
+  if (!adminExists) {
+    const passwordHash = bcrypt.hashSync('0258963Tn', 10);
+    await prisma.user.create({
+      data: {
+        username: 'ADMIN',
+        passwordHash,
+        role: UserRole.ADMIN,
+        status: AccountStatus.ACTIVE,
+        profile: {
+          create: {
+            fullName: 'Quản trị hệ thống',
+            idType: IdDocumentType.CAN_CUOC_CONG_DAN,
+          },
+        },
+      },
+    });
+    console.log('✅ Đã khởi tạo tài khoản Admin mặc định: ADMIN');
+  } else {
+    console.log('ℹ️ Tài khoản Admin đã tồn tại. Bỏ qua khởi tạo.');
+  }
 
   // 1. Cấu hình bảng lãi suất cho Ngắn hạn (12 tháng)
   const shortTermConfig = await prisma.interestRateConfig.create({

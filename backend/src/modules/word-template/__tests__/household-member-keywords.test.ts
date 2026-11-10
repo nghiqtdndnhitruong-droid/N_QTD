@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { WordTemplateDataDictionaryService } from '../word-template-data-dictionary.service';
+import { wordTemplateCompiler } from '../engine/word-template-compiler';
 import { normalizeHouseholdMembers } from '../../collateral/collateral.service';
 import { Gender, IdDocumentType, CollateralOwnerType, LoanType, CollateralAssetType } from '@prisma/client';
 
@@ -113,14 +114,16 @@ describe('Household Members (Thành viên hộ gia đình) Keywords & Service Te
     expect(resolvedContext['THANH_VIEN_HO.THONG_TIN_CHI_TIET_GOP']).toContain('Bà: Trần Thị Vợ (sinh năm: 1985)');
     expect(resolvedContext['THANH_VIEN_HO.THONG_TIN_CHI_TIET_GOP']).toContain('địa chỉ: Ấp Nô Lựa, Xã Nhị Trường');
 
-    // 4. Kiểm tra vòng lặp DANH_SACH_THANH_VIEN_HO
+    // 4. Kiểm tra vòng lặp DANH_SACH_THANH_VIEN_HO (@number / STT bắt đầu từ số 3)
     expect(resolvedContext.DANH_SACH_THANH_VIEN_HO).toHaveLength(2);
     expect(resolvedContext.DANH_SACH_THANH_VIEN_HO[0].HO_TEN).toBe('Nguyễn Văn Chồng');
     expect(resolvedContext.DANH_SACH_THANH_VIEN_HO[0].DIA_CHI).toBe('Ấp Nô Lựa, Xã Nhị Trường');
-    expect(resolvedContext.DANH_SACH_THANH_VIEN_HO[0].STT).toBe(1);
+    expect(resolvedContext.DANH_SACH_THANH_VIEN_HO[0].STT).toBe(3);
+    expect(resolvedContext.DANH_SACH_THANH_VIEN_HO[0]._number).toBe(3);
     expect(resolvedContext.DANH_SACH_THANH_VIEN_HO[1].HO_TEN).toBe('Trần Thị Vợ');
     expect(resolvedContext.DANH_SACH_THANH_VIEN_HO[1].DIA_CHI).toBe('Ấp Nô Lựa, Xã Nhị Trường');
-    expect(resolvedContext.DANH_SACH_THANH_VIEN_HO[1].STT).toBe(2);
+    expect(resolvedContext.DANH_SACH_THANH_VIEN_HO[1].STT).toBe(4);
+    expect(resolvedContext.DANH_SACH_THANH_VIEN_HO[1]._number).toBe(4);
     expect(resolvedContext.DANH_SACH_THANH_VIEN_HO[1].DANH_XUNG).toBe('Bà');
   });
 
@@ -193,6 +196,23 @@ describe('Household Members (Thành viên hộ gia đình) Keywords & Service Te
     expect(resolvedContext['KHOAN_VAY.CO_THANH_VIEN_HO']).toBe(false);
     expect(resolvedContext.DANH_SACH_THANH_VIEN_HO).toHaveLength(0);
     expect(resolvedContext['THANH_VIEN_HO.HO_TEN']).toBe('');
+  });
+
+  it('biến @number trong vòng lặp FOR của DANH_SACH_THANH_VIEN_HO phải bắt đầu từ số 3', () => {
+    const templateXml = '<w:p><w:t>{{#FOR tvh IN DANH_SACH_THANH_VIEN_HO}}{{@number}}. {{tvh.HO_TEN}} - {{/FOR}}</w:t></w:p>';
+    const context = {
+      DANH_SACH_THANH_VIEN_HO: [
+        { HO_TEN: 'Thành viên A' },
+        { HO_TEN: 'Thành viên B' },
+        { HO_TEN: 'Thành viên C' },
+      ],
+    };
+
+    const compiled = wordTemplateCompiler.compile(templateXml, context);
+    expect(compiled.compiledXml).toContain('{{_number}}');
+    expect(compiled.enrichedData.DANH_SACH_THANH_VIEN_HO[0]._number).toBe(3);
+    expect(compiled.enrichedData.DANH_SACH_THANH_VIEN_HO[1]._number).toBe(4);
+    expect(compiled.enrichedData.DANH_SACH_THANH_VIEN_HO[2]._number).toBe(5);
   });
 });
 

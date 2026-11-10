@@ -27,6 +27,8 @@ export type Permission =
   | 'repayment:delete'
   | 'interest-rate:view'
   | 'interest-rate:create'
+  | 'interest-rate:update'
+  | 'interest-rate:delete'
   | 'asset-pricing:view'
   | 'asset-pricing:create'
   | 'asset-pricing:update'
@@ -96,6 +98,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, readonly Permission[]> = {
     'repayment:delete',
     'interest-rate:view',
     'interest-rate:create',
+    'interest-rate:update',
+    'interest-rate:delete',
     'asset-pricing:view',
     'asset-pricing:create',
     'asset-pricing:update',
@@ -115,13 +119,28 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   ADMIN: 'Quản trị hệ thống',
 };
 
+export interface UserProfileData {
+  fullName: string;
+  idType: 'CAN_CUOC_CONG_DAN' | 'CAN_CUOC';
+  idNumber: string | null;
+  idIssueDate: string | null;
+  idIssuePlace: string | null;
+  yearOfBirth: number | null;
+  gender: 'NAM' | 'NU' | null;
+}
+
 export interface AuthUser {
   id: string;
   username: string;
   fullName: string;
   title: string;
   roles: UserRole[];
+  role?: UserRole;
+  status?: string;
   permissions: Permission[];
+  profile?: UserProfileData;
+  createdAt?: string;
+  lastLoginAt?: string | null;
 }
 
 interface AuthState {
@@ -130,10 +149,9 @@ interface AuthState {
   user: AuthUser | null;
   isInitialized: boolean;
   setSession: (payload: { accessToken: string; user: AuthUser }) => void;
+  updateUserProfile: (profile: UserProfileData) => void;
   clearSession: () => void;
   setInitialized: (initialized: boolean) => void;
-  /** Chỉ dùng trong môi trường DEV/Mock để kiểm thử nhanh quyền hiển thị theo vai trò. */
-  switchMockRole: (role: UserRole) => void;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -146,6 +164,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       user,
       isInitialized: true,
     }),
+  updateUserProfile: (profile) => {
+    const current = get().user;
+    if (!current) return;
+    set({
+      user: {
+        ...current,
+        fullName: profile.fullName || current.fullName,
+        profile,
+      },
+    });
+  },
   clearSession: () =>
     set({
       accessToken: null,
@@ -153,17 +182,5 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       isInitialized: true,
     }),
   setInitialized: (isInitialized) => set({ isInitialized }),
-  switchMockRole: (role) => {
-    const current = get().user;
-    if (!current) return;
-    set({
-      user: {
-        ...current,
-        roles: [role],
-        title: ROLE_LABELS[role],
-        permissions: [...ROLE_PERMISSIONS[role]],
-      },
-    });
-  },
 }));
 

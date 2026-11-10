@@ -294,6 +294,7 @@ export class LoanService {
     // 6. Lấy mức lãi suất năm từ bảng lãi suất công bố của Quỹ tại thời điểm cấp
     const effectiveDate = dto.contractDate ? new Date(dto.contractDate) : loanStartDate;
     const annualRate = await interestRateService.determineInterestRate(
+      dto.loanType,
       dto.termType,
       dto.loanAmount,
       effectiveDate
@@ -347,6 +348,55 @@ export class LoanService {
       loan.loanStartDate = loan.contractDate ?? loan.createdAt;
     }
 
+    if (loan.status === LoanStatus.DANG_TAO) {
+      try {
+        const effectiveDate = loan.contractDate ? new Date(loan.contractDate) : (loan.loanStartDate || new Date());
+        const currentRate = await interestRateService.determineInterestRate(
+          loan.loanType,
+          loan.termType,
+          loan.loanAmount,
+          effectiveDate
+        );
+        if (currentRate !== loan.interestRate) {
+          const updateData: Prisma.LoanUpdateInput = { interestRate: currentRate };
+          if (loan.loanPlan && (loan.loanPlan as any).expenses) {
+            const plan = loan.loanPlan as any;
+            const termFactor = loan.termType === LoanTermType.TRUNG_HAN ? 2 : 1;
+            const interestExpense = Math.round(loan.loanAmount * (currentRate / 100) * termFactor);
+            let hasInterestItem = false;
+            const updatedExpenses = (plan.expenses || []).map((ex: any) => {
+              if (/Chi phí trả lãi|Trả lãi tiền vay/i.test(ex.name)) {
+                hasInterestItem = true;
+                return {
+                  name: `Chi phí trả lãi tiền vay (${loan.loanAmount.toLocaleString('vi-VN')} đ × ${currentRate}% × ${termFactor} năm)`,
+                  amount: interestExpense,
+                };
+              }
+              return ex;
+            });
+            if (hasInterestItem) {
+              const totalExpenses = updatedExpenses.reduce((sum: number, item: any) => sum + item.amount, 0);
+              const totalRevenues = (plan.revenues || []).reduce((sum: number, item: any) => sum + item.amount, 0);
+              updateData.loanPlan = {
+                ...plan,
+                expenses: updatedExpenses,
+                totalExpenses,
+                profit: totalRevenues - totalExpenses,
+              };
+              loan.loanPlan = updateData.loanPlan as any;
+            }
+          }
+          await prisma.loan.update({
+            where: { id: loan.id },
+            data: updateData,
+          });
+          loan.interestRate = currentRate;
+        }
+      } catch {
+        // Bỏ qua lỗi nếu chưa có cấu hình tương ứng
+      }
+    }
+
     if (loan.status === LoanStatus.DA_GIAI_NGAN) {
       const summary = loanCalculationService.computeLoanSummary(loan as any);
       if (summary.isOverdue) {
@@ -371,6 +421,29 @@ export class LoanService {
     const { loans, total } = await this.repo.findMany(query);
     const { page, limit } = parsePagination(query);
     const pagination = createPaginationMeta(total, page, limit);
+
+    for (const loan of loans) {
+      if (loan.status === LoanStatus.DANG_TAO) {
+        try {
+          const effectiveDate = loan.contractDate ? new Date(loan.contractDate) : (loan.loanStartDate || loan.createdAt || new Date());
+          const currentRate = await interestRateService.determineInterestRate(
+            loan.loanType,
+            loan.termType,
+            loan.loanAmount,
+            effectiveDate
+          );
+          if (currentRate !== loan.interestRate) {
+            await prisma.loan.update({
+              where: { id: loan.id },
+              data: { interestRate: currentRate },
+            });
+            loan.interestRate = currentRate;
+          }
+        } catch {
+          // Bỏ qua nếu có lỗi
+        }
+      }
+    }
 
     const enrichedLoans = loans.map((loan) => ({
       ...loan,
@@ -410,32 +483,64 @@ export class LoanService {
     }
 
     const effectiveLoanAmount = dto.loanAmount ?? existing.loanAmount;
-
-    // 2. Nếu có cập nhật Phương án vay hoặc Số tiền vay -> kiểm tra và đồng bộ Vốn tự có
-    if (dto.loanPlan) {
-      this.validateAndNormalizeLoanPlan(dto.loanPlan, effectiveLoanAmount);
-    } else if (dto.loanAmount !== undefined && existing.loanPlan) {
-      // Nếu đổi Số tiền vay ở bước 2 mà đã có Phương án vay -> tự động đồng bộ lại borrowedCapital & ownCapital
-      const currentTotalDemand = Math.max(existing.loanPlan.loanAmount, dto.loanAmount);
-      dto.loanPlan = {
-        purpose: existing.loanPlan.purpose,
-        loanAmount: currentTotalDemand,
-        ownCapital: Math.max(0, currentTotalDemand - dto.loanAmount),
-        borrowedCapital: dto.loanAmount,
-        expenses: existing.loanPlan.expenses,
-        revenues: existing.loanPlan.revenues,
-      };
-    }
-
-    const startDate = dto.loanStartDate
-      ? new Date(dto.loanStartDate)
-      : existing.loanStartDate || existing.createdAt;
+    const loanType = dto.loanType ?? existing.loanType;
     const termType = dto.termType !== undefined ? dto.termType : existing.termType;
     const termMonths =
       termType === LoanTermType.NGAN_HAN
         ? LOAN_CONSTANTS.SHORT_TERM_MONTHS
         : LOAN_CONSTANTS.MEDIUM_TERM_MONTHS;
-    const loanType = dto.loanType ?? existing.loanType;
+    const startDate = dto.loanStartDate
+      ? new Date(dto.loanStartDate)
+      : existing.loanStartDate || existing.createdAt;
+
+    // Đối với hồ sơ đang tạo (DANG_TAO), tự động cập nhật lại mức lãi suất tương ứng từ bảng lãi suất hiệu lực
+    if (existing.status === LoanStatus.DANG_TAO && dto.interestRate === undefined) {
+      try {
+        const effectiveDate = dto.contractDate
+          ? new Date(dto.contractDate)
+          : (existing.contractDate ? new Date(existing.contractDate) : startDate);
+        dto.interestRate = await interestRateService.determineInterestRate(
+          loanType,
+          termType,
+          effectiveLoanAmount,
+          effectiveDate
+        );
+      } catch {
+        // Bỏ qua nếu có lỗi
+      }
+    }
+
+    // 2. Nếu có cập nhật Phương án vay hoặc Số tiền vay -> kiểm tra và đồng bộ Vốn tự có
+    if (dto.loanPlan) {
+      this.validateAndNormalizeLoanPlan(dto.loanPlan, effectiveLoanAmount);
+    } else if (dto.loanAmount !== undefined && existing.loanPlan) {
+      // Nếu đổi Số tiền vay ở bước 2 mà đã có Phương án vay -> tự động đồng bộ lại borrowedCapital & ownCapital và chi phí lãi
+      const currentTotalDemand = Math.max(existing.loanPlan.loanAmount, dto.loanAmount);
+      const termFactor = termType === LoanTermType.TRUNG_HAN ? 2 : 1;
+      const rateToUse = dto.interestRate ?? existing.interestRate;
+      const interestExpense = Math.round(dto.loanAmount * (rateToUse / 100) * termFactor);
+      let updatedExpenses = existing.loanPlan.expenses;
+      if (updatedExpenses && updatedExpenses.length > 0) {
+        updatedExpenses = updatedExpenses.map((ex) => {
+          if (/Chi phí trả lãi|Trả lãi tiền vay/i.test(ex.name)) {
+            return {
+              name: `Chi phí trả lãi tiền vay (${dto.loanAmount!.toLocaleString('vi-VN')} đ × ${rateToUse}% × ${termFactor} năm)`,
+              amount: interestExpense,
+            };
+          }
+          return ex;
+        });
+      }
+
+      dto.loanPlan = {
+        purpose: existing.loanPlan.purpose,
+        loanAmount: currentTotalDemand,
+        ownCapital: Math.max(0, currentTotalDemand - dto.loanAmount),
+        borrowedCapital: dto.loanAmount,
+        expenses: updatedExpenses,
+        revenues: existing.loanPlan.revenues,
+      };
+    }
     const contractExpiryDate =
       dto.mortgageContract !== undefined
         ? dto.mortgageContract?.contractExpiryDate
@@ -630,6 +735,7 @@ export class LoanService {
     let annualRate = sourceLoan.interestRate;
     try {
       annualRate = await interestRateService.determineInterestRate(
+        sourceLoan.loanType,
         sourceLoan.termType,
         sourceLoan.loanAmount,
         new Date()

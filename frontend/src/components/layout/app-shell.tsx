@@ -8,15 +8,13 @@ import {
   Plus,
   User as UserIcon,
 } from 'lucide-react';
-import { env } from '@/config/env';
 import { BREADCRUMB_NAME_MAP, NAVIGATION_SECTIONS, type NavItem } from '@/app/navigation';
 import { cn } from '@/lib/utils';
-import { useAuthStore, type UserRole } from '@/stores/auth.store';
+import { useAuthStore } from '@/stores/auth.store';
 import { useUiStore } from '@/stores/ui.store';
 import { usePermission } from '@/features/auth/hooks/use-permission';
 import { logoutApi } from '@/features/auth/api/auth.api';
 import {
-  Badge,
   Button,
   Drawer,
   DrawerBody,
@@ -149,7 +147,6 @@ export function AppShell() {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const clearSession = useAuthStore((s) => s.clearSession);
-  const switchMockRole = useAuthStore((s) => s.switchMockRole);
   const sidebarCollapsed = useUiStore((s) => s.sidebarCollapsed);
   const toggleSidebar = useUiStore((s) => s.toggleSidebar);
   const mobileNavOpen = useUiStore((s) => s.mobileNavOpen);
@@ -243,26 +240,6 @@ export function AppShell() {
           </div>
 
           <div className="flex items-center gap-2.5">
-            {env.enableMock && (
-              <div className="hidden items-center gap-2 md:flex">
-                <Badge tone="warning" dot title="Một số API chưa có trên Backend đang chạy qua Mock">
-                  MOCK DATA (DEV)
-                </Badge>
-                <label className="inline-flex items-center gap-1.5 text-xs text-slate-600">
-                  <span>Vai trò:</span>
-                  <select
-                    aria-label="Chuyển đổi vai trò kiểm thử"
-                    value={user?.roles[0] ?? 'CREDIT_OFFICER'}
-                    onChange={(e) => switchMockRole(e.target.value as UserRole)}
-                    className="h-7 rounded border border-slate-300 bg-slate-50 px-2 text-xs font-semibold text-primary-800 focus:border-primary-600 focus:outline-none"
-                  >
-                    <option value="CREDIT_OFFICER">Cán bộ tín dụng</option>
-                    <option value="ADMIN">Quản trị (Admin)</option>
-                  </select>
-                </label>
-              </div>
-            )}
-
             {can('loan:create') && (
               <Button
                 size="sm"

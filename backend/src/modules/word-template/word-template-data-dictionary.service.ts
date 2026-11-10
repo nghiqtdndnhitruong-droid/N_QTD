@@ -192,6 +192,12 @@ export class WordTemplateDataDictionaryService {
           { path: 'mortgage.contractNumber', label: 'Số hợp đồng thế chấp (HĐTC)', dataType: 'TEXT', sampleValue: '12/2026/HĐTC' },
           { path: 'mortgage.contractExpiryDate', label: 'Ngày hết hạn hợp đồng thế chấp', dataType: 'DATE', sampleValue: '20/05/2030' },
           { path: 'mortgage.committeeAuthDate', label: 'Ngày chứng thực UBND', dataType: 'DATE', sampleValue: '20/05/2026' },
+          { path: 'mortgage.committeeAuthDateDay', label: 'Ngày chứng thực ủy ban (chỉ số ngày)', dataType: 'TEXT', sampleValue: '20' },
+          { path: 'mortgage.committeeAuthDateMonth', label: 'Ngày chứng thực ủy ban (chỉ số tháng)', dataType: 'TEXT', sampleValue: '05' },
+          { path: 'mortgage.committeeAuthDateYear', label: 'Ngày chứng thực ủy ban (chỉ số năm)', dataType: 'TEXT', sampleValue: '2026' },
+          { path: 'NGAY_CHUNG_THUC_UY_BAN_NGAY', label: 'Ngày chứng thực ủy ban ngày (chỉ số ngày, ví dụ: 20)', dataType: 'TEXT', sampleValue: '20' },
+          { path: 'NGAY_CHUNG_THUC_UY_BAN_THANG', label: 'Ngày chứng thực ủy ban tháng (chỉ số tháng, ví dụ: 05)', dataType: 'TEXT', sampleValue: '05' },
+          { path: 'NGAY_CHUNG_THUC_UY_BAN_NAM', label: 'Ngày chứng thực ủy ban năm (chỉ số năm, ví dụ: 2026)', dataType: 'TEXT', sampleValue: '2026' },
         ],
       },
       {
@@ -208,12 +214,31 @@ export class WordTemplateDataDictionaryService {
           { path: 'collaterals_summary.firstAssetAddress', label: 'Địa chỉ tài sản đầu tiên', dataType: 'TEXT', sampleValue: 'Ấp Nô Lựa, Xã Nhị Trường, Tỉnh Vĩnh Long' },
           { path: 'collaterals_summary.firstAssetOwner', label: 'Chủ sở hữu tài sản đầu tiên', dataType: 'TEXT', sampleValue: 'Nguyễn Văn An' },
           { path: 'CHU_SO_HUU.HO_TEN', label: 'Họ tên chủ sở hữu tài sản (người đầu tiên)', dataType: 'TEXT', sampleValue: 'Nguyễn Văn An' },
+          { path: 'CHU_SO_HUU.HO_TEN_IN_HOA', label: 'Họ tên chủ sở hữu tài sản viết hoa', dataType: 'TEXT', sampleValue: 'NGUYỄN VĂN AN' },
           { path: 'CHU_SO_HUU_1.HO_TEN', label: 'Họ tên chủ sở hữu thứ nhất', dataType: 'TEXT', sampleValue: 'Nguyễn Văn An' },
+          { path: 'CHU_SO_HUU_1.HO_TEN_IN_HOA', label: 'Họ tên chủ sở hữu thứ nhất viết hoa', dataType: 'TEXT', sampleValue: 'NGUYỄN VĂN AN' },
+          { path: 'CHU_SO_HUU_1', label: 'Tên chủ sở hữu thứ nhất (viết gọn)', dataType: 'TEXT', sampleValue: 'Nguyễn Văn An' },
+          { path: 'CHU_SO_HUU_1.DANH_XUNG', label: 'Danh xưng chủ sở hữu thứ nhất (Ông/Bà/Hộ Ông/Hộ Bà)', dataType: 'TEXT', sampleValue: 'Ông' },
+          { path: 'CHU_SO_HUU_1.NAM_SINH', label: 'Năm sinh chủ sở hữu thứ nhất', dataType: 'TEXT', sampleValue: '1985' },
+          { path: 'CHU_SO_HUU_1.LOAI_GIAY_TO', label: 'Loại giấy tờ chủ sở hữu thứ nhất', dataType: 'TEXT', sampleValue: 'Căn cước công dân' },
+          { path: 'CHU_SO_HUU_1.SO_CCCD', label: 'Số CCCD/Căn cước chủ sở hữu thứ nhất', dataType: 'TEXT', sampleValue: '084185001234' },
+          { path: 'CHU_SO_HUU_1.SO_GIAY_TO', label: 'Số giấy tờ chủ sở hữu thứ nhất', dataType: 'TEXT', sampleValue: '084185001234' },
+          { path: 'CHU_SO_HUU_1.NGAY_CAP', label: 'Ngày cấp giấy tờ chủ sở hữu thứ nhất (dd/mm/yyyy)', dataType: 'DATE', sampleValue: '10/05/2021' },
+          { path: 'CHU_SO_HUU_1.NOI_CAP', label: 'Nơi cấp giấy tờ chủ sở hữu thứ nhất', dataType: 'TEXT', sampleValue: 'Cục CSQLHC về TTXH' },
+          { path: 'CHU_SO_HUU_1.DIA_CHI', label: 'Địa chỉ thường trú chủ sở hữu thứ nhất', dataType: 'TEXT', sampleValue: 'Ấp Nô Lựa, Xã Nhị Trường' },
+          { path: 'CHU_SO_HUU_1.QUAN_HE', label: 'Quan hệ của chủ sở hữu thứ nhất', dataType: 'TEXT', sampleValue: 'Người vay' },
           { path: 'CHU_SO_HUU_2.HO_TEN', label: 'Họ tên chủ sở hữu thứ hai (nếu có 2 người cùng sở hữu)', dataType: 'TEXT', sampleValue: 'Trần Thị Bích' },
+          { path: 'CHU_SO_HUU_2.HO_TEN_IN_HOA', label: 'Họ tên chủ sở hữu thứ hai viết hoa', dataType: 'TEXT', sampleValue: 'TRẦN THỊ BÍCH' },
           { path: 'CHU_SO_HUU_2', label: 'Tên chủ sở hữu thứ hai (viết gọn)', dataType: 'TEXT', sampleValue: 'Trần Thị Bích' },
           { path: 'CHU_SO_HUU_2.DANH_XUNG', label: 'Danh xưng chủ sở hữu thứ hai (Ông/Bà)', dataType: 'TEXT', sampleValue: 'Bà' },
+          { path: 'CHU_SO_HUU_2.NAM_SINH', label: 'Năm sinh chủ sở hữu thứ hai', dataType: 'TEXT', sampleValue: '1990' },
+          { path: 'CHU_SO_HUU_2.LOAI_GIAY_TO', label: 'Loại giấy tờ chủ sở hữu thứ hai', dataType: 'TEXT', sampleValue: 'Căn cước công dân' },
           { path: 'CHU_SO_HUU_2.SO_CCCD', label: 'Số CCCD chủ sở hữu thứ hai', dataType: 'TEXT', sampleValue: '084192005678' },
+          { path: 'CHU_SO_HUU_2.SO_GIAY_TO', label: 'Số giấy tờ chủ sở hữu thứ hai', dataType: 'TEXT', sampleValue: '084192005678' },
+          { path: 'CHU_SO_HUU_2.NGAY_CAP', label: 'Ngày cấp giấy tờ chủ sở hữu thứ hai', dataType: 'DATE', sampleValue: '15/06/2022' },
+          { path: 'CHU_SO_HUU_2.NOI_CAP', label: 'Nơi cấp giấy tờ chủ sở hữu thứ hai', dataType: 'TEXT', sampleValue: 'Cục CSQLHC về TTXH' },
           { path: 'CHU_SO_HUU_2.DIA_CHI', label: 'Địa chỉ thường trú chủ sở hữu thứ hai', dataType: 'TEXT', sampleValue: 'Ấp Nô Lựa, Xã Nhị Trường' },
+          { path: 'CHU_SO_HUU_2.QUAN_HE', label: 'Quan hệ của chủ sở hữu thứ hai', dataType: 'TEXT', sampleValue: 'Người thừa kế' },
           { path: 'CO_CHU_SO_HUU_2', label: 'Khoản vay có 2 chủ sở hữu cùng đứng tên tài sản (True/False)', dataType: 'BOOLEAN', sampleValue: true },
         ],
       },
@@ -778,7 +803,7 @@ export class WordTemplateDataDictionaryService {
         key: `HEIR_${heir?.idNumber || heir?.fullName || 'heir'}`,
         ownerType,
         isHousehold,
-        fullName: isHousehold && heir?.fullName ? `Hộ ${heir.fullName}` : (heir?.fullName || ''),
+        fullName: heir?.fullName || '',
         gender: heir?.gender === 'NAM' ? 'Nam' : 'Nữ',
         genderTitle,
         yearOfBirth: heir?.yearOfBirth ? String(heir.yearOfBirth) : '',
@@ -800,7 +825,7 @@ export class WordTemplateDataDictionaryService {
       key: `MEMBER_${member?.idNumber || member?.fullName || 'member'}`,
       ownerType,
       isHousehold,
-      fullName: isHousehold && member?.fullName ? `Hộ ${member.fullName}` : (member?.fullName || ''),
+      fullName: member?.fullName || '',
       gender: member?.gender === 'NAM' ? 'Nam' : 'Nữ',
       genderTitle,
       yearOfBirth: member?.yearOfBirth ? String(member.yearOfBirth) : '',
@@ -956,11 +981,14 @@ export class WordTemplateDataDictionaryService {
 
       const existing = uniqueOwnersMap.get(personKey);
       if (!existing) {
-        uniqueOwnersMap.set(personKey, o);
+        uniqueOwnersMap.set(personKey, { ...o });
       } else {
-        // Nếu bản ghi hiện tại là Hộ nhưng bản ghi mới là Cá nhân -> ưu tiên thay thế bằng Cá nhân (giữ nguyên danh xưng cá nhân)
-        if (existing.isHousehold && !o.isHousehold) {
-          uniqueOwnersMap.set(personKey, o);
+        // Yêu cầu: Nếu có 2 tài sản (1 Hộ, 1 Cá nhân) cùng một người, biến danh xưng vẫn giữ nguyên là Hộ Ông / Bà theo giới tính
+        if (o.isHousehold && !existing.isHousehold) {
+          existing.isHousehold = true;
+          existing.ownerType = o.ownerType;
+          existing.genderTitle = o.genderTitle;
+          existing.relationship = o.relationship;
         }
       }
     };
@@ -988,6 +1016,13 @@ export class WordTemplateDataDictionaryService {
         fullName: o.fullName || '',
         ho_ten: o.fullName || '',
         HO_TEN: o.fullName || '',
+        HO_TEN_IN_HOA: (o.fullName || '').toUpperCase(),
+        HO_TEN_VIET_HOA: (o.fullName || '').toUpperCase(),
+        HO_TEN_HOA: (o.fullName || '').toUpperCase(),
+        ho_ten_in_hoa: (o.fullName || '').toUpperCase(),
+        ho_ten_viet_hoa: (o.fullName || '').toUpperCase(),
+        IN_HOA: (o.fullName || '').toUpperCase(),
+        VIET_HOA: (o.fullName || '').toUpperCase(),
         gender: o.gender || '',
         gioi_tinh: o.gender || '',
         GIOI_TINH: o.gender || '',
@@ -1095,29 +1130,66 @@ export class WordTemplateDataDictionaryService {
     }
 
     const firstOwner = uniqueOwnersList[0] || assetOwners[0] || this.extractOwnerInfo({ ownerType: 'NGUOI_VAY_CA_NHAN' }, member, heir);
+    const firstOwnerBirthYear = firstOwner.yearOfBirth ? String(firstOwner.yearOfBirth) : '';
+    const firstOwnerUpper = (firstOwner.fullName || '').toUpperCase();
     const firstOwnerObj = {
       ...firstOwner,
-      HO_TEN: firstOwner.fullName,
-      XUNG_HO: firstOwner.genderTitle,
-      DANH_XUNG: firstOwner.genderTitle,
-      LOAI_GIAY_TO: firstOwner.idType,
-      SO_GIAY_TO: firstOwner.idNumber,
-      SO_CCCD: firstOwner.idNumber,
-      NGAY_CAP: firstOwner.idIssueDate,
-      NOI_CAP: firstOwner.idIssuePlace,
-      DIA_CHI: firstOwner.address,
-      NAM_SINH: firstOwner.yearOfBirth,
-      QUAN_HE: firstOwner.relationship,
+      fullName: firstOwner.fullName || '',
+      ho_ten: firstOwner.fullName || '',
+      HO_TEN: firstOwner.fullName || '',
+      HO_TEN_IN_HOA: firstOwnerUpper,
+      HO_TEN_VIET_HOA: firstOwnerUpper,
+      HO_TEN_HOA: firstOwnerUpper,
+      ho_ten_in_hoa: firstOwnerUpper,
+      ho_ten_viet_hoa: firstOwnerUpper,
+      IN_HOA: firstOwnerUpper,
+      VIET_HOA: firstOwnerUpper,
+      gender: firstOwner.gender || '',
+      gioi_tinh: firstOwner.gender || '',
+      GIOI_TINH: firstOwner.gender || '',
+      genderTitle: firstOwner.genderTitle || '',
+      XUNG_HO: firstOwner.genderTitle || '',
+      DANH_XUNG: firstOwner.genderTitle || '',
+      danh_xung: firstOwner.genderTitle || '',
+      xung_ho: firstOwner.genderTitle || '',
+      LOAI_GIAY_TO: firstOwner.idType || '',
+      loai_giay_to: firstOwner.idType || '',
+      SO_GIAY_TO: firstOwner.idNumber || '',
+      so_giay_to: firstOwner.idNumber || '',
+      SO_CCCD: firstOwner.idNumber || '',
+      so_cccd: firstOwner.idNumber || '',
+      NGAY_CAP: firstOwner.idIssueDate || '',
+      ngay_cap: firstOwner.idIssueDate || '',
+      NGAY_CAP_CCCD: firstOwner.idIssueDate || '',
+      NOI_CAP: firstOwner.idIssuePlace || '',
+      noi_cap: firstOwner.idIssuePlace || '',
+      NOI_CAP_CCCD: firstOwner.idIssuePlace || '',
+      DIA_CHI: firstOwner.address || '',
+      dia_chi: firstOwner.address || '',
+      NAM_SINH: firstOwnerBirthYear,
+      nam_sinh: firstOwnerBirthYear,
+      QUAN_HE: firstOwner.relationship || '',
+      quan_he: firstOwner.relationship || '',
+      SO_DIEN_THOAI: (firstOwner as any).phoneNumber || '',
+      so_dien_thoai: (firstOwner as any).phoneNumber || '',
     };
 
     const secondOwner = uniqueOwnersList[1] || extendedOwnersList[1] || null;
     const hasSecondOwner = Boolean(secondOwner && secondOwner.fullName && secondOwner.fullName.trim() !== '');
+    const secondOwnerUpper = (secondOwner?.fullName || '').toUpperCase();
     const secondOwnerObj = secondOwner
       ? {
           ...secondOwner,
           fullName: secondOwner.fullName || '',
           ho_ten: secondOwner.fullName || '',
           HO_TEN: secondOwner.fullName || '',
+          HO_TEN_IN_HOA: secondOwnerUpper,
+          HO_TEN_VIET_HOA: secondOwnerUpper,
+          HO_TEN_HOA: secondOwnerUpper,
+          ho_ten_in_hoa: secondOwnerUpper,
+          ho_ten_viet_hoa: secondOwnerUpper,
+          IN_HOA: secondOwnerUpper,
+          VIET_HOA: secondOwnerUpper,
           gender: secondOwner.gender || '',
           genderTitle: secondOwner.genderTitle || '',
           XUNG_HO: secondOwner.genderTitle || '',
@@ -1144,6 +1216,13 @@ export class WordTemplateDataDictionaryService {
           fullName: '',
           ho_ten: '',
           HO_TEN: '',
+          HO_TEN_IN_HOA: '',
+          HO_TEN_VIET_HOA: '',
+          HO_TEN_HOA: '',
+          ho_ten_in_hoa: '',
+          ho_ten_viet_hoa: '',
+          IN_HOA: '',
+          VIET_HOA: '',
           gender: '',
           genderTitle: '',
           XUNG_HO: '',
@@ -1642,7 +1721,7 @@ export class WordTemplateDataDictionaryService {
         }
       }
       const cHouseholdMembers = Array.from(groupHMembersMap.values()).map((hm: any, hIdx: number) => {
-        const hIdxNum = hIdx + 1;
+        const hIdxNum = hIdx + 3;
         const hFullName = (hm.fullName || '').trim();
         const hIsNam = hm.gender === 'NAM';
         const hGender = hIsNam ? 'Nam' : 'Nữ';
@@ -1849,6 +1928,10 @@ export class WordTemplateDataDictionaryService {
         chu_so_huu: ownerFullName,
         CHU_SO_HUU_HO_TEN: ownerFullName,
         chu_so_huu_ho_ten: ownerFullName,
+        CHU_SO_HUU_HO_TEN_IN_HOA: (ownerFullName || '').toUpperCase(),
+        chu_so_huu_ho_ten_in_hoa: (ownerFullName || '').toUpperCase(),
+        CHU_SO_HUU_HO_TEN_VIET_HOA: (ownerFullName || '').toUpperCase(),
+        chu_so_huu_ho_ten_viet_hoa: (ownerFullName || '').toUpperCase(),
         CHU_SO_HUU_XUNG_HO: ownerGenderTitle,
         chu_so_huu_xung_ho: ownerGenderTitle,
         CHU_SO_HUU_DANH_XUNG: ownerGenderTitle,
@@ -1871,9 +1954,42 @@ export class WordTemplateDataDictionaryService {
         chu_so_huu_quan_he: ownerRelationship,
         CHU_SO_HUU_1: firstOwner.fullName,
         CHU_SO_HUU_1_HO_TEN: firstOwner.fullName,
+        CHU_SO_HUU_1_HO_TEN_IN_HOA: firstOwnerUpper,
+        CHU_SO_HUU_1_HO_TEN_VIET_HOA: firstOwnerUpper,
+        CHU_SO_HUU_1_IN_HOA: firstOwnerUpper,
+        CHU_SO_HUU_1_VIET_HOA: firstOwnerUpper,
+        CHU_SO_HUU_1_XUNG_HO: firstOwner.genderTitle,
+        CHU_SO_HUU_1_DANH_XUNG: firstOwner.genderTitle,
+        CHU_SO_HUU_1_LOAI_GIAY_TO: firstOwner.idType,
+        CHU_SO_HUU_1_SO_GIAY_TO: firstOwner.idNumber,
+        CHU_SO_HUU_1_SO_CCCD: firstOwner.idNumber,
+        CHU_SO_HUU_1_NGAY_CAP: firstOwner.idIssueDate,
+        CHU_SO_HUU_1_NOI_CAP: firstOwner.idIssuePlace,
+        CHU_SO_HUU_1_DIA_CHI: firstOwner.address,
+        CHU_SO_HUU_1_NAM_SINH: firstOwnerBirthYear,
+        CHU_SO_HUU_1_QUAN_HE: firstOwner.relationship,
+        CHU_SO_HUU_THU_NHAT: firstOwner.fullName,
+        CHU_SO_HUU_THU_1: firstOwner.fullName,
+        chu_so_huu_1: firstOwnerObj,
         CHU_SO_HUU_2: secondOwnerObj.HO_TEN,
         CHU_SO_HUU_2_HO_TEN: secondOwnerObj.HO_TEN,
+        CHU_SO_HUU_2_HO_TEN_IN_HOA: secondOwnerUpper,
+        CHU_SO_HUU_2_HO_TEN_VIET_HOA: secondOwnerUpper,
+        CHU_SO_HUU_2_IN_HOA: secondOwnerUpper,
+        CHU_SO_HUU_2_VIET_HOA: secondOwnerUpper,
+        CHU_SO_HUU_2_XUNG_HO: secondOwnerObj.XUNG_HO,
+        CHU_SO_HUU_2_DANH_XUNG: secondOwnerObj.DANH_XUNG,
+        CHU_SO_HUU_2_LOAI_GIAY_TO: secondOwnerObj.LOAI_GIAY_TO,
+        CHU_SO_HUU_2_SO_GIAY_TO: secondOwnerObj.SO_GIAY_TO,
+        CHU_SO_HUU_2_SO_CCCD: secondOwnerObj.SO_CCCD,
+        CHU_SO_HUU_2_NGAY_CAP: secondOwnerObj.NGAY_CAP,
+        CHU_SO_HUU_2_NOI_CAP: secondOwnerObj.NOI_CAP,
+        CHU_SO_HUU_2_DIA_CHI: secondOwnerObj.DIA_CHI,
+        CHU_SO_HUU_2_NAM_SINH: secondOwnerObj.NAM_SINH,
+        CHU_SO_HUU_2_QUAN_HE: secondOwnerObj.QUAN_HE,
         CHU_SO_HUU_THU_HAI: secondOwnerObj.HO_TEN,
+        CHU_SO_HUU_THU_2: secondOwnerObj.HO_TEN,
+        chu_so_huu_2: secondOwnerObj,
         CO_CHU_SO_HUU_2: hasSecondOwner,
         CO_CHU_SO_HUU_THU_HAI: hasSecondOwner,
 
@@ -1993,7 +2109,7 @@ export class WordTemplateDataDictionaryService {
     }
 
     const householdMembersList = allHouseholdMembersRaw.map((hm: any, idx: number) => {
-      const idxNum = idx + 1;
+      const idxNum = idx + 3;
       const fullName = (hm.fullName || '').trim();
       const isNam = hm.gender === 'NAM';
       const gender = isNam ? 'Nam' : 'Nữ';
@@ -2095,6 +2211,30 @@ export class WordTemplateDataDictionaryService {
       soHdTheChapNam = contractDate.format('YY');
       soHdTheChapThang = contractDate.format('MM');
       soHdTheChapSo = rawSoHdTheChap;
+    }
+
+    // Trích xuất Ngày, Tháng, Năm của Ngày chứng thực UBND / Ủy ban
+    let committeeAuthDateDay = '';
+    let committeeAuthDateMonth = '';
+    let committeeAuthDateYear = '';
+    let committeeAuthDateFormatted = '';
+
+    if (mortgage?.committeeAuthDate) {
+      const d = dayjs(mortgage.committeeAuthDate);
+      if (d.isValid()) {
+        committeeAuthDateDay = d.format('DD');
+        committeeAuthDateMonth = d.format('MM');
+        committeeAuthDateYear = d.format('YYYY');
+        committeeAuthDateFormatted = d.format('DD/MM/YYYY');
+      } else if (typeof mortgage.committeeAuthDate === 'string' && mortgage.committeeAuthDate.includes('/')) {
+        const parts = mortgage.committeeAuthDate.split('/');
+        if (parts.length >= 3) {
+          committeeAuthDateDay = parts[0].trim().padStart(2, '0');
+          committeeAuthDateMonth = parts[1].trim().padStart(2, '0');
+          committeeAuthDateYear = parts[2].trim();
+          committeeAuthDateFormatted = `${committeeAuthDateDay}/${committeeAuthDateMonth}/${committeeAuthDateYear}`;
+        }
+      }
     }
 
     // Tính toán dữ liệu Phương án vay vốn (PHUONG_AN)
@@ -2362,6 +2502,18 @@ export class WordTemplateDataDictionaryService {
         SO_HOP_DONG_THE_CHAP_THANG: soHdTheChapThang,
         SO_HOP_DONG_THE_CHAP_NGAY: soHdTheChapNgay,
         SO_HOP_DONG_THE_CHAP_SO: soHdTheChapSo,
+        NGAY_CHUNG_THUC_UY_BAN_NGAY: committeeAuthDateDay,
+        NGAY_CHUNG_THUC_UY_BAN_THANG: committeeAuthDateMonth,
+        NGAY_CHUNG_THUC_UY_BAN_NAM: committeeAuthDateYear,
+        NGAY_CHUNG_THUC_UBND_NGAY: committeeAuthDateDay,
+        NGAY_CHUNG_THUC_UBND_THANG: committeeAuthDateMonth,
+        NGAY_CHUNG_THUC_UBND_NAM: committeeAuthDateYear,
+        NGAY_CHUNG_THUC_NGAY: committeeAuthDateDay,
+        NGAY_CHUNG_THUC_THANG: committeeAuthDateMonth,
+        NGAY_CHUNG_THUC_NAM: committeeAuthDateYear,
+        NGAY_CHUNG_THUC_UY_BAN: committeeAuthDateFormatted,
+        NGAY_CHUNG_THUC_UBND: committeeAuthDateFormatted,
+        NGAY_CHUNG_THUC: committeeAuthDateFormatted,
         soHdTheChapNam,
         soHdTheChapThang,
         soHdTheChapNgay,
@@ -2403,9 +2555,22 @@ export class WordTemplateDataDictionaryService {
         contractExpiryDate: mortgage?.contractExpiryDate
           ? dayjs(mortgage.contractExpiryDate).format('DD/MM/YYYY')
           : '',
-        committeeAuthDate: mortgage?.committeeAuthDate
-          ? dayjs(mortgage.committeeAuthDate).format('DD/MM/YYYY')
-          : '',
+        committeeAuthDate: committeeAuthDateFormatted,
+        committeeAuthDateDay,
+        committeeAuthDateMonth,
+        committeeAuthDateYear,
+        NGAY_CHUNG_THUC_UY_BAN_NGAY: committeeAuthDateDay,
+        NGAY_CHUNG_THUC_UY_BAN_THANG: committeeAuthDateMonth,
+        NGAY_CHUNG_THUC_UY_BAN_NAM: committeeAuthDateYear,
+        NGAY_CHUNG_THUC_UBND_NGAY: committeeAuthDateDay,
+        NGAY_CHUNG_THUC_UBND_THANG: committeeAuthDateMonth,
+        NGAY_CHUNG_THUC_UBND_NAM: committeeAuthDateYear,
+        NGAY_CHUNG_THUC_NGAY: committeeAuthDateDay,
+        NGAY_CHUNG_THUC_THANG: committeeAuthDateMonth,
+        NGAY_CHUNG_THUC_NAM: committeeAuthDateYear,
+        NGAY_CHUNG_THUC_UY_BAN: committeeAuthDateFormatted,
+        NGAY_CHUNG_THUC_UBND: committeeAuthDateFormatted,
+        NGAY_CHUNG_THUC: committeeAuthDateFormatted,
       },
       collaterals_summary: {
         totalCount: collaterals.length,
@@ -2507,11 +2672,46 @@ export class WordTemplateDataDictionaryService {
         DIA_CHI: firstCollateral?.address || '',
         CHU_SO_HUU: firstOwner.fullName,
         CHU_SO_HUU_HO_TEN: firstOwner.fullName,
+        CHU_SO_HUU_HO_TEN_IN_HOA: firstOwnerUpper,
+        CHU_SO_HUU_HO_TEN_VIET_HOA: firstOwnerUpper,
         CHU_SO_HUU_1: firstOwner.fullName,
         CHU_SO_HUU_1_HO_TEN: firstOwner.fullName,
+        CHU_SO_HUU_1_HO_TEN_IN_HOA: firstOwnerUpper,
+        CHU_SO_HUU_1_HO_TEN_VIET_HOA: firstOwnerUpper,
+        CHU_SO_HUU_1_IN_HOA: firstOwnerUpper,
+        CHU_SO_HUU_1_VIET_HOA: firstOwnerUpper,
+        CHU_SO_HUU_1_XUNG_HO: firstOwner.genderTitle,
+        CHU_SO_HUU_1_DANH_XUNG: firstOwner.genderTitle,
+        CHU_SO_HUU_1_LOAI_GIAY_TO: firstOwner.idType,
+        CHU_SO_HUU_1_SO_GIAY_TO: firstOwner.idNumber,
+        CHU_SO_HUU_1_SO_CCCD: firstOwner.idNumber,
+        CHU_SO_HUU_1_NGAY_CAP: firstOwner.idIssueDate,
+        CHU_SO_HUU_1_NOI_CAP: firstOwner.idIssuePlace,
+        CHU_SO_HUU_1_DIA_CHI: firstOwner.address,
+        CHU_SO_HUU_1_NAM_SINH: firstOwnerBirthYear,
+        CHU_SO_HUU_1_QUAN_HE: firstOwner.relationship,
+        CHU_SO_HUU_THU_NHAT: firstOwner.fullName,
+        CHU_SO_HUU_THU_NHAT_HO_TEN_IN_HOA: firstOwnerUpper,
+        CHU_SO_HUU_THU_1: firstOwner.fullName,
+        CHU_SO_HUU_THU_1_HO_TEN_IN_HOA: firstOwnerUpper,
         CHU_SO_HUU_2: secondOwnerObj.HO_TEN,
         CHU_SO_HUU_2_HO_TEN: secondOwnerObj.HO_TEN,
+        CHU_SO_HUU_2_HO_TEN_IN_HOA: secondOwnerUpper,
+        CHU_SO_HUU_2_HO_TEN_VIET_HOA: secondOwnerUpper,
+        CHU_SO_HUU_2_IN_HOA: secondOwnerUpper,
+        CHU_SO_HUU_2_VIET_HOA: secondOwnerUpper,
+        CHU_SO_HUU_2_XUNG_HO: secondOwnerObj.XUNG_HO,
+        CHU_SO_HUU_2_DANH_XUNG: secondOwnerObj.DANH_XUNG,
+        CHU_SO_HUU_2_LOAI_GIAY_TO: secondOwnerObj.LOAI_GIAY_TO,
+        CHU_SO_HUU_2_SO_GIAY_TO: secondOwnerObj.SO_GIAY_TO,
+        CHU_SO_HUU_2_SO_CCCD: secondOwnerObj.SO_CCCD,
+        CHU_SO_HUU_2_NGAY_CAP: secondOwnerObj.NGAY_CAP,
+        CHU_SO_HUU_2_NOI_CAP: secondOwnerObj.NOI_CAP,
+        CHU_SO_HUU_2_DIA_CHI: secondOwnerObj.DIA_CHI,
+        CHU_SO_HUU_2_NAM_SINH: secondOwnerObj.NAM_SINH,
+        CHU_SO_HUU_2_QUAN_HE: secondOwnerObj.QUAN_HE,
         CHU_SO_HUU_THU_HAI: secondOwnerObj.HO_TEN,
+        CHU_SO_HUU_THU_2: secondOwnerObj.HO_TEN,
         CHU_SO_HUU_XUNG_HO: firstOwner.genderTitle,
         CHU_SO_HUU_DANH_XUNG: firstOwner.genderTitle,
         CHU_SO_HUU_LOAI_GIAY_TO: firstOwner.idType,
@@ -2523,7 +2723,6 @@ export class WordTemplateDataDictionaryService {
         CHU_SO_HUU_NAM_SINH: firstOwner.yearOfBirth,
         CHU_SO_HUU_QUAN_HE: firstOwner.relationship,
         CHU_SO_HUU_DAU_TIEN: firstOwnerObj,
-        CHU_SO_HUU_THU_2: secondOwnerObj,
         CO_CHU_SO_HUU_2: hasSecondOwner,
         NGAY_CAP: firstCollateral?.issueDate ? dayjs(firstCollateral.issueDate).format('DD/MM/YYYY') : '',
         NOI_CAP: firstCollateral?.issuePlace || '',
@@ -2871,6 +3070,10 @@ export class WordTemplateDataDictionaryService {
       DIA_CHI_GOP: mergedAddresses,
       DIA_CHI_TAI_SAN_GOP: mergedAddresses,
       'CHU_SO_HUU.HO_TEN': firstOwner.fullName,
+      'CHU_SO_HUU.HO_TEN_IN_HOA': firstOwnerUpper,
+      'CHU_SO_HUU.HO_TEN_VIET_HOA': firstOwnerUpper,
+      'CHU_SO_HUU.IN_HOA': firstOwnerUpper,
+      'CHU_SO_HUU.VIET_HOA': firstOwnerUpper,
       'CHU_SO_HUU.XUNG_HO': firstOwner.genderTitle,
       'CHU_SO_HUU.DANH_XUNG': firstOwner.genderTitle,
       'CHU_SO_HUU.LOAI_GIAY_TO': firstOwner.idType,
@@ -2886,6 +3089,10 @@ export class WordTemplateDataDictionaryService {
       CHU_SO_HUU: firstOwner.fullName,
       CHU_SO_HUU_GOP: mergedOwners,
       CHU_SO_HUU_HO_TEN: firstOwner.fullName,
+      CHU_SO_HUU_HO_TEN_IN_HOA: firstOwnerUpper,
+      CHU_SO_HUU_HO_TEN_VIET_HOA: firstOwnerUpper,
+      CHU_SO_HUU_IN_HOA: firstOwnerUpper,
+      CHU_SO_HUU_VIET_HOA: firstOwnerUpper,
       CHU_SO_HUU_XUNG_HO: firstOwner.genderTitle,
       CHU_SO_HUU_DANH_XUNG: firstOwner.genderTitle,
       CHU_SO_HUU_LOAI_GIAY_TO: firstOwner.idType,
@@ -2899,25 +3106,133 @@ export class WordTemplateDataDictionaryService {
 
       // Chủ sở hữu 1 (đầu tiên)
       'CHU_SO_HUU_1.HO_TEN': firstOwner.fullName,
+      'CHU_SO_HUU_1.HO_TEN_IN_HOA': firstOwnerUpper,
+      'CHU_SO_HUU_1.HO_TEN_VIET_HOA': firstOwnerUpper,
+      'CHU_SO_HUU_1.HO_TEN_HOA': firstOwnerUpper,
+      'CHU_SO_HUU_1.IN_HOA': firstOwnerUpper,
+      'CHU_SO_HUU_1.VIET_HOA': firstOwnerUpper,
       'CHU_SO_HUU_1.XUNG_HO': firstOwner.genderTitle,
       'CHU_SO_HUU_1.DANH_XUNG': firstOwner.genderTitle,
+      'CHU_SO_HUU_1.GIOI_TINH': firstOwner.gender || '',
       'CHU_SO_HUU_1.LOAI_GIAY_TO': firstOwner.idType,
       'CHU_SO_HUU_1.SO_GIAY_TO': firstOwner.idNumber,
       'CHU_SO_HUU_1.SO_CCCD': firstOwner.idNumber,
       'CHU_SO_HUU_1.NGAY_CAP': firstOwner.idIssueDate,
+      'CHU_SO_HUU_1.NGAY_CAP_CCCD': firstOwner.idIssueDate,
       'CHU_SO_HUU_1.NOI_CAP': firstOwner.idIssuePlace,
+      'CHU_SO_HUU_1.NOI_CAP_CCCD': firstOwner.idIssuePlace,
       'CHU_SO_HUU_1.DIA_CHI': firstOwner.address,
-      'CHU_SO_HUU_1.NAM_SINH': firstOwner.yearOfBirth,
+      'CHU_SO_HUU_1.NAM_SINH': firstOwnerBirthYear,
       'CHU_SO_HUU_1.QUAN_HE': firstOwner.relationship,
+      'CHU_SO_HUU_1.SO_DIEN_THOAI': (firstOwner as any).phoneNumber || '',
+
       CHU_SO_HUU_1: firstOwner.fullName,
       CHU_SO_HUU_1_HO_TEN: firstOwner.fullName,
+      CHU_SO_HUU_1_HO_TEN_IN_HOA: firstOwnerUpper,
+      CHU_SO_HUU_1_HO_TEN_VIET_HOA: firstOwnerUpper,
+      CHU_SO_HUU_1_HO_TEN_HOA: firstOwnerUpper,
+      CHU_SO_HUU_1_IN_HOA: firstOwnerUpper,
+      CHU_SO_HUU_1_VIET_HOA: firstOwnerUpper,
+      CHU_SO_HUU_1_XUNG_HO: firstOwner.genderTitle,
+      CHU_SO_HUU_1_DANH_XUNG: firstOwner.genderTitle,
+      CHU_SO_HUU_1_GIOI_TINH: firstOwner.gender || '',
+      CHU_SO_HUU_1_LOAI_GIAY_TO: firstOwner.idType,
+      CHU_SO_HUU_1_SO_CCCD: firstOwner.idNumber,
+      CHU_SO_HUU_1_SO_GIAY_TO: firstOwner.idNumber,
+      CHU_SO_HUU_1_NGAY_CAP: firstOwner.idIssueDate,
+      CHU_SO_HUU_1_NGAY_CAP_CCCD: firstOwner.idIssueDate,
+      CHU_SO_HUU_1_NOI_CAP: firstOwner.idIssuePlace,
+      CHU_SO_HUU_1_NOI_CAP_CCCD: firstOwner.idIssuePlace,
+      CHU_SO_HUU_1_DIA_CHI: firstOwner.address,
+      CHU_SO_HUU_1_NAM_SINH: firstOwnerBirthYear,
+      CHU_SO_HUU_1_QUAN_HE: firstOwner.relationship,
+      CHU_SO_HUU_1_SO_DIEN_THOAI: (firstOwner as any).phoneNumber || '',
+
       'CHU_SO_HUU_THU_NHAT.HO_TEN': firstOwner.fullName,
+      'CHU_SO_HUU_THU_NHAT.HO_TEN_IN_HOA': firstOwnerUpper,
+      'CHU_SO_HUU_THU_NHAT.HO_TEN_VIET_HOA': firstOwnerUpper,
+      'CHU_SO_HUU_THU_NHAT.IN_HOA': firstOwnerUpper,
+      'CHU_SO_HUU_THU_NHAT.VIET_HOA': firstOwnerUpper,
+      'CHU_SO_HUU_THU_NHAT.XUNG_HO': firstOwner.genderTitle,
+      'CHU_SO_HUU_THU_NHAT.DANH_XUNG': firstOwner.genderTitle,
+      'CHU_SO_HUU_THU_NHAT.GIOI_TINH': firstOwner.gender || '',
+      'CHU_SO_HUU_THU_NHAT.LOAI_GIAY_TO': firstOwner.idType,
+      'CHU_SO_HUU_THU_NHAT.SO_GIAY_TO': firstOwner.idNumber,
+      'CHU_SO_HUU_THU_NHAT.SO_CCCD': firstOwner.idNumber,
+      'CHU_SO_HUU_THU_NHAT.NGAY_CAP': firstOwner.idIssueDate,
+      'CHU_SO_HUU_THU_NHAT.NOI_CAP': firstOwner.idIssuePlace,
+      'CHU_SO_HUU_THU_NHAT.DIA_CHI': firstOwner.address,
+      'CHU_SO_HUU_THU_NHAT.NAM_SINH': firstOwnerBirthYear,
+      'CHU_SO_HUU_THU_NHAT.QUAN_HE': firstOwner.relationship,
       CHU_SO_HUU_THU_NHAT: firstOwner.fullName,
+      CHU_SO_HUU_THU_NHAT_HO_TEN: firstOwner.fullName,
+      CHU_SO_HUU_THU_NHAT_HO_TEN_IN_HOA: firstOwnerUpper,
+      CHU_SO_HUU_THU_NHAT_HO_TEN_VIET_HOA: firstOwnerUpper,
+      CHU_SO_HUU_THU_NHAT_IN_HOA: firstOwnerUpper,
+      CHU_SO_HUU_THU_NHAT_VIET_HOA: firstOwnerUpper,
+      CHU_SO_HUU_THU_NHAT_XUNG_HO: firstOwner.genderTitle,
+      CHU_SO_HUU_THU_NHAT_DANH_XUNG: firstOwner.genderTitle,
+      CHU_SO_HUU_THU_NHAT_SO_CCCD: firstOwner.idNumber,
+      CHU_SO_HUU_THU_NHAT_SO_GIAY_TO: firstOwner.idNumber,
+      CHU_SO_HUU_THU_NHAT_NGAY_CAP: firstOwner.idIssueDate,
+      CHU_SO_HUU_THU_NHAT_NOI_CAP: firstOwner.idIssuePlace,
+      CHU_SO_HUU_THU_NHAT_DIA_CHI: firstOwner.address,
+      CHU_SO_HUU_THU_NHAT_NAM_SINH: firstOwnerBirthYear,
+
+      'CHU_SO_HUU_THU_1.HO_TEN': firstOwner.fullName,
+      'CHU_SO_HUU_THU_1.HO_TEN_IN_HOA': firstOwnerUpper,
+      'CHU_SO_HUU_THU_1.HO_TEN_VIET_HOA': firstOwnerUpper,
+      'CHU_SO_HUU_THU_1.IN_HOA': firstOwnerUpper,
+      'CHU_SO_HUU_THU_1.VIET_HOA': firstOwnerUpper,
+      'CHU_SO_HUU_THU_1.XUNG_HO': firstOwner.genderTitle,
+      'CHU_SO_HUU_THU_1.DANH_XUNG': firstOwner.genderTitle,
+      'CHU_SO_HUU_THU_1.LOAI_GIAY_TO': firstOwner.idType,
+      'CHU_SO_HUU_THU_1.SO_GIAY_TO': firstOwner.idNumber,
+      'CHU_SO_HUU_THU_1.SO_CCCD': firstOwner.idNumber,
+      'CHU_SO_HUU_THU_1.NGAY_CAP': firstOwner.idIssueDate,
+      'CHU_SO_HUU_THU_1.NOI_CAP': firstOwner.idIssuePlace,
+      'CHU_SO_HUU_THU_1.DIA_CHI': firstOwner.address,
+      'CHU_SO_HUU_THU_1.NAM_SINH': firstOwnerBirthYear,
+      'CHU_SO_HUU_THU_1.QUAN_HE': firstOwner.relationship,
+      CHU_SO_HUU_THU_1: firstOwner.fullName,
+      CHU_SO_HUU_THU_1_HO_TEN: firstOwner.fullName,
+      CHU_SO_HUU_THU_1_HO_TEN_IN_HOA: firstOwnerUpper,
+      CHU_SO_HUU_THU_1_HO_TEN_VIET_HOA: firstOwnerUpper,
+      CHU_SO_HUU_THU_1_IN_HOA: firstOwnerUpper,
+      CHU_SO_HUU_THU_1_VIET_HOA: firstOwnerUpper,
+
       'TAI_SAN.CHU_SO_HUU_1': firstOwner.fullName,
+      'TAI_SAN.CHU_SO_HUU_1.HO_TEN': firstOwner.fullName,
+      'TAI_SAN.CHU_SO_HUU_1.HO_TEN_IN_HOA': firstOwnerUpper,
+      'TAI_SAN.CHU_SO_HUU_1.HO_TEN_VIET_HOA': firstOwnerUpper,
+      'TAI_SAN.CHU_SO_HUU_1.IN_HOA': firstOwnerUpper,
+      'TAI_SAN.CHU_SO_HUU_1.VIET_HOA': firstOwnerUpper,
+      'TAI_SAN.CHU_SO_HUU_1.XUNG_HO': firstOwner.genderTitle,
+      'TAI_SAN.CHU_SO_HUU_1.DANH_XUNG': firstOwner.genderTitle,
+      'TAI_SAN.CHU_SO_HUU_1.LOAI_GIAY_TO': firstOwner.idType,
+      'TAI_SAN.CHU_SO_HUU_1.SO_GIAY_TO': firstOwner.idNumber,
+      'TAI_SAN.CHU_SO_HUU_1.SO_CCCD': firstOwner.idNumber,
+      'TAI_SAN.CHU_SO_HUU_1.NGAY_CAP': firstOwner.idIssueDate,
+      'TAI_SAN.CHU_SO_HUU_1.NOI_CAP': firstOwner.idIssuePlace,
+      'TAI_SAN.CHU_SO_HUU_1.DIA_CHI': firstOwner.address,
+      'TAI_SAN.CHU_SO_HUU_1.NAM_SINH': firstOwnerBirthYear,
+      'TAI_SAN.CHU_SO_HUU_1.QUAN_HE': firstOwner.relationship,
       'TAI_SAN.CHU_SO_HUU_THU_NHAT': firstOwner.fullName,
+      'TAI_SAN.CHU_SO_HUU_THU_NHAT.HO_TEN': firstOwner.fullName,
+      'TAI_SAN.CHU_SO_HUU_THU_NHAT.HO_TEN_IN_HOA': firstOwnerUpper,
+      'TAI_SAN.CHU_SO_HUU_THU_NHAT.HO_TEN_VIET_HOA': firstOwnerUpper,
+      'TAI_SAN.CHU_SO_HUU_THU_1': firstOwner.fullName,
+      'TAI_SAN.CHU_SO_HUU_THU_1.HO_TEN': firstOwner.fullName,
+      'TAI_SAN.CHU_SO_HUU_THU_1.HO_TEN_IN_HOA': firstOwnerUpper,
+      'TAI_SAN.CHU_SO_HUU_THU_1.HO_TEN_VIET_HOA': firstOwnerUpper,
 
       // Chủ sở hữu 2 (thứ hai)
       'CHU_SO_HUU_2.HO_TEN': secondOwnerObj.HO_TEN,
+      'CHU_SO_HUU_2.HO_TEN_IN_HOA': secondOwnerUpper,
+      'CHU_SO_HUU_2.HO_TEN_VIET_HOA': secondOwnerUpper,
+      'CHU_SO_HUU_2.HO_TEN_HOA': secondOwnerUpper,
+      'CHU_SO_HUU_2.IN_HOA': secondOwnerUpper,
+      'CHU_SO_HUU_2.VIET_HOA': secondOwnerUpper,
       'CHU_SO_HUU_2.XUNG_HO': secondOwnerObj.XUNG_HO,
       'CHU_SO_HUU_2.DANH_XUNG': secondOwnerObj.DANH_XUNG,
       'CHU_SO_HUU_2.LOAI_GIAY_TO': secondOwnerObj.LOAI_GIAY_TO,
@@ -2930,6 +3245,11 @@ export class WordTemplateDataDictionaryService {
       'CHU_SO_HUU_2.QUAN_HE': secondOwnerObj.QUAN_HE,
       CHU_SO_HUU_2: secondOwnerObj.HO_TEN,
       CHU_SO_HUU_2_HO_TEN: secondOwnerObj.HO_TEN,
+      CHU_SO_HUU_2_HO_TEN_IN_HOA: secondOwnerUpper,
+      CHU_SO_HUU_2_HO_TEN_VIET_HOA: secondOwnerUpper,
+      CHU_SO_HUU_2_HO_TEN_HOA: secondOwnerUpper,
+      CHU_SO_HUU_2_IN_HOA: secondOwnerUpper,
+      CHU_SO_HUU_2_VIET_HOA: secondOwnerUpper,
       CHU_SO_HUU_2_XUNG_HO: secondOwnerObj.XUNG_HO,
       CHU_SO_HUU_2_DANH_XUNG: secondOwnerObj.DANH_XUNG,
       CHU_SO_HUU_2_SO_CCCD: secondOwnerObj.SO_CCCD,
@@ -2939,12 +3259,49 @@ export class WordTemplateDataDictionaryService {
       CHU_SO_HUU_2_DIA_CHI: secondOwnerObj.DIA_CHI,
       CHU_SO_HUU_2_NAM_SINH: secondOwnerObj.NAM_SINH,
       'CHU_SO_HUU_THU_HAI.HO_TEN': secondOwnerObj.HO_TEN,
+      'CHU_SO_HUU_THU_HAI.HO_TEN_IN_HOA': secondOwnerUpper,
+      'CHU_SO_HUU_THU_HAI.HO_TEN_VIET_HOA': secondOwnerUpper,
+      'CHU_SO_HUU_THU_HAI.IN_HOA': secondOwnerUpper,
+      'CHU_SO_HUU_THU_HAI.VIET_HOA': secondOwnerUpper,
       CHU_SO_HUU_THU_HAI: secondOwnerObj.HO_TEN,
       CHU_SO_HUU_THU_HAI_HO_TEN: secondOwnerObj.HO_TEN,
+      CHU_SO_HUU_THU_HAI_HO_TEN_IN_HOA: secondOwnerUpper,
+      CHU_SO_HUU_THU_HAI_HO_TEN_VIET_HOA: secondOwnerUpper,
+      CHU_SO_HUU_THU_HAI_IN_HOA: secondOwnerUpper,
+      CHU_SO_HUU_THU_HAI_VIET_HOA: secondOwnerUpper,
       'CHU_SO_HUU_THU_2.HO_TEN': secondOwnerObj.HO_TEN,
+      'CHU_SO_HUU_THU_2.HO_TEN_IN_HOA': secondOwnerUpper,
+      'CHU_SO_HUU_THU_2.HO_TEN_VIET_HOA': secondOwnerUpper,
+      'CHU_SO_HUU_THU_2.IN_HOA': secondOwnerUpper,
+      'CHU_SO_HUU_THU_2.VIET_HOA': secondOwnerUpper,
       CHU_SO_HUU_THU_2: secondOwnerObj.HO_TEN,
+      CHU_SO_HUU_THU_2_HO_TEN: secondOwnerObj.HO_TEN,
+      CHU_SO_HUU_THU_2_HO_TEN_IN_HOA: secondOwnerUpper,
+      CHU_SO_HUU_THU_2_HO_TEN_VIET_HOA: secondOwnerUpper,
       'TAI_SAN.CHU_SO_HUU_2': secondOwnerObj.HO_TEN,
+      'TAI_SAN.CHU_SO_HUU_2.HO_TEN': secondOwnerObj.HO_TEN,
+      'TAI_SAN.CHU_SO_HUU_2.HO_TEN_IN_HOA': secondOwnerUpper,
+      'TAI_SAN.CHU_SO_HUU_2.HO_TEN_VIET_HOA': secondOwnerUpper,
+      'TAI_SAN.CHU_SO_HUU_2.IN_HOA': secondOwnerUpper,
+      'TAI_SAN.CHU_SO_HUU_2.VIET_HOA': secondOwnerUpper,
+      'TAI_SAN.CHU_SO_HUU_2.XUNG_HO': secondOwnerObj.XUNG_HO,
+      'TAI_SAN.CHU_SO_HUU_2.DANH_XUNG': secondOwnerObj.DANH_XUNG,
+      'TAI_SAN.CHU_SO_HUU_2.LOAI_GIAY_TO': secondOwnerObj.LOAI_GIAY_TO,
+      'TAI_SAN.CHU_SO_HUU_2.SO_GIAY_TO': secondOwnerObj.SO_GIAY_TO,
+      'TAI_SAN.CHU_SO_HUU_2.SO_CCCD': secondOwnerObj.SO_CCCD,
+      'TAI_SAN.CHU_SO_HUU_2.NGAY_CAP': secondOwnerObj.NGAY_CAP,
+      'TAI_SAN.CHU_SO_HUU_2.NOI_CAP': secondOwnerObj.NOI_CAP,
+      'TAI_SAN.CHU_SO_HUU_2.DIA_CHI': secondOwnerObj.DIA_CHI,
+      'TAI_SAN.CHU_SO_HUU_2.NAM_SINH': secondOwnerObj.NAM_SINH,
+      'TAI_SAN.CHU_SO_HUU_2.QUAN_HE': secondOwnerObj.QUAN_HE,
       'TAI_SAN.CHU_SO_HUU_THU_HAI': secondOwnerObj.HO_TEN,
+      'TAI_SAN.CHU_SO_HUU_THU_HAI.HO_TEN': secondOwnerObj.HO_TEN,
+      'TAI_SAN.CHU_SO_HUU_THU_HAI.HO_TEN_IN_HOA': secondOwnerUpper,
+      'TAI_SAN.CHU_SO_HUU_THU_HAI.HO_TEN_VIET_HOA': secondOwnerUpper,
+      'TAI_SAN.CHU_SO_HUU_THU_2': secondOwnerObj.HO_TEN,
+      'TAI_SAN.CHU_SO_HUU_THU_2.HO_TEN': secondOwnerObj.HO_TEN,
+      'TAI_SAN.CHU_SO_HUU_THU_2.HO_TEN_IN_HOA': secondOwnerUpper,
+      'TAI_SAN.CHU_SO_HUU_THU_2.HO_TEN_VIET_HOA': secondOwnerUpper,
 
       // Cờ boolean kiểm tra có chủ sở hữu thứ 2
       CO_CHU_SO_HUU_2: hasSecondOwner,
@@ -3072,6 +3429,44 @@ export class WordTemplateDataDictionaryService {
       'KHOAN_VAY,SO_HOP_DONG_THE_CHAP_SO': soHdTheChapSo,
       SO_HOP_DONG_THE_CHAP_SO: soHdTheChapSo,
       'loan.SO_HOP_DONG_THE_CHAP_SO': soHdTheChapSo,
+      // Ngày chứng thực ủy ban / UBND
+      NGAY_CHUNG_THUC_UY_BAN_NGAY: committeeAuthDateDay,
+      NGAY_CHUNG_THUC_UY_BAN_THANG: committeeAuthDateMonth,
+      NGAY_CHUNG_THUC_UY_BAN_NAM: committeeAuthDateYear,
+      'KHOAN_VAY.NGAY_CHUNG_THUC_UY_BAN_NGAY': committeeAuthDateDay,
+      'KHOAN_VAY.NGAY_CHUNG_THUC_UY_BAN_THANG': committeeAuthDateMonth,
+      'KHOAN_VAY.NGAY_CHUNG_THUC_UY_BAN_NAM': committeeAuthDateYear,
+      'mortgage.committeeAuthDateDay': committeeAuthDateDay,
+      'mortgage.committeeAuthDateMonth': committeeAuthDateMonth,
+      'mortgage.committeeAuthDateYear': committeeAuthDateYear,
+      'mortgage.NGAY_CHUNG_THUC_UY_BAN_NGAY': committeeAuthDateDay,
+      'mortgage.NGAY_CHUNG_THUC_UY_BAN_THANG': committeeAuthDateMonth,
+      'mortgage.NGAY_CHUNG_THUC_UY_BAN_NAM': committeeAuthDateYear,
+
+      NGAY_CHUNG_THUC_UBND_NGAY: committeeAuthDateDay,
+      NGAY_CHUNG_THUC_UBND_THANG: committeeAuthDateMonth,
+      NGAY_CHUNG_THUC_UBND_NAM: committeeAuthDateYear,
+      'KHOAN_VAY.NGAY_CHUNG_THUC_UBND_NGAY': committeeAuthDateDay,
+      'KHOAN_VAY.NGAY_CHUNG_THUC_UBND_THANG': committeeAuthDateMonth,
+      'KHOAN_VAY.NGAY_CHUNG_THUC_UBND_NAM': committeeAuthDateYear,
+      'mortgage.NGAY_CHUNG_THUC_UBND_NGAY': committeeAuthDateDay,
+      'mortgage.NGAY_CHUNG_THUC_UBND_THANG': committeeAuthDateMonth,
+      'mortgage.NGAY_CHUNG_THUC_UBND_NAM': committeeAuthDateYear,
+
+      NGAY_CHUNG_THUC_NGAY: committeeAuthDateDay,
+      NGAY_CHUNG_THUC_THANG: committeeAuthDateMonth,
+      NGAY_CHUNG_THUC_NAM: committeeAuthDateYear,
+      'KHOAN_VAY.NGAY_CHUNG_THUC_NGAY': committeeAuthDateDay,
+      'KHOAN_VAY.NGAY_CHUNG_THUC_THANG': committeeAuthDateMonth,
+      'KHOAN_VAY.NGAY_CHUNG_THUC_NAM': committeeAuthDateYear,
+
+      NGAY_CHUNG_THUC_UY_BAN: committeeAuthDateFormatted,
+      NGAY_CHUNG_THUC_UBND: committeeAuthDateFormatted,
+      NGAY_CHUNG_THUC: committeeAuthDateFormatted,
+      'KHOAN_VAY.NGAY_CHUNG_THUC_UY_BAN': committeeAuthDateFormatted,
+      'KHOAN_VAY.NGAY_CHUNG_THUC_UBND': committeeAuthDateFormatted,
+      'KHOAN_VAY.NGAY_CHUNG_THUC': committeeAuthDateFormatted,
+      'mortgage.committeeAuthDate': committeeAuthDateFormatted,
       'KHOAN_VAY.NGAY_CAP_KHE_UOC': nested.loan.contractDate,
       NGAY_CAP_KHE_UOC: nested.loan.contractDate,
       'loan.NGAY_CAP_KHE_UOC': nested.loan.contractDate,
@@ -3265,6 +3660,18 @@ export class WordTemplateDataDictionaryService {
         SO_HOP_DONG_THE_CHAP_THANG: soHdTheChapThang,
         SO_HOP_DONG_THE_CHAP_NGAY: soHdTheChapNgay,
         SO_HOP_DONG_THE_CHAP_SO: soHdTheChapSo,
+        NGAY_CHUNG_THUC_UY_BAN_NGAY: committeeAuthDateDay,
+        NGAY_CHUNG_THUC_UY_BAN_THANG: committeeAuthDateMonth,
+        NGAY_CHUNG_THUC_UY_BAN_NAM: committeeAuthDateYear,
+        NGAY_CHUNG_THUC_UBND_NGAY: committeeAuthDateDay,
+        NGAY_CHUNG_THUC_UBND_THANG: committeeAuthDateMonth,
+        NGAY_CHUNG_THUC_UBND_NAM: committeeAuthDateYear,
+        NGAY_CHUNG_THUC_NGAY: committeeAuthDateDay,
+        NGAY_CHUNG_THUC_THANG: committeeAuthDateMonth,
+        NGAY_CHUNG_THUC_NAM: committeeAuthDateYear,
+        NGAY_CHUNG_THUC_UY_BAN: committeeAuthDateFormatted,
+        NGAY_CHUNG_THUC_UBND: committeeAuthDateFormatted,
+        NGAY_CHUNG_THUC: committeeAuthDateFormatted,
         isSoKheUocGiongSoHdTheChap,
         IS_SO_KHE_UOC_GIONG_SO_HD_THE_CHAP: isSoKheUocGiongSoHdTheChap,
         SO_KHE_UOC_GIONG_SO_HD_THE_CHAP: isSoKheUocGiongSoHdTheChap,
@@ -3370,7 +3777,9 @@ export class WordTemplateDataDictionaryService {
       CHU_SO_HUU_1: firstOwnerObj,
       CHU_SO_HUU_2: secondOwnerObj,
       CHU_SO_HUU_THU_NHAT: firstOwnerObj,
+      CHU_SO_HUU_THU_1: firstOwnerObj,
       CHU_SO_HUU_THU_HAI: secondOwnerObj,
+      CHU_SO_HUU_THU_2: secondOwnerObj,
       CO_CHU_SO_HUU_2: hasSecondOwner,
       CO_CHU_SO_HUU_THU_HAI: hasSecondOwner,
       CO_NGUOI_THUA_KE: coNguoiThuaKe,
@@ -3669,9 +4078,12 @@ export class WordTemplateDataDictionaryService {
 
   /**
    * Gộp hình thức sử dụng của nhiều tài sản:
-   * Nếu có nhiều thửa và nội dung là "riêng: x1 m2, chung: y1 m2" hoặc "sử dụng riêng: x2 m2; sử dụng chung: y2 m2"
-   * thì tự gộp lại thành 1 câu: "riêng: x1+x2 m2; chung: y1+y2 m2" (hoặc "sử dụng riêng: ...; sử dụng chung: ...")
-   * Tương tự nếu chỉ có sử dụng riêng: "riêng: x1+x2 m2" (hoặc "sử dụng riêng: ...").
+   * - Chỉ gộp diện tích khi các tài sản có nội dung cùng cấu trúc:
+   *   Ví dụ: "riêng: 10m2; chung: không m2" với "riêng: 20m2; chung: không m2" -> "riêng: 30 m2; chung: không m2"
+   *   (Giữ nguyên y hệt từ 'riêng' và 'chung', không tự ý đổi thành 'sử dụng riêng').
+   *   Hoặc "sử dụng riêng: 10m2; sử dụng chung: Không m2" -> "sử dụng riêng: 30 m2; sử dụng chung: Không m2" (giữ nguyên 'sử dụng riêng').
+   * - Nếu tài sản có nội dung khác cấu trúc, ví dụ 1 tài sản là chữ "Sử dụng riêng" (hoặc "sử dụng riêng") và 1 tài sản là "riêng: 10m2; chung: Không m2"
+   *   thì KHÔNG tự gộp lại mà tách ra 2 cái như bình thường (nối dấu ;).
    */
   public formatMergedUsageForms(items: any[]): string {
     if (!items || items.length === 0) return '';
@@ -3683,7 +4095,7 @@ export class WordTemplateDataDictionaryService {
     if (rawForms.length === 1) return String(rawForms[0]).trim();
 
     // Helper parse số từ chuỗi tiếng Việt: "1.992,5" -> 1992.5, "500" -> 500
-    const parseViNum = (s: string): number => {
+    const parseViNum = (s: string): number | null => {
       let clean = s.trim();
       if (clean.includes('.') && clean.includes(',')) {
         clean = clean.replace(/\./g, '').replace(',', '.');
@@ -3691,82 +4103,119 @@ export class WordTemplateDataDictionaryService {
         clean = clean.replace(',', '.');
       }
       const val = parseFloat(clean);
-      return isNaN(val) ? 0 : val;
+      return isNaN(val) ? null : val;
     };
 
-    const parsed = rawForms.map((textStr) => {
-      const text = String(textStr).trim();
-      const isLowercase = text.startsWith('r') || text.startsWith('s');
-      const hasSuDung = /sử\s*dụng/i.test(text);
-      const unit = text.includes('m²') ? 'm²' : 'm2';
+    const riengRegex = /(sử\s*dụng\s*riêng|riêng)\s*[:\s-]\s*([\d.,]+)\s*(m²|m2)?/i;
+    const chungRegex = /(sử\s*dụng\s*chung|chung)\s*[:\s-]\s*([\d.,]+|[kK]hông(?:\s+có)?)\s*(m²|m2)?/i;
 
-      const riengMatch = text.match(/(?:sử\s*dụng\s*)?riêng\s*[:\s-]\s*([\d.,]+)/i);
-      const chungMatch = text.match(/(?:sử\s*dụng\s*)?chung\s*[:\s-]\s*([\d.,]+)/i);
+    const parseItem = (textStr: string) => {
+      const text = String(textStr).trim();
+      const riengMatch = text.match(riengRegex);
+      const chungMatch = text.match(chungRegex);
+
+      const mentionsChung = /(?:sử\s*dụng\s*)?chung/i.test(text);
+
+      let kind: 'RIENG_CHUNG' | 'RIENG_ONLY' | 'OTHER' = 'OTHER';
+      if (riengMatch && chungMatch) {
+        kind = 'RIENG_CHUNG';
+      } else if (riengMatch && !mentionsChung) {
+        kind = 'RIENG_ONLY';
+      }
+
+      let riengNum = 0;
+      let prefixRieng = '';
+      let riengUnit = 'm2';
+      if (riengMatch) {
+        prefixRieng = riengMatch[1].trim();
+        riengNum = parseViNum(riengMatch[2]) ?? 0;
+        riengUnit = riengMatch[3] || 'm2';
+      }
+
+      let chungNum = 0;
+      let prefixChung = '';
+      let chungText = '';
+      let chungUnit = 'm2';
+      if (chungMatch) {
+        prefixChung = chungMatch[1].trim();
+        const chungValStr = chungMatch[2].trim();
+        const parsedChungNum = parseViNum(chungValStr);
+        if (parsedChungNum !== null) {
+          chungNum = parsedChungNum;
+        }
+        if (/^[kK]hông(?:\s+có)?$/i.test(chungValStr)) {
+          chungText = chungValStr;
+        }
+        chungUnit = chungMatch[3] || 'm2';
+      }
 
       return {
-        rieng: riengMatch ? parseViNum(riengMatch[1]) : undefined,
-        chung: chungMatch ? parseViNum(chungMatch[1]) : undefined,
-        hasSuDung,
-        isLowercase,
-        unit,
+        raw: text,
+        kind,
+        prefixRieng,
+        riengNum,
+        riengUnit,
+        prefixChung,
+        chungNum,
+        chungText,
+        chungUnit,
       };
-    });
+    };
 
-    const hasAnyNumber = parsed.some((p) => p.rieng !== undefined || p.chung !== undefined);
-    if (!hasAnyNumber) {
+    const parsed = rawForms.map(parseItem);
+    const first = parsed[0];
+
+    // Chỉ gộp khi tất cả các tài sản có cùng cấu trúc và không phải dạng OTHER (ví dụ: chỉ có chữ 'Sử dụng riêng')
+    const canMerge =
+      first.kind !== 'OTHER' &&
+      parsed.every((p) => {
+        if (p.kind !== first.kind) return false;
+        // Kiểm tra phong cách chữ (riêng vs sử dụng riêng)
+        const isFirstSuDungRieng = /sử\s*dụng/i.test(first.prefixRieng);
+        const isItemSuDungRieng = /sử\s*dụng/i.test(p.prefixRieng);
+        if (isFirstSuDungRieng !== isItemSuDungRieng) return false;
+
+        if (first.kind === 'RIENG_CHUNG') {
+          const isFirstSuDungChung = /sử\s*dụng/i.test(first.prefixChung);
+          const isItemSuDungChung = /sử\s*dụng/i.test(p.prefixChung);
+          if (isFirstSuDungChung !== isItemSuDungChung) return false;
+        }
+        return true;
+      });
+
+    if (!canMerge) {
       return mergeAssetValues(items, (c: any) => c?.usageForm);
-    }
-
-    let totalRieng = 0;
-    let hasRieng = false;
-    let totalChung = 0;
-    let hasChung = false;
-    let anySuDung = false;
-    let allLowercase = true;
-    let unit = 'm2';
-
-    for (const p of parsed) {
-      if (p.rieng !== undefined) {
-        totalRieng += p.rieng;
-        hasRieng = true;
-      }
-      if (p.chung !== undefined) {
-        totalChung += p.chung;
-        hasChung = true;
-      }
-      if (p.hasSuDung) anySuDung = true;
-      if (!p.isLowercase) allLowercase = false;
-      if (p.unit === 'm²') unit = 'm²';
     }
 
     const formatNum = (val: number): string => {
       return val.toLocaleString('vi-VN', { useGrouping: false, maximumFractionDigits: 2 });
     };
 
-    const parts: string[] = [];
+    const unit = parsed.some((p) => p.riengUnit === 'm²' || p.chungUnit === 'm²') ? 'm²' : 'm2';
+    const totalRieng = parsed.reduce((sum, p) => sum + p.riengNum, 0);
 
-    if (hasRieng) {
-      let label = '';
-      if (anySuDung) {
-        label = allLowercase ? 'sử dụng riêng' : 'Sử dụng riêng';
-      } else {
-        label = allLowercase ? 'riêng' : 'Riêng';
-      }
-      parts.push(`${label}: ${formatNum(totalRieng)} ${unit}`);
+    if (first.kind === 'RIENG_ONLY') {
+      return `${first.prefixRieng}: ${formatNum(totalRieng)} ${unit}`;
     }
 
-    if (hasChung) {
-      let label = '';
-      if (anySuDung) {
-        label = allLowercase ? 'sử dụng chung' : 'Sử dụng chung';
+    if (first.kind === 'RIENG_CHUNG') {
+      const totalChung = parsed.reduce((sum, p) => sum + p.chungNum, 0);
+      let chungValDisplay = '';
+      if (totalChung > 0) {
+        chungValDisplay = `${formatNum(totalChung)} ${unit}`;
       } else {
-        label = allLowercase ? 'chung' : 'Chung';
+        const hasCapKhong = parsed.some((p) => p.chungText && p.chungText.includes('Không'));
+        const hasLowerKhong = parsed.some((p) => p.chungText && p.chungText.toLowerCase().includes('không'));
+        if (hasCapKhong) {
+          chungValDisplay = `Không ${unit}`;
+        } else if (hasLowerKhong) {
+          chungValDisplay = `không ${unit}`;
+        } else {
+          chungValDisplay = `0 ${unit}`;
+        }
       }
-      parts.push(`${label}: ${formatNum(totalChung)} ${unit}`);
-    }
 
-    if (parts.length > 0) {
-      return parts.join('; ');
+      return `${first.prefixRieng}: ${formatNum(totalRieng)} ${unit}; ${first.prefixChung}: ${chungValDisplay}`;
     }
 
     return mergeAssetValues(items, (c: any) => c?.usageForm);
