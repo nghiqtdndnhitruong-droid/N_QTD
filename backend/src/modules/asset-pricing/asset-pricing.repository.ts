@@ -29,7 +29,7 @@ export class AssetPricingRepository {
   }
 
   async findMany(query: AssetPricingFilterQuery): Promise<{ rules: AssetPricingRule[]; total: number }> {
-    const { page, limit, skip, sortBy, sortOrder } = parsePagination(query);
+    const { limit, skip, sortBy, sortOrder } = parsePagination(query);
 
     const where: Prisma.AssetPricingRuleWhereInput = {};
 
@@ -41,12 +41,16 @@ export class AssetPricingRepository {
       where.isActive = query.isActive;
     }
 
+    const orderBy: Prisma.AssetPricingRuleOrderByWithRelationInput[] = query.sortBy
+      ? [{ [sortBy]: sortOrder }]
+      : [{ sortOrder: 'asc' }, { createdAt: 'asc' }];
+
     const [rules, total] = await Promise.all([
       prisma.assetPricingRule.findMany({
         where,
         skip,
         take: limit,
-        orderBy: { [sortBy]: sortOrder },
+        orderBy,
       }),
       prisma.assetPricingRule.count({ where }),
     ]);
@@ -55,6 +59,12 @@ export class AssetPricingRepository {
   }
 
   async create(data: CreateAssetPricingRuleDto): Promise<AssetPricingRule> {
+    let order = data.sortOrder;
+    if (order === undefined) {
+      const count = await prisma.assetPricingRule.count();
+      order = count + 1;
+    }
+
     return prisma.assetPricingRule.create({
       data: {
         landCategory: data.landCategory,
@@ -62,6 +72,7 @@ export class AssetPricingRepository {
         effectiveDate: new Date(data.effectiveDate),
         isActive: data.isActive ?? true,
         note: data.note,
+        sortOrder: order,
       },
     });
   }
@@ -74,10 +85,27 @@ export class AssetPricingRepository {
     if (data.effectiveDate !== undefined) updateData.effectiveDate = new Date(data.effectiveDate);
     if (data.isActive !== undefined) updateData.isActive = data.isActive;
     if (data.note !== undefined) updateData.note = data.note;
+    if (data.sortOrder !== undefined) updateData.sortOrder = data.sortOrder;
 
     return prisma.assetPricingRule.update({
       where: { id },
       data: updateData,
+    });
+  }
+
+  async reorder(ruleIds: string[]): Promise<void> {
+    const updates = ruleIds.map((id, index) =>
+      prisma.assetPricingRule.update({
+        where: { id },
+        data: { sortOrder: index + 1 },
+      })
+    );
+    await prisma.$transaction(updates);
+  }
+
+  async delete(id: string): Promise<AssetPricingRule> {
+    return prisma.assetPricingRule.delete({
+      where: { id },
     });
   }
 }

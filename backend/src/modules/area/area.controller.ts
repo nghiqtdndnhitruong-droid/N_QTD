@@ -124,6 +124,18 @@ export class AreaController {
     res.status(200).json(response);
   };
 
+  deleteCommune = async (req: Request, res: Response): Promise<void> => {
+    const id = String(req.params.id);
+    const result = await this.service.deleteCommune(id);
+    const response: ApiResponse<typeof result> = {
+      success: true,
+      message: `Đã xóa "${result.deletedName}" khỏi danh mục địa bàn`,
+      data: result,
+      timestamp: new Date().toISOString(),
+    };
+    res.status(200).json(response);
+  };
+
   // ==========================================
   // AREA GROUP CONTROLLER
   // ==========================================

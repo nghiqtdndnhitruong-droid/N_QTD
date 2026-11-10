@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
 import {
   ArrowLeft,
   CheckCircle2,
@@ -64,6 +64,8 @@ import {
 export function LoanDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const currentTab = searchParams.get('tab') || 'overview';
   const [statusTarget, setStatusTarget] = useState<LoanStatus | null>(null);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
@@ -238,7 +240,19 @@ export function LoanDetailPage() {
       )}
 
       {/* Các Tab chi tiết hồ sơ */}
-      <Tabs defaultValue="overview">
+      <Tabs
+        value={currentTab}
+        onValueChange={(val) => {
+          setSearchParams(
+            (prev) => {
+              const next = new URLSearchParams(prev);
+              next.set('tab', val);
+              return next;
+            },
+            { replace: true }
+          );
+        }}
+      >
         <TabsList>
           <TabsTrigger value="overview">Tổng quan & Phương án vay</TabsTrigger>
           {isRelatedPersonEligible && (

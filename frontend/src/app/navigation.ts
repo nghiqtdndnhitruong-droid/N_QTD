@@ -3,6 +3,7 @@ import {
   BarChart3,
   BookOpen,
   CreditCard,
+  Database,
   FileText,
   LandPlot,
   LayoutDashboard,
@@ -20,6 +21,7 @@ export interface NavItem {
   to: string;
   icon: LucideIcon;
   permission?: Permission;
+  adminOnly?: boolean;
   exact?: boolean;
   devOnly?: boolean;
 }
@@ -27,6 +29,7 @@ export interface NavItem {
 export interface NavSection {
   title: string;
   items: NavItem[];
+  adminOnly?: boolean;
 }
 
 export const NAVIGATION_SECTIONS: NavSection[] = [
@@ -97,12 +100,19 @@ export const NAVIGATION_SECTIONS: NavSection[] = [
   },
   {
     title: 'Quản trị hệ thống',
+    adminOnly: true,
     items: [
       {
         label: 'Người dùng & Phân quyền',
         to: '/admin/users',
         icon: Shield,
-        permission: 'user:view',
+        adminOnly: true,
+      },
+      {
+        label: 'Sao lưu & Phục hồi dữ liệu',
+        to: '/admin/backup',
+        icon: Database,
+        adminOnly: true,
       },
       ...(env.isDev
         ? [
@@ -110,6 +120,7 @@ export const NAVIGATION_SECTIONS: NavSection[] = [
               label: 'Design System (DEV)',
               to: '/dev/ui',
               icon: SwatchBook,
+              adminOnly: true,
               devOnly: true,
             } satisfies NavItem,
           ]
@@ -130,6 +141,7 @@ export const BREADCRUMB_NAME_MAP: Record<string, string> = {
   '/settings/asset-pricing': 'Bảng giá định giá tài sản',
   '/reports': 'Báo cáo & Thống kê',
   '/admin/users': 'Người dùng hệ thống',
+  '/admin/backup': 'Sao lưu & Phục hồi dữ liệu',
   '/profile': 'Thông tin cá nhân',
   '/dev/ui': 'Design System',
 };

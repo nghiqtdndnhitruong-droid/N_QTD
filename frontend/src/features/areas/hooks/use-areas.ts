@@ -3,6 +3,7 @@ import { queryKeys } from '@/lib/query';
 import { areasApi } from '../api/areas.api';
 import type {
   CreateAreaGroupPayload,
+  CreateCommunePayload,
   CreateHamletPayload,
   UpdateAreaGroupPayload,
   UpdateHamletPayload,
@@ -42,6 +43,17 @@ export function useHamletsByCommune(communeId: string | undefined | null) {
   });
 }
 
+export function useCreateCommune() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: CreateCommunePayload) => areasApi.createCommune(payload),
+    onSuccess: (created) => {
+      void qc.invalidateQueries({ queryKey: queryKeys.areas.all });
+      void qc.invalidateQueries({ queryKey: queryKeys.areas.communes(created.provinceId) });
+    },
+  });
+}
+
 export function useCreateHamlet() {
   const qc = useQueryClient();
   return useMutation({
@@ -58,6 +70,16 @@ export function useUpdateHamlet() {
   return useMutation({
     mutationFn: ({ id, payload }: { id: string; payload: UpdateHamletPayload }) =>
       areasApi.updateHamlet(id, payload),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: queryKeys.areas.all });
+    },
+  });
+}
+
+export function useDeleteCommune() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => areasApi.deleteCommune(id),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: queryKeys.areas.all });
     },

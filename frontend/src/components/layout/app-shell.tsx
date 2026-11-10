@@ -37,6 +37,7 @@ function SidebarNavigation({
   onNavigate?: () => void;
 }) {
   const { can } = usePermission();
+  const user = useAuthStore((s) => s.user);
   const location = useLocation();
 
   const isItemActive = (item: NavItem, routerIsActive: boolean) => {
@@ -54,9 +55,11 @@ function SidebarNavigation({
     <div className="flex flex-1 flex-col justify-between overflow-y-auto px-2.5 py-4">
       <div className="space-y-5">
         {NAVIGATION_SECTIONS.map((section) => {
-          const visibleItems = section.items.filter(
-            (item) => !item.permission || can(item.permission),
-          );
+          if (section.adminOnly && user?.role !== 'ADMIN') return null;
+          const visibleItems = section.items.filter((item) => {
+            if (item.adminOnly && user?.role !== 'ADMIN') return false;
+            return !item.permission || can(item.permission);
+          });
           if (visibleItems.length === 0) return null;
 
           return (

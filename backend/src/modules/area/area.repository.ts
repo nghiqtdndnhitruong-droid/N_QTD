@@ -49,6 +49,24 @@ export class AreaRepository {
     });
   }
 
+  async findCommuneByNameInProvince(provinceId: string, name: string): Promise<Commune | null> {
+    return prisma.commune.findFirst({
+      where: {
+        provinceId,
+        name: { equals: name.trim(), mode: 'insensitive' },
+      },
+    });
+  }
+
+  async findCommuneByCodeInProvince(provinceId: string, code: string): Promise<Commune | null> {
+    return prisma.commune.findFirst({
+      where: {
+        provinceId,
+        code: code.trim().toUpperCase(),
+      },
+    });
+  }
+
   async findHamletsByCommune(
     communeId: string,
     search?: string,
@@ -216,6 +234,19 @@ export class AreaRepository {
       prisma.collateral.count({ where: { hamletId } }),
     ]);
     return { members, collaterals };
+  }
+
+  async deleteCommune(id: string) {
+    return prisma.commune.delete({ where: { id } });
+  }
+
+  async countCommuneUsage(communeId: string): Promise<{ members: number; collaterals: number; hamlets: number }> {
+    const [members, collaterals, hamlets] = await Promise.all([
+      prisma.member.count({ where: { communeId, isDeleted: { not: true } } }),
+      prisma.collateral.count({ where: { communeId } }),
+      prisma.hamlet.count({ where: { communeId } }),
+    ]);
+    return { members, collaterals, hamlets };
   }
 
   // ==========================================

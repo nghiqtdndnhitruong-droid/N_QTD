@@ -4,6 +4,7 @@ import type {
   AreaTreeProvince,
   Commune,
   CreateAreaGroupPayload,
+  CreateCommunePayload,
   CreateHamletPayload,
   Hamlet,
   Province,
@@ -46,6 +47,10 @@ export const areasApi = {
     });
   },
 
+  createCommune(payload: CreateCommunePayload): Promise<Commune> {
+    return apiPost<Commune, CreateCommunePayload>('/areas/communes', payload);
+  },
+
   getHamletsByCommune(communeId: string, search?: string): Promise<Hamlet[]> {
     return apiGet<Hamlet[]>(`/areas/communes/${communeId}/hamlets`, {
       params: search ? { search } : undefined,
@@ -67,6 +72,10 @@ export const areasApi = {
 
   updateHamlet(id: string, payload: UpdateHamletPayload): Promise<Hamlet> {
     return apiPut<Hamlet, UpdateHamletPayload>(`/areas/hamlets/${id}`, payload);
+  },
+
+  deleteCommune(id: string): Promise<{ id: string; deletedName: string }> {
+    return apiDelete<{ id: string; deletedName: string }>(`/areas/communes/${id}`);
   },
 
   deleteHamlet(id: string): Promise<{ id: string; deletedName: string }> {

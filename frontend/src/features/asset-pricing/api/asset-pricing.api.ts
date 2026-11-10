@@ -1,4 +1,4 @@
-import { apiGet, apiGetPaginated, apiPost, apiPut } from '@/lib/http';
+import { apiDelete, apiGet, apiGetPaginated, apiPatch, apiPost, apiPut } from '@/lib/http';
 import type { Paginated } from '@/shared/types';
 import type {
   AssetPricingListQuery,
@@ -34,6 +34,14 @@ export const assetPricingApi = {
       `/asset-pricing-rules/${id}`,
       payload,
     );
+  },
+
+  reorder(ruleIds: string[]): Promise<void> {
+    return apiPatch<void, { ruleIds: string[] }>('/asset-pricing-rules/reorder', { ruleIds });
+  },
+
+  delete(id: string): Promise<AssetPricingRule> {
+    return apiDelete<AssetPricingRule>(`/asset-pricing-rules/${id}`);
   },
 };
 

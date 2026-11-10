@@ -7,9 +7,14 @@ export interface CreateAssetPricingRuleDto {
   effectiveDate: string | Date;
   isActive?: boolean;
   note?: string;
+  sortOrder?: number;
 }
 
 export interface UpdateAssetPricingRuleDto extends Partial<CreateAssetPricingRuleDto> {}
+
+export interface ReorderAssetPricingDto {
+  ruleIds: string[];
+}
 
 export interface AssetPricingFilterQuery extends PaginationQuery {
   landCategory?: string;

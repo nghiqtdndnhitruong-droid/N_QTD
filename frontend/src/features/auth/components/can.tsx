@@ -51,3 +51,21 @@ export function RequirePermission({
   return children ? <>{children}</> : <Outlet />;
 }
 
+/**
+ * Bảo vệ các route yêu cầu vai trò người dùng cụ thể (ví dụ: ADMIN).
+ */
+export function RequireRole({
+  role,
+  children,
+}: {
+  role: 'CREDIT_OFFICER' | 'ADMIN';
+  children?: ReactNode;
+}) {
+  const user = useAuthStore((s) => s.user);
+  if (user?.role !== role) {
+    return <Navigate to="/403" replace />;
+  }
+  return children ? <>{children}</> : <Outlet />;
+}
+
+

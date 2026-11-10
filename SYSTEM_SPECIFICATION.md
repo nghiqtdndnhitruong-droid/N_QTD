@@ -1,7 +1,7 @@
 # HỆ THỐNG QUẢN LÝ TÍN DỤNG QUỸ TÍN DỤNG NHÂN DÂN (N_QTD)
 ## TÀI LIỆU ĐẶC TẢ KỸ THUẬT & TOÀN BỘ NGHIỆP VỤ HỆ THỐNG (SYSTEM SPECIFICATION)
 
-> **Phiên bản:** 3.4 (Full System Specification)  
+> **Phiên bản:** 3.10 (Full System Specification)  
 > **Ngày cập nhật:** 10/11/2026  
 > **Trạng thái:** Hoàn thiện và đang vận hành chính thức  
 > **Phạm vi áp dụng:** Toàn bộ hệ thống Backend, Frontend, Cơ sở dữ liệu và Động cơ Biểu mẫu Word (Word Template Engine v2.0)
@@ -23,6 +23,8 @@
    - 4.8. [Người liên quan & Người thừa kế (Related Person & Heir)](#48-người-liên-quan--người-thừa-kế-related-person--heir)
    - 4.9. [Giải ngân & Kế hoạch thu nợ (Disbursement & Repayment)](#49-giải-ngân--kế-hoạch-thu-nợ-disbursement--repayment)
    - 4.10. [Hệ thống Xác thực, Phân quyền & Hồ sơ Cán bộ (Auth & User Profile Module)](#410-hệ-thống-xác-thực-phân-quyền--hồ-sơ-cán-bộ-auth--user-profile-module)
+   - 4.11. [Báo cáo & Thống kê Tín dụng Chuyên sâu (Reports & Analytics Module)](#411-báo-cáo--thống-kê-tín-dụng-chuyên-sâu-reports--analytics-module)
+   - 4.12. [Sao lưu & Phục hồi Cơ sở dữ liệu Hệ thống (Database Backup & Restore Module)](#412-sao-lưu--phục-hồi-cơ-sở-dữ-liệu-hệ-thống-database-backup--restore-module)
 5. [ĐỘNG CƠ SINH BIỂU MẪU WORD TỰ ĐỘNG (WORD TEMPLATE ENGINE v2.0)](#5-động-cơ-sinh-biểu-mẫu-word-tự-động-word-template-engine-v20)
    - 5.1. [Kiến trúc Engine xử lý XML Word](#51-kiến-trúc-engine-xử-lý-xml-word)
    - 5.2. [Hệ thống từ khóa toàn cục (Global Keywords Dictionary)](#52-hệ-thống-từ-khóa-toàn-cục-global-keywords-dictionary)
@@ -230,7 +232,13 @@ erDiagram
   - **Cho vay Tín chấp (`TIN_CHAP`):** Áp dụng một mốc lãi suất duy nhất cho toàn bộ các khoản vay tín chấp không phân biệt số tiền hay kỳ hạn (kể cả ngắn hạn hay trung hạn).
   - **Chỉnh sửa / Xóa mốc lãi suất:** Cung cấp đầy đủ quyền chỉnh sửa và xóa các cấu hình / mốc lãi suất đã thiết lập.
   - **Tự động đồng bộ hồ sơ lưu nháp (`DANG_TAO`):** Khi ban hành mới, chỉnh sửa hoặc xóa mốc lãi suất, hệ thống tự động đồng bộ và cập nhật lại mức lãi suất mới nhất cho toàn bộ các khoản vay đang ở trạng thái lưu nháp (`DANG_TAO`). Cơ chế này đảm bảo ngoài danh mục khoản vay (`LoanListPage`), chi tiết khoản vay (`LoanDetailPage`), và Phương án vay vốn ở Bước 4 (`LoanPlan` - dòng chi phí trả lãi vay) đều lập tức phản ánh và tính toán theo đúng mốc lãi suất mới mà không bị găm lãi suất cũ.
-- **Bảng giá đất:** Quản lý đơn giá đất của Quỹ và Nhà nước theo từng danh mục đất (đất ruộng, đất cập lộ, cập kênh...). Cán bộ tín dụng có thể bấm 1 nút trên giao diện định giá để tự động điền đơn giá chuẩn mà không cần tra cứu thủ công.
+- **Bảng giá đất:**
+  - Quản lý đơn giá đất của Quỹ và Nhà nước theo từng danh mục đất (đất ruộng, đất cập lộ, cập kênh...). Cán bộ tín dụng có thể bấm 1 nút trên giao diện định giá để tự động điền đơn giá chuẩn mà không cần tra cứu thủ công.
+  - **Tính năng di chuyển / sắp xếp thứ tự linh hoạt (Reorder):**
+    - Cho phép di chuyển vị trí từng dòng giá đất lên trên (`ArrowUp`) hoặc xuống dưới (`ArrowDown`) ngay tại danh mục Bảng giá tài sản.
+    - CSDL lưu trữ trường `sortOrder` và tự động cập nhật qua transaction nguyên tử `PATCH /api/v1/asset-pricing-rules/reorder`.
+    - **Đồng bộ vị trí tùy chọn khi lập hồ sơ định giá:** Thứ tự sắp xếp trong danh mục này được đồng bộ 100% sang danh sách dropdown (`SelectInput`) tại màn hình định giá tài sản của khoản vay (Bước 5), giúp cán bộ thao tác áp giá đất theo đúng thứ tự quen thuộc đã định hình.
+  - **Tính năng Xóa quy định đơn giá:** Hỗ trợ nút Xóa trực tiếp trên từng dòng kèm hộp thoại xác nhận `ConfirmDialog`, đồng bộ xóa vĩnh viễn qua `DELETE /api/v1/asset-pricing-rules/:id` và dọn sạch khỏi ô chọn định giá.
 
 ### 4.4. Hồ sơ Khoản vay & Quy trình Wizard 6 bước (Loan Module)
 Quy trình lập hồ sơ vay vốn được thiết kế dưới dạng Wizard 6 bước thông minh, phản ứng linh hoạt theo loại vay:
@@ -270,6 +278,16 @@ flowchart LR
 - Khả năng trả nợ:
   $$\text{Lợi nhuận ròng} = \text{Tổng nguồn thu} - \text{Tổng chi phí}$$
 - Hỗ trợ nhập danh sách các khoản chi phí và nguồn thu linh hoạt; tự động cộng dồn và cung cấp các biến gộp để xuất văn bản: `PHUONG_AN.CHI_PHI_GOP`, `PHUONG_AN.NGUON_THU_GOP`, các vòng lặp bảng biểu.
+- **Mẫu phương án vay vốn định hình sẵn (Loan Plan Templates):**
+  - **Mẫu sửa nhà (`SUA_NHA`):**
+    - Mục đích vay vốn (`purpose`): Cố định chính xác chuỗi ký tự `"Sửa nhà"`.
+    - Danh mục chi phí: 2 chi phí đầu tiên gồm `Tiền mua vật liệu xây dựng` (mặc định 80% tổng nhu cầu vốn) và `Tiền công thợ` (mặc định 20% tổng nhu cầu vốn).
+    - **Cơ chế nhảy số tự động (Auto-rebalancing):** Tổng của 2 chi phí đầu luôn bằng `Tổng nhu cầu vốn`. Khi người dùng sửa số tiền tại `Tiền mua vật liệu xây dựng` hoặc `Tiền công thợ`, chi phí còn lại sẽ tự động nhảy bù trừ (`Tổng nhu cầu vốn - Số vừa nhập`). Khi `Tổng nhu cầu vốn` thay đổi, chi phí công thợ tự động nhảy theo số chênh lệch.
+    - Chi phí trả lãi tiền vay: Tự động tính toán theo số tiền vay thực tế, lãi suất và kỳ hạn vay.
+  - **Mẫu chăn nuôi (`CHAN_NUOI`):**
+    - Mục đích vay vốn (`purpose`): Cố định chính xác chuỗi ký tự `"Chăn nuôi bò sinh sản x con"`.
+    - Danh mục chi phí: 3 chi phí đầu tiên gồm `Tiền mua con giống` (mặc định 80%), `Tiền xây dựng chuồng trại` (mặc định 15%) và `Tiền thức ăn` (mặc định 5%).
+    - **Cơ chế nhảy số tự động (Auto-rebalancing):** Tổng của 3 chi phí đầu luôn bằng `Tổng nhu cầu vốn`. Khi người dùng chỉnh sửa số tiền ở bất kỳ chi phí nào trong 3 chi phí trên, chi phí liên đới (thức ăn / chuồng trại) sẽ tự động nhảy bù trừ tương ứng. Khi `Tổng nhu cầu vốn` thay đổi, chi phí tiền thức ăn tự động cập nhật để đảm bảo tổng 3 chi phí luôn khớp hoàn toàn với tổng nhu cầu vốn.
 
 ### 4.6. Tài sản thế chấp & Chủ sở hữu (Collateral Module)
 - **Tự động sinh mã tài sản:** Mỗi tài sản thế chấp khi lưu trữ được hệ thống gán một mã định danh duy nhất không trùng lặp (ví dụ: `TS-001`, `TS-002`...).
@@ -402,6 +420,49 @@ Mỗi tài khoản được liên kết 1:1 với một hồ sơ cá nhân (`use
   - Drawer thêm mới và chỉnh sửa hồ sơ cán bộ.
   - Dialog Đặt lại mật khẩu (Reset password) an toàn.
   - Xác nhận Khóa / Mở khóa tài khoản cán bộ kèm hộp thoại cảnh báo `ConfirmDialog`.
+
+### 4.11. Báo cáo & Thống kê Tín dụng Chuyên sâu (Reports & Analytics Module)
+Phân hệ Báo cáo & Thống kê (`/reports`) được tổ chức thành 3 tab nghiệp vụ chuyên biệt:
+1. **Xuất danh sách khoản vay đã giải ngân (`disbursed`):**
+   - Hỗ trợ chọn khoảng thời gian (`Từ ngày` đến `Đến ngày`). Ô nhập liệu tự động chuẩn hóa định dạng `dd/mm/yyyy` (tự động thêm dấu `/` khi gõ).
+   - Xuất file Excel chuẩn gồm 2 sheet:
+     - **Sheet 1: Tín chấp:** STT, Số HĐ (Số khế ước), Tên người vay, Địa bàn (Ấp), Ngày vay, Ngày tới hạn (khoản vay trung hạn lấy mốc 1 năm - tới hạn thanh toán phân nửa), Số tiền vay, Số tờ, Diện tích tài sản, Mã tài sản, Loại tài sản.
+     - **Sheet 2: Thế chấp:** Các cột tương tự, bổ sung cột `Tổng giá trị tài sản` nằm ngay trước cột `Loại tài sản`.
+     - Chỉ trích xuất các khoản vay đã được giải ngân thực tế (`status === 'DA_GIAI_NGAN'`).
+2. **Danh sách tới hạn theo tháng (`maturity`):**
+   - Hỗ trợ chọn Tháng (1 - 12) và Năm.
+   - Xuất file Excel chứa sheet tới hạn của tháng tương ứng với các cột: STT, Họ tên, Số giấy tờ, Địa bàn (Ấp), Số tiền vay, Ngày tới hạn.
+3. **Khoản vay chậm đóng lãi (`unpaid-interest`):**
+   - Bộ lọc chuyên sâu theo số tháng chưa đóng lãi: 3 tháng, 4 tháng hoặc tất cả các khoản vay quá hạn đóng lãi.
+   - Hiển thị trực quan: Tên thành viên vay, Số điện thoại liên hệ trực tiếp, Số khế ước, Số tiền vay, Lãi suất, Ngày vay, Số ngày chưa đóng lãi, Số tiền lãi tạm tính còn thiếu.
+   - Tích hợp nút hành động / liên kết nhanh đưa cán bộ trực tiếp sang tab Thu lãi / Thu nợ của khoản vay đó để thực hiện nghiệp vụ thu hồi nợ tức thì.
+
+### 4.12. Sao lưu & Phục hồi Cơ sở dữ liệu Hệ thống (Database Backup & Restore Module)
+- **Tách biệt phân hệ độc lập (`/admin/backup`):** Phân hệ Sao lưu & Phục hồi dữ liệu được tách thành một menu riêng biệt trong phần "Quản trị hệ thống".
+- **Phân quyền tuyệt đối (Admin-only):**
+  - **Backend:** Toàn bộ API `/api/v1/system/backup`, `/api/v1/system/restore`, `/api/v1/system/stats` đều được gắn middleware `requireRole(UserRole.ADMIN)`. Cán bộ tín dụng không thể truy xuất hay kích hoạt.
+  - **Frontend:** Menu được đánh dấu `adminOnly: true` (ẩn hoàn toàn khỏi Sidebar và Drawer của cán bộ). Route `/admin/backup` được bảo vệ bằng component `<RequireRole role="ADMIN">` (tự động chuyển hướng về `/403` nếu người dùng không phải Admin).
+- **Tính năng Sao lưu dữ liệu (Export Database):**
+  - Xuất toàn bộ cơ sở dữ liệu (toàn bộ 19 collection của hệ thống: Người dùng, Thành viên, Khoản vay, Tài sản, Định giá, Biểu lãi suất, Bảng giá đất, Biểu mẫu Word, Audit Log...).
+  - Đính kèm metadata chi tiết: Phiên bản hệ thống, thời gian tạo, tên cán bộ thực hiện, tổng số bản ghi và checksum mã hóa (SHA-256) để kiểm tra toàn vẹn.
+- **Tính năng Phục hồi dữ liệu (Restore Database):**
+  - Cho phép chọn file `.json` đã sao lưu trước đó.
+  - Kiểm tra tính hợp lệ của cấu trúc file, schema version và checksum.
+  - Cơ chế dọn dẹp dữ liệu cũ theo đúng thứ tự reverse-dependency để tránh xung đột ràng buộc khóa ngoại.
+  - Chuẩn hóa toàn bộ chuỗi thời gian (ISO Date strings) sang định dạng `Date` đối tượng của MongoDB.
+  - Tự động ghi lại nhật ký kiểm toán hệ thống (`audit_logs`) sau khi phục hồi thành công.
+- **Tính năng Làm sạch Cơ sở dữ liệu (Clean Database / Reset):**
+  - Phục vụ mục đích làm sạch hệ thống dữ liệu hoặc khởi tạo lại môi trường vận hành mới.
+  - Được bảo vệ bằng hộp thoại xác nhận đa tầng `ConfirmDialog` với cảnh báo nghiêm ngặt về việc không thể hoàn tác.
+  - **Quy tắc bảo toàn dữ liệu đặc thù:**
+    - **XÓA SẠCH:** Toàn bộ thành viên, hồ sơ vay, tài sản thế chấp, định giá, giao dịch giải ngân, lịch sử thu nợ/lãi, địa bàn, lãi suất, bảng giá đất và các tài khoản cán bộ tín dụng.
+    - **CHỈ GIỮ LẠI:**
+      1. Tài khoản Quản trị viên **`ADMIN`** và hồ sơ cá nhân của Admin.
+      2. Toàn bộ **Thư viện từ khóa biểu mẫu Word** (`GlobalWordKeyword`).
+      3. Toàn bộ các **Mẫu biểu Word** đã tải lên kèm cấu hình ánh xạ (`WordTemplate`, `WordTemplateVersion`, `WordTemplateMapping`).
+  - Ghi vết kiểm toán `DATABASE_CLEAN` vào `audit_logs` sau khi hoàn tất.
+- **Khóa toàn bộ nhóm "Quản trị hệ thống" (Admin-Only Enforcement):**
+  - Toàn bộ các tab trong nhóm Quản trị hệ thống gồm: *Người dùng & Phân quyền* (`/admin/users`), *Sao lưu & Phục hồi dữ liệu* (`/admin/backup`) và *Design System DEV* (`/dev/ui`) đều được ẩn hoàn toàn khỏi giao diện người dùng thường và khóa cứng bằng route guard `<RequireRole role="ADMIN">` cùng backend middleware `requireRole(UserRole.ADMIN)`.
 
 ---
 
@@ -613,6 +674,10 @@ Hệ thống cài đặt các thuật toán ghép chuỗi pháp lý cực kỳ n
 | **v3.6 (Bổ sung bộ từ khóa Cán bộ đang đăng nhập - CAN_BO.*)** | - **Tự động nhận diện Cán bộ đang thao tác:**<br>  1. Tích hợp middleware xác thực `optionalAuthenticateToken` trên toàn bộ các route Word Template, tự động nhận diện tài khoản cán bộ đăng nhập qua Bearer JWT Token.<br>  2. Khi chạy xem trước (`previewTemplate`) hoặc xuất tài liệu (`exportLoanDocuments`), hệ thống tự động truyền đối tượng người dùng hiện tại kèm hồ sơ cá nhân (`user.profile`) vào bộ dữ liệu context.<br>  3. Hỗ trợ fallback tự động tìm cán bộ/quản trị viên kích hoạt đầu tiên trong hệ thống nếu chạy từ các kịch bản nền không có token.<br>- **Bộ từ khóa chuẩn hóa Cán bộ (`CAN_BO.*`):**<br>  - **Họ và tên:** `{{CAN_BO.HO_TEN}}`, `{{CAN_BO.HO_TEN_IN_HOA}}`, `{{CAN_BO_HO_TEN}}`, `{{CAN_BO}}`<br>  - **Loại giấy tờ:** `{{CAN_BO.LOAI_GIAY_TO}}`, `{{CAN_BO_LOAI_GIAY_TO}}` (chuẩn hóa "Căn cước công dân" hoặc "Căn cước")<br>  - **Số giấy tờ / CCCD:** `{{CAN_BO.SO_GIAY_TO}}`, `{{CAN_BO.SO_CCCD}}`, `{{CAN_BO_SO_GIAY_TO}}`, `{{CAN_BO_SO_CCCD}}`<br>  - **Nơi cấp:** `{{CAN_BO.NOI_CAP}}`, `{{CAN_BO.NOI_CAP_GIAY_TO}}`, `{{CAN_BO_NOI_CAP}}`<br>  - **Ngày cấp:** `{{CAN_BO.NGAY_CAP}}`, `{{CAN_BO_NGAY_CAP}}` (DD/MM/YYYY), kèm phân rã `{{CAN_BO.NGAY_CAP_NGAY}}`, `{{CAN_BO.NGAY_CAP_THANG}}`, `{{CAN_BO.NGAY_CAP_NAM}}`<br>  - **Giới tính:** `{{CAN_BO.GIOI_TINH}}`, `{{CAN_BO_GIOI_TINH}}` ("Nam" hoặc "Nữ")<br>  - **Năm sinh:** `{{CAN_BO.NAM_SINH}}`, `{{CAN_BO_NAM_SINH}}`<br>  - **Danh xưng & Chức vụ:** `{{CAN_BO.DANH_XUNG}}` ("Ông"/"Bà"), `{{CAN_BO.CHUC_VU}}` ("Cán bộ tín dụng" / "Quản trị hệ thống")<br>- **Đồng bộ Từ điển Dữ liệu & Thư viện Toàn cục:** Thêm nhóm `CAN_BO` vào Data Dictionary (`DataDictionaryGroup`) và Thư viện Từ khóa Toàn cục (`GlobalWordKeyword`), đồng thời bổ sung bộ lọc nhóm `CAN_BO` trên giao diện Tra cứu từ khóa (`TemplateCatalogPage`). |
 | **v3.7 (Khắc phục lỗi Dư Dấu Ngoặc Nhọn & Làm Sạch Track Changes Biểu Mẫu Word)** | - **Cơ chế Tự động Chuẩn hóa Dấu Ngoặc Nhọn (`normalizeTemplateBraces`):**<br>  1. Tự động thu gọn và làm sạch các trường hợp dư thừa 3 hoặc 4 dấu ngoặc nhọn do gõ nhầm hoặc bộ gõ tiếng Việt / Word tạo ra (ví dụ: `{{{{#IF CO_TRONG_NHOM_2}}`, `{{{{#IF CO_TRONG_NHOM_2}}}}`, `{{{#IF CO_TRONG_NHOM_2}}}`, `{{#IF CO_TRONG_NHOM_2}}}}`, `{{{{/IF}}}}`, `{{{{CAN_BO.HO_TEN}}}}`...) về chuẩn xác dạng `{{...}}`.<br>  2. Tự động chuẩn hóa các dấu ngoặc bị gõ cách rời rạc bằng khoảng trắng (ví dụ: `{ { #IF ... } }` $\rightarrow$ `{{#IF ...}}`).<br>- **Loại bỏ Hoàn toàn Dấu vết Track Changes / Revision Deletion (`<w:del>`, `<w:delText>`):**<br>  - Microsoft Word thường lưu các ký tự đã bị xóa vào thẻ `<w:del>` và `<w:delText>`. Khi trích xuất văn bản từ XML, các ký tự xóa này bị dính liền vào thẻ mới tạo nên hiện tượng `{{{{`. Hệ thống tự động loại bỏ triệt để toàn bộ các thẻ `<w:del>` trước khi reconciliation và phân tích cú pháp.<br>- **Nâng cấp Toàn bộ 4 Tầng Pipeline Động Cơ Word:**<br>  1. `WordXmlReconciler`: Tự động lọc sạch `<w:del>`, chuẩn hóa các run `<w:t>` và ghép nối hoàn hảo các tag bị xé lẻ giữa các thẻ `<w:r>`.<br>  2. `WordTemplateParserService`: Loại bỏ `<w:del>` và chuẩn hóa ngoặc nhọn trong `extractTextFromXml` khi đọc file DOCX.<br>  3. `TemplateAstParser`: Cập nhật regex chấp nhận từ 2 dấu ngoặc trở lên (`/{ {2,}\s*([\s\S]*?)\s*}{2,}/g`), cắt bỏ ngoặc nhọn thừa hai đầu, loại bỏ hoàn toàn lỗi `UNKNOWN_TAG_SYNTAX` đối với các thẻ bị dư dấu ngoặc.<br>  4. `WordTemplateCompiler`: Hỗ trợ regex linh hoạt cho các lệnh `#IF`, `#ELSE IF`, `#ELSE` (kể cả có hoặc không có dấu `#`), `/IF`, `#FOR`, `/FOR`, và chuẩn hóa lần cuối toàn bộ XML trước khi Docxtemplater thực hiện rendering.<br>- Người dùng không còn phải tự xóa và gõ lại dấu ngoặc trong file Word khi gặp hiện tượng này. |
 | **v3.8 (Làm Sạch và Tinh Gọn Toàn Bộ Thư Viện Từ Khóa Hệ Thống)** | - **Rà soát Đối chiếu Toàn diện 44 Biểu Mẫu:**<br>  - Thực hiện quét tự động toàn bộ 44 file biểu mẫu Word (.docx) đang có trên hệ thống (bao gồm các file biểu mẫu active trong database, thư mục uploads và thư mục template/done).<br>- **Loại bỏ Triệt để 280 Từ khóa Không Sử Dụng:**<br>  - Xóa sạch 280 từ khóa rác/dư thừa/không có mẫu nào sử dụng trong cơ sở dữ liệu MongoDB (`global_word_keywords`).<br>  - Cập nhật và tinh gọn mã nguồn khởi tạo `seedDefaultCatalog` trong `global-word-keyword.service.ts` từ 3.324 dòng xuống còn 1.387 dòng, chỉ duy trì đúng **106 từ khóa chuẩn mực** thuộc 9 nhóm nghiệp vụ đang được sử dụng thực tế.<br>- **Hiệu quả:**<br>  - Giao diện Thư viện Từ khóa (`TemplateCatalogPage`) hiển thị gọn gàng, sạch sẽ, không còn các từ khóa mồ côi.<br>  - Đảm bảo 100% tính toàn vẹn khi biên dịch và xuất văn bản DOCX, tốc độ tra cứu và mapping tăng đáng kể. |
+| **v3.9 (Phân Hệ Báo Cáo Thống Kê & Xuất Excel Chuẩn Hóa)** | - **Gỡ bỏ Tính năng Xuất Excel Cũ & Tái Cấu Trúc Toàn Bộ Trang Báo Cáo (`ReportsPage`):**<br>  - Thay thế toàn bộ 3 tab cũ và tính năng export dummy bằng 2 tab nghiệp vụ chuyên sâu: **"Khoản vay đã giải ngân"** và **"Danh sách tới hạn"**.<br>- **Tab 1: Khoản vay đã giải ngân (`disbursed`):**<br>  1. Bộ lọc ngày thông minh: "Từ ngày" và "Đến ngày" với `DateInput` (tự động thêm dấu `/` khi gõ theo định dạng `dd/mm/yyyy`).<br>  2. Chỉ lọc các hồ sơ khoản vay đã giải ngân (`status: DA_GIAI_NGAN`).<br>  3. Xuất file Excel (.xlsx) đa sheet chuyên nghiệp bằng `exceljs` gồm đúng 2 sheet:<br>     - **Sheet 1 (`Tín chấp` - 11 cột):** `STT`, `Số HĐ` (Số khế ước), `Tên người vay`, `Địa bàn` (lấy cấp Ấp), `Ngày vay`, `Ngày tới hạn` (trung hạn tính mốc 1 năm trả 1/2 vốn), `Số tiền vay`, `Số tờ` (tổng tài sản), `Diện tích tài sản`, `Mã tài sản`, `Loại tài sản`.<br>     - **Sheet 2 (`Thế chấp` - 12 cột):** Cấu trúc tương tự Tín chấp nhưng có thêm 1 cột **`Tổng giá trị tài sản`** nằm ngay trước cột `Loại tài sản`.<br>  4. Hỗ trợ xem trước (preview) dữ liệu từng sheet, thẻ thống kê tổng số hồ sơ, tổng dư nợ giải ngân và tổng giá trị định giá.<br>- **Tab 2: Danh sách tới hạn (`maturity`):**<br>  1. Bộ lọc chọn **Tháng** (1 - 12) và **Năm**.<br>  2. Tự động tính toán ngày tới hạn theo đặc thù tín dụng: Vay ngắn hạn (mốc đáo hạn 12 tháng); Vay trung hạn (mốc 1 năm trả 1 nửa vốn hoặc mốc đáo hạn toàn phần).<br>  3. Xuất file Excel (.xlsx) 1 sheet chứa đầy đủ 6 cột chuẩn mực: `STT`, `Họ tên`, `Số giấy tờ`, `Địa bàn` (lấy cấp Ấp), `Số tiền vay`, `Ngày tới hạn`.<br>  4. Thống kê tổng hợp số hồ sơ và tổng dư nợ đến hạn thanh toán trong tháng được chọn. |
+| **v3.10 (Bổ Sung Tab Nợ Chậm Đóng Lãi & Tab Sao Lưu / Phục Hồi Cơ Sở Dữ Liệu)** | - **Tab 3: Khoản vay Chậm đóng lãi (`unpaid-interest`):**<br>  1. **Bộ lọc linh hoạt:** Lọc theo số tháng chậm đóng lãi (Chậm từ 3 tháng trở lên, Đúng 3 tháng, Đúng 4 tháng, Từ 4 tháng trở lên, hoặc Tất cả) và thanh tìm kiếm tức thời theo Tên, Số điện thoại, Số HĐ hoặc CCCD.<br>  2. **Hiển thị thông tin liên lạc & nợ lãi:**<br>     - Cột Số điện thoại người vay được hiển thị nổi bật với liên kết gọi điện `tel:...` 1-click giúp cán bộ gọi nhắc nợ dễ dàng.<br>     - Cột Số tiền lãi chưa đóng hiển thị số tiền to, đậm, màu đỏ tính chuẩn xác theo ngày sinh lãi đến hiện tại.<br>     - Cột Số tháng chậm đóng lãi kèm huy hiệu trực quan (3 tháng màu cam, từ 4 tháng màu đỏ cảnh báo).<br>  3. **Tương tác 1-click:** Bấm vào bất kỳ dòng nào hoặc nút "Thu lãi ngay" sẽ điều hướng thẳng đến tab **"Thu nợ gốc & lãi"** (`/loans/:id?tab=repayments`) của chính khoản vay đó.<br>  4. **Xuất file Excel:** Hỗ trợ xuất file Excel danh sách các khoản vay chậm đóng lãi phục vụ kiểm tra và nhắc nợ tại địa bàn.<br>- **Tab 4: Sao lưu & Tải lên Cơ sở dữ liệu (`backup-restore`):**<br>  1. **Sao lưu dữ liệu (Backup):** Bấm nút "Sao lưu dữ liệu ngay" sẽ xuất toàn bộ cơ sở dữ liệu hệ thống (19 collections: Người dùng, Thành viên, Khoản vay, Tài sản, Định giá, Người liên quan, Giải ngân, Lịch sử Thu nợ/lãi, Biểu mẫu Word, Cấu hình lãi suất...) ra 1 file JSON độc lập đính kèm đầy đủ metadata và dấu thời gian.<br>  2. **Tải lên & Phục hồi dữ liệu (Restore):** Cho phép chọn file sao lưu `.json` và nạp lại toàn bộ dữ liệu vào hệ thống. Tích hợp thuật toán bảo toàn quan hệ phụ thuộc (xóa theo thứ tự đảo ngược, khôi phục ngày tháng từ ISO string và nạp theo lô). Hộp thoại `ConfirmDialog` xác nhận cảnh báo an toàn trước khi thực thi. |
+| **v3.11 (Bảo Mật Quản Trị Hệ Thống, Làm Sạch CSDL, Phương Án Mẫu & Sắp Xếp/Xóa Bảng Giá)** | - **Bảo mật Quản trị Hệ thống (Admin-Only):** Toàn bộ các tab quản trị hệ thống (`/admin/users`, `/admin/backup`, `/dev/ui`) chỉ hiển thị và cho phép truy cập bởi tài khoản vai trò `ADMIN`. Cán bộ tín dụng truy cập trực tiếp bằng URL sẽ bị chặn và chuyển hướng an toàn.<br>- **Làm Sạch Cơ Sở Dữ Liệu (Clean Database):** Nút làm sạch dữ liệu trong trang Sao lưu cho phép xóa sạch toàn bộ dữ liệu nghiệp vụ (hồ sơ vay, thành viên, tài sản, định giá, trả nợ, giải ngân, bảng giá tài sản...), bảo toàn duy nhất tài khoản Admin, Thư viện Từ khóa Toàn cục và Danh mục Mẫu Word.<br>- **Nhảy Số Tự Động Phương Án Mẫu (Sửa Nhà & Chăn Nuôi):**<br>  1. Mẫu "Sửa nhà": Mục đích ghi đúng chữ "Sửa nhà"; 2 chi phí đầu tiên (tiền vật liệu, tiền công thợ) tự động cân đối theo tổng nhu cầu vốn.<br>  2. Mẫu "Chăn nuôi": Mục đích ghi đúng chữ "Chăn nuôi bò sinh sản x con"; 3 chi phí đầu tiên (tiền mua con giống, chuồng trại, thức ăn) tự động nhảy số theo tổng nhu cầu vốn.<br>- **Sắp Xếp & Xóa Bảng Giá Tài Sản:** Cho phép di chuyển thứ tự (Lên/Xuống) và Xóa đơn giá trong Bảng giá đất (`/settings/asset-pricing`). Thứ tự sắp xếp được đồng bộ tức thì vào danh sách chọn loại đất trong bước định giá khoản vay. |
+| **v3.12 (Bổ Sung Tính Năng Thêm & Xóa Xã Trong Quản Lý Địa Bàn Hành Chính)** | - **Thêm Xã Mới (`QuickCreateCommuneDialog`):**<br>  1. Bổ sung nút **"Thêm Xã mới"** tại PageHeader và Card trạng thái rỗng trên trang Quản lý địa bàn (`/settings/areas`).<br>  2. Hộp thoại tạo nhanh xã cho phép chọn Tỉnh trực thuộc, nhập Tên Xã (tự động chuẩn hóa tiền tố "Xã" nếu chỉ nhập tên riêng như "Long Sơn" $\rightarrow$ "Xã Long Sơn") và Mã Xã tùy chọn (tự động slugify từ tên nếu để trống).<br>  3. Kiểm tra chống trùng tên hoặc trùng mã xã trong cùng một Tỉnh (`AREA_ALREADY_EXISTS`), lưu vào MongoDB và tự động ghi nhật ký kiểm toán `AuditLog` action `CREATE_COMMUNE`.<br>- **Xóa Xã (`Commune`):** Bổ sung nút "Xóa xã" trên từng thẻ xã tại trang Quản lý địa bàn (`/settings/areas`).<br>- **Ràng buộc an toàn tuyệt đối:**<br>  1. Chặn xóa và hiển thị thông báo lỗi thân thiện nếu xã đang được tham chiếu bởi bất kỳ hồ sơ thành viên (`Member`) hoặc tài sản thế chấp (`Collateral`) nào.<br>  2. Nếu không có dữ liệu nghiệp vụ tham chiếu: tự động xóa sạch các ấp trực thuộc (`Hamlet`), gỡ liên kết khỏi các nhóm địa bàn (`AreaGroup.communeIds`), xóa bản ghi xã khỏi database và ghi nhận nhật ký kiểm toán (`AuditLog`).<br>- **Giao diện & Trải nghiệm:** Hộp thoại `ConfirmDialog` cảnh báo số lượng ấp trực thuộc bị ảnh hưởng và yêu cầu xác nhận trước khi thực hiện. Tự động bỏ lọc xã đang chọn nếu xã đó vừa bị xóa. |
 
 ---
 

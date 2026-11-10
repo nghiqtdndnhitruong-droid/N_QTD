@@ -41,6 +41,7 @@ router.post(
   validate({ body: createCommuneSchema }),
   asyncHandler(areaController.createCommune)
 );
+router.delete('/communes/:id', asyncHandler(areaController.deleteCommune));
 
 router.post(
   '/hamlets',

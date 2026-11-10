@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import type { ColumnDef } from '@tanstack/react-table';
-import { Pencil, Plus } from 'lucide-react';
+import { ArrowDown, ArrowUp, Pencil, Plus, Trash2 } from 'lucide-react';
 import { formatDateVN, formatVND, toApiDate } from '@/shared/format';
 import { apiDateStringSchema, positiveVndSchema } from '@/shared/validation';
 import { applyServerErrorsToForm } from '@/lib/http';
@@ -29,6 +29,8 @@ import { Can } from '@/features/auth/components/can';
 import {
   useAssetPricingList,
   useCreateAssetPricing,
+  useDeleteAssetPricing,
+  useReorderAssetPricing,
   useUpdateAssetPricing,
 } from '../hooks/use-asset-pricing';
 import type { AssetPricingRule } from '../types/asset-pricing.types';
@@ -55,6 +57,41 @@ export function AssetPricingPage() {
 
   const createMutation = useCreateAssetPricing();
   const updateMutation = useUpdateAssetPricing();
+  const reorderMutation = useReorderAssetPricing();
+  const deleteMutation = useDeleteAssetPricing();
+
+  const [deletingRule, setDeletingRule] = useState<AssetPricingRule | null>(null);
+
+  const items = data?.items || [];
+
+  const handleConfirmDelete = async () => {
+    if (!deletingRule) return;
+    try {
+      await deleteMutation.mutateAsync(deletingRule.id);
+      notifySuccess(`Đã xóa đơn giá "${deletingRule.landCategory}"`);
+      setDeletingRule(null);
+    } catch (err) {
+      notifyApiError(err);
+    }
+  };
+
+  const handleMoveRule = async (index: number, direction: 'UP' | 'DOWN') => {
+    const targetIndex = direction === 'UP' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= items.length) return;
+
+    const nextItems = [...items];
+    const [moved] = nextItems.splice(index, 1);
+    if (!moved) return;
+    nextItems.splice(targetIndex, 0, moved);
+
+    const ruleIds = nextItems.map((r) => r.id);
+    try {
+      await reorderMutation.mutateAsync(ruleIds);
+      notifySuccess(`Đã di chuyển "${moved.landCategory}" ${direction === 'UP' ? 'lên trên' : 'xuống dưới'}`);
+    } catch (err) {
+      notifyApiError(err);
+    }
+  };
 
   const { control, handleSubmit, reset, setError } = useForm<PricingFormValues>({
     resolver: zodResolver(pricingSchema),
@@ -118,6 +155,37 @@ export function AssetPricingPage() {
   const columns = useMemo<ColumnDef<AssetPricingRule>[]>(
     () => [
       {
+        id: 'reorder',
+        header: 'Thứ tự',
+        meta: { align: 'center' },
+        cell: ({ row }) => {
+          const idx = row.index;
+          const total = items.length;
+          return (
+            <div className="flex items-center justify-center gap-1">
+              <button
+                type="button"
+                disabled={idx === 0 || reorderMutation.isPending}
+                title="Di chuyển lên trên"
+                onClick={() => handleMoveRule(idx, 'UP')}
+                className="p-1 rounded text-slate-500 hover:text-primary-700 hover:bg-slate-100 disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
+              >
+                <ArrowUp className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                disabled={idx === total - 1 || reorderMutation.isPending}
+                title="Di chuyển xuống dưới"
+                onClick={() => handleMoveRule(idx, 'DOWN')}
+                className="p-1 rounded text-slate-500 hover:text-primary-700 hover:bg-slate-100 disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
+              >
+                <ArrowDown className="h-4 w-4" />
+              </button>
+            </div>
+          );
+        },
+      },
+      {
         accessorKey: 'landCategory',
         header: 'Phân loại đất / Vị trí',
         cell: ({ row }) => (
@@ -162,21 +230,34 @@ export function AssetPricingPage() {
         header: 'Thao tác',
         meta: { align: 'right' },
         cell: ({ row }) => (
-          <Can perm="asset-pricing:update">
-            <Button
-              variant="ghost"
-              size="sm"
-              leftIcon={<Pencil className="h-3.5 w-3.5" />}
-              onClick={() => openEdit(row.original)}
-            >
-              Cập nhật
-            </Button>
-          </Can>
+          <div className="flex items-center justify-end gap-1.5">
+            <Can perm="asset-pricing:update">
+              <Button
+                variant="ghost"
+                size="sm"
+                leftIcon={<Pencil className="h-3.5 w-3.5" />}
+                onClick={() => openEdit(row.original)}
+              >
+                Cập nhật
+              </Button>
+            </Can>
+            <Can perm="asset-pricing:update">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-danger-600 hover:text-danger-700 hover:bg-danger-50"
+                leftIcon={<Trash2 className="h-3.5 w-3.5" />}
+                onClick={() => setDeletingRule(row.original)}
+              >
+                Xóa
+              </Button>
+            </Can>
+          </div>
         ),
       },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
+    [items, reorderMutation.isPending],
   );
 
   return (
@@ -275,6 +356,34 @@ export function AssetPricingPage() {
         confirmText="Xác nhận lưu"
         isLoading={createMutation.isPending || updateMutation.isPending}
         onConfirm={handleConfirmSave}
+      />
+
+      <ConfirmDialog
+        open={Boolean(deletingRule)}
+        onOpenChange={(open) => !open && setDeletingRule(null)}
+        title="Xác nhận xóa quy định đơn giá đất?"
+        tone="danger"
+        confirmText="Xóa đơn giá"
+        cancelText="Hủy bỏ"
+        isLoading={deleteMutation.isPending}
+        onConfirm={handleConfirmDelete}
+        description={
+          deletingRule ? (
+            <div className="space-y-1.5 text-xs text-slate-600">
+              <p>
+                Bạn có chắc chắn muốn xóa đơn giá của phân loại đất: &ldquo;
+                <strong className="text-slate-900">{deletingRule.landCategory}</strong>&rdquo; (
+                <span className="font-semibold text-primary-700">
+                  {formatVND(deletingRule.pricePerSqMeter)}/m²
+                </span>
+                )?
+              </p>
+              <p className="text-slate-500">
+                Thao tác này sẽ xóa vĩnh viễn quy định giá này khỏi danh mục hệ thống và không còn xuất hiện trong ô chọn nhanh khi định giá tài sản.
+              </p>
+            </div>
+          ) : undefined
+        }
       />
     </div>
   );

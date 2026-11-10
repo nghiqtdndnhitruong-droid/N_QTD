@@ -45,6 +45,22 @@ export class AssetPricingService {
     return this.repo.update(id, dto);
   }
 
+  async delete(id: string) {
+    await this.getById(id);
+    return this.repo.delete(id);
+  }
+
+  async reorder(ruleIds: string[]) {
+    if (!Array.isArray(ruleIds) || ruleIds.length === 0) {
+      throw AppError.badRequest('Danh sách ID quy định giá đất không hợp lệ');
+    }
+    await this.repo.reorder(ruleIds);
+    return {
+      success: true,
+      message: 'Cập nhật thứ tự sắp xếp bảng giá tài sản thành công',
+    };
+  }
+
   /**
    * Tự động tính giá trị định giá theo Bảng giá Quỹ dựa trên loại đất và diện tích (ưu tiên diện tích thực nếu có).
    * Làm tròn xuống số nguyên đồng (Math.floor).

@@ -356,6 +356,20 @@ export function LoanCreatePage() {
         expenses: draftLoan.loanPlan.expenses,
         revenues: draftLoan.loanPlan.revenues,
       });
+
+      if (
+        draftLoan.loanPlan.purpose === 'Sửa nhà' ||
+        draftLoan.loanPlan.expenses?.[0]?.name === 'Tiền mua vật liệu xây dựng'
+      ) {
+        setActiveTemplate('SUA_NHA');
+        setIsTemplateManuallyEdited(true);
+      } else if (
+        draftLoan.loanPlan.purpose === 'Chăn nuôi bò sinh sản x con' ||
+        draftLoan.loanPlan.expenses?.[0]?.name === 'Tiền mua con giống'
+      ) {
+        setActiveTemplate('CHAN_NUOI');
+        setIsTemplateManuallyEdited(true);
+      }
     } else {
       const defaultTotalDemand = Math.round(draftLoan.loanAmount * 1.2);
       planForm.setValue('loanAmount', defaultTotalDemand);
@@ -414,6 +428,35 @@ export function LoanCreatePage() {
     planForm,
   ]);
 
+  // Tự động điều chỉnh chi phí khi Tổng nhu cầu vốn thay đổi và người dùng đã sửa tay trước đó
+  useEffect(() => {
+    if (!activeTemplate || !isTemplateManuallyEdited) return;
+    if (watchedTotalCapitalDemand <= 0) return;
+
+    if (activeTemplate === 'SUA_NHA') {
+      const exp0 = planForm.getValues('expenses.0.amount') || 0;
+      const targetExp1 = Math.max(0, watchedTotalCapitalDemand - exp0);
+      const curExp1 = planForm.getValues('expenses.1.amount');
+      if (curExp1 !== targetExp1) {
+        planForm.setValue('expenses.1.amount', targetExp1, {
+          shouldValidate: true,
+          shouldDirty: true,
+        });
+      }
+    } else if (activeTemplate === 'CHAN_NUOI') {
+      const exp0 = planForm.getValues('expenses.0.amount') || 0;
+      const exp1 = planForm.getValues('expenses.1.amount') || 0;
+      const targetExp2 = Math.max(0, watchedTotalCapitalDemand - exp0 - exp1);
+      const curExp2 = planForm.getValues('expenses.2.amount');
+      if (curExp2 !== targetExp2) {
+        planForm.setValue('expenses.2.amount', targetExp2, {
+          shouldValidate: true,
+          shouldDirty: true,
+        });
+      }
+    }
+  }, [watchedTotalCapitalDemand, activeTemplate, isTemplateManuallyEdited, planForm]);
+
   // Tự động cập nhật dòng chi phí trả lãi tiền vay theo số tiền, lãi suất, kỳ hạn thực tế khi thay đổi thông số vay
   useEffect(() => {
     if (effectiveLoanAmount <= 0) return;
@@ -446,6 +489,55 @@ export function LoanCreatePage() {
       }
     }
   }, [effectiveLoanAmount, effectiveInterestRate, effectiveTermType, planForm]);
+
+  // Tự động nhảy số bù trừ chi phí theo Mẫu sửa nhà (2 chi phí đầu) & Mẫu chăn nuôi (3 chi phí đầu)
+  const handleExpenseAmountChange = (index: number, val: number) => {
+    setIsTemplateManuallyEdited(true);
+
+    if (activeTemplate === 'SUA_NHA') {
+      if (index === 0) {
+        // Tiền mua vật liệu xây dựng -> Tiền công thợ tự nhảy
+        const companionAmount = Math.max(0, watchedTotalCapitalDemand - val);
+        planForm.setValue('expenses.1.amount', companionAmount, {
+          shouldValidate: true,
+          shouldDirty: true,
+        });
+      } else if (index === 1) {
+        // Tiền công thợ -> Tiền mua vật liệu xây dựng tự nhảy
+        const companionAmount = Math.max(0, watchedTotalCapitalDemand - val);
+        planForm.setValue('expenses.0.amount', companionAmount, {
+          shouldValidate: true,
+          shouldDirty: true,
+        });
+      }
+    } else if (activeTemplate === 'CHAN_NUOI') {
+      if (index === 0) {
+        // Tiền mua con giống -> tính lại Tiền thức ăn (index 2), giữ nguyên Chuồng trại (index 1)
+        const exp1 = planForm.getValues('expenses.1.amount') || 0;
+        const companionAmount = Math.max(0, watchedTotalCapitalDemand - val - exp1);
+        planForm.setValue('expenses.2.amount', companionAmount, {
+          shouldValidate: true,
+          shouldDirty: true,
+        });
+      } else if (index === 1) {
+        // Tiền xây dựng chuồng trại -> tính lại Tiền thức ăn (index 2), giữ nguyên Con giống (index 0)
+        const exp0 = planForm.getValues('expenses.0.amount') || 0;
+        const companionAmount = Math.max(0, watchedTotalCapitalDemand - exp0 - val);
+        planForm.setValue('expenses.2.amount', companionAmount, {
+          shouldValidate: true,
+          shouldDirty: true,
+        });
+      } else if (index === 2) {
+        // Tiền thức ăn -> tính lại Chuồng trại (index 1), giữ nguyên Con giống (index 0)
+        const exp0 = planForm.getValues('expenses.0.amount') || 0;
+        const companionAmount = Math.max(0, watchedTotalCapitalDemand - exp0 - val);
+        planForm.setValue('expenses.1.amount', companionAmount, {
+          shouldValidate: true,
+          shouldDirty: true,
+        });
+      }
+    }
+  };
 
   // Mục 3.1: Sao chép địa chỉ hiện tại của người vay sang người thừa kế
   const handleCopyBorrowerAddress = () => {
@@ -493,16 +585,11 @@ export function LoanCreatePage() {
       termType: effectiveTermType,
     });
 
-    const currentPurpose = (planForm.getValues('purpose') || '').trim();
-    const isDefaultOrEmptyPurpose =
-      !currentPurpose ||
-      currentPurpose === 'Đầu tư sản xuất nông nghiệp và mua vật tư phân bón' ||
-      currentPurpose === LOAN_PLAN_TEMPLATE_META.SUA_NHA.defaultPurpose ||
-      currentPurpose === LOAN_PLAN_TEMPLATE_META.CHAN_NUOI.defaultPurpose;
-
-    if (isDefaultOrEmptyPurpose) {
-      planForm.setValue('purpose', calculated.defaultPurpose, { shouldValidate: true });
-    }
+    // Gán đúng mục đích theo yêu cầu: Sửa nhà / Chăn nuôi bò sinh sản x con
+    planForm.setValue('purpose', calculated.defaultPurpose, {
+      shouldValidate: true,
+      shouldDirty: true,
+    });
 
     planForm.setValue('borrowedCapital', calculated.borrowedCapital, { shouldValidate: true });
     planForm.setValue('ownCapital', calculated.ownCapital, { shouldValidate: true });
@@ -1174,6 +1261,7 @@ export function LoanCreatePage() {
                         required
                         showWords={false}
                         wrapperClassName="flex-1"
+                        onChangeValue={(val) => handleExpenseAmountChange(index, val)}
                       />
                       <div className="flex items-center rounded border border-slate-200 bg-white mb-0.5">
                         <button

@@ -7,6 +7,7 @@ export interface AssetPricingRule {
   effectiveDate: string;
   isActive: boolean;
   note: string | null;
+  sortOrder?: number;
   createdAt: string;
   updatedAt: string;
 }

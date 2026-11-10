@@ -120,6 +120,11 @@ router.get(
   asyncHandler(assetPricingController.findMany)
 );
 
+router.patch(
+  '/reorder',
+  asyncHandler(assetPricingController.reorder)
+);
+
 /**
  * @swagger
  * /api/v1/asset-pricing-rules/{id}:
@@ -174,6 +179,27 @@ router.put(
   '/:id',
   validate({ body: updateAssetPricingRuleSchema }),
   asyncHandler(assetPricingController.update)
+);
+
+/**
+ * @swagger
+ * /api/v1/asset-pricing-rules/{id}:
+ *   delete:
+ *     summary: Xóa một quy định đơn giá đất
+ *     tags: [3. Bảng Giá Đất (Asset Pricing)]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Xóa thành công
+ */
+router.delete(
+  '/:id',
+  asyncHandler(assetPricingController.delete)
 );
 
 export const assetPricingRoutes = router;

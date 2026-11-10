@@ -3,7 +3,7 @@ import { createBrowserRouter } from 'react-router';
 import { env } from '@/config/env';
 import { AppShell } from '@/components/layout';
 import { DetailPageSkeleton } from '@/components/feedback';
-import { ProtectedRoute, RequirePermission } from '@/features/auth/components/can';
+import { ProtectedRoute, RequirePermission, RequireRole } from '@/features/auth/components/can';
 import { LoginPage } from '@/features/auth/pages/login-page';
 import { ForbiddenPage, NotFoundPage } from '@/features/auth/pages/error-pages';
 
@@ -66,6 +66,9 @@ const ReportsPage = lazy(() =>
 );
 const UsersPage = lazy(() =>
   import('@/features/users/pages/users-page').then((m) => ({ default: m.UsersPage })),
+);
+const BackupPage = lazy(() =>
+  import('@/features/backup/pages/backup-page').then((m) => ({ default: m.BackupPage })),
 );
 const ProfilePage = lazy(() =>
   import('@/features/auth/pages/profile-page').then((m) => ({ default: m.ProfilePage })),
@@ -236,11 +239,21 @@ export const appRouter = createBrowserRouter([
           {
             path: 'admin/users',
             element: (
-              <RequirePermission perm="user:view">
+              <RequireRole role="ADMIN">
                 <LazyPage>
                   <UsersPage />
                 </LazyPage>
-              </RequirePermission>
+              </RequireRole>
+            ),
+          },
+          {
+            path: 'admin/backup',
+            element: (
+              <RequireRole role="ADMIN">
+                <LazyPage>
+                  <BackupPage />
+                </LazyPage>
+              </RequireRole>
             ),
           },
           {
@@ -256,9 +269,11 @@ export const appRouter = createBrowserRouter([
                 {
                   path: 'dev/ui',
                   element: (
-                    <LazyPage>
-                      <DesignSystemPage />
-                    </LazyPage>
+                    <RequireRole role="ADMIN">
+                      <LazyPage>
+                        <DesignSystemPage />
+                      </LazyPage>
+                    </RequireRole>
                   ),
                 },
               ]

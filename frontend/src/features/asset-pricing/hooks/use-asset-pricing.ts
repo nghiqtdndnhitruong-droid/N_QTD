@@ -37,3 +37,23 @@ export function useUpdateAssetPricing() {
   });
 }
 
+export function useReorderAssetPricing() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (ruleIds: string[]) => assetPricingApi.reorder(ruleIds),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: queryKeys.assetPricing.all });
+    },
+  });
+}
+
+export function useDeleteAssetPricing() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => assetPricingApi.delete(id),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: queryKeys.assetPricing.all });
+    },
+  });
+}
+

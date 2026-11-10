@@ -37,14 +37,14 @@ export const LOAN_PLAN_TEMPLATE_META: Record<
   SUA_NHA: {
     label: 'Mẫu sửa nhà',
     description:
-      'Chi phí: Vật liệu XD (80%), Công thợ (20%), Chi phí trả lãi tiền vay (tính theo số tiền, lãi suất, thời hạn), Chi tiêu gia đình (70tr) • Nguồn thu: Sản xuất lúa (60%), Thu khác (40%)',
-    defaultPurpose: 'Sửa chữa, cải tạo nhà ở gia đình',
+      'Chi phí: Vật liệu XD, Công thợ (tự nhảy theo Tổng nhu cầu vốn), Chi phí trả lãi tiền vay, Chi tiêu gia đình (70tr) • Nguồn thu: Sản xuất lúa (60%), Thu khác (40%)',
+    defaultPurpose: 'Sửa nhà',
   },
   CHAN_NUOI: {
     label: 'Mẫu chăn nuôi',
     description:
-      'Chi phí: Con giống (80%), Chuồng trại (15%), Thức ăn (5%), Chi phí trả lãi tiền vay (tính theo số tiền, lãi suất, thời hạn), Chi tiêu gia đình (140tr) • Nguồn thu: Lúa (30%), Chăn nuôi (50%), Thu khác (20%)',
-    defaultPurpose: 'Chăn nuôi bò sinh sản và phát triển kinh tế hộ gia đình',
+      'Chi phí: Con giống, Chuồng trại, Thức ăn (tự nhảy theo Tổng nhu cầu vốn), Chi phí trả lãi tiền vay, Chi tiêu gia đình (140tr) • Nguồn thu: Lúa (30%), Chăn nuôi (50%), Thu khác (20%)',
+    defaultPurpose: 'Chăn nuôi bò sinh sản x con',
   },
 };
 

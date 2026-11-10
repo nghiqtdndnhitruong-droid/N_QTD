@@ -32,6 +32,17 @@ function normalizeHamletName(rawName: string): string {
   return `Ấp ${trimmed}`;
 }
 
+function normalizeCommuneName(rawName: string): string {
+  const trimmed = rawName.trim().replace(/\s+/g, ' ');
+  if (/^(xã|phường|thị trấn)\b/i.test(trimmed)) {
+    return trimmed
+      .replace(/^xã\b/i, 'Xã')
+      .replace(/^phường\b/i, 'Phường')
+      .replace(/^thị trấn\b/i, 'Thị trấn');
+  }
+  return `Xã ${trimmed}`;
+}
+
 export class AreaService {
   private isSeeded = false;
 
@@ -161,13 +172,50 @@ export class AreaService {
     if (!province) {
       throw AppError.notFound('Không tìm thấy Tỉnh/Thành phố', ErrorCode.AREA_NOT_FOUND);
     }
-    const code = dto.code?.trim().toUpperCase() || slugifyCode(dto.name);
-    return this.repo.createCommune({
+
+    const formattedName = normalizeCommuneName(dto.name);
+    const duplicate = await this.repo.findCommuneByNameInProvince(dto.provinceId, formattedName);
+    if (duplicate) {
+      throw AppError.conflict(
+        `"${formattedName}" đã tồn tại trong ${province.name}`,
+        ErrorCode.AREA_ALREADY_EXISTS,
+        [{ field: 'name', message: `"${formattedName}" đã tồn tại trong ${province.name}` }]
+      );
+    }
+
+    const code = dto.code?.trim().toUpperCase() || slugifyCode(formattedName);
+    const duplicateCode = await this.repo.findCommuneByCodeInProvince(dto.provinceId, code);
+    if (duplicateCode) {
+      throw AppError.conflict(
+        `Mã xã "${code}" đã tồn tại trong ${province.name}`,
+        ErrorCode.AREA_ALREADY_EXISTS,
+        [{ field: 'code', message: `Mã xã "${code}" đã tồn tại trong ${province.name}` }]
+      );
+    }
+
+    const created = await this.repo.createCommune({
       provinceId: dto.provinceId,
       code,
-      name: dto.name.trim(),
+      name: formattedName,
       isActive: dto.isActive ?? true,
     });
+
+    await prisma.auditLog.create({
+      data: {
+        entityType: 'AREA',
+        entityId: created.id,
+        action: 'CREATE_COMMUNE',
+        reason: `Thêm ${created.name} thuộc ${province.name}`,
+        metadata: {
+          communeId: created.id,
+          communeName: created.name,
+          provinceId: province.id,
+          provinceName: province.name,
+        },
+      },
+    });
+
+    return created;
   }
 
   async createHamlet(dto: CreateHamletDto) {
@@ -261,6 +309,57 @@ export class AreaService {
     }
 
     await this.repo.deleteHamlet(id);
+    return { id, deletedName: existing.name };
+  }
+
+  async deleteCommune(id: string) {
+    const existing = await this.repo.findCommuneById(id);
+    if (!existing) {
+      throw AppError.notFound('Không tìm thấy Xã/Phường', ErrorCode.AREA_NOT_FOUND);
+    }
+
+    const usage = await this.repo.countCommuneUsage(id);
+    if (usage.members > 0 || usage.collaterals > 0) {
+      throw AppError.conflict(
+        `Không thể xóa "${existing.name}" vì đang được sử dụng bởi ${usage.members} thành viên và ${usage.collaterals} tài sản thế chấp.`,
+        ErrorCode.AREA_IN_USE
+      );
+    }
+
+    // Xóa các ấp trực thuộc của xã này
+    await prisma.hamlet.deleteMany({
+      where: { communeId: id },
+    });
+
+    // Gỡ communeId khỏi các AreaGroup đang tham chiếu
+    const areaGroupsWithCommune = await prisma.areaGroup.findMany({
+      where: { communeIds: { has: id } },
+    });
+    for (const group of areaGroupsWithCommune) {
+      await prisma.areaGroup.update({
+        where: { id: group.id },
+        data: {
+          communeIds: group.communeIds.filter((cid) => cid !== id),
+        },
+      });
+    }
+
+    await this.repo.deleteCommune(id);
+
+    await prisma.auditLog.create({
+      data: {
+        entityType: 'AREA',
+        entityId: id,
+        action: 'DELETE_COMMUNE',
+        reason: `Xóa ${existing.name} và ${usage.hamlets} ấp trực thuộc`,
+        metadata: {
+          communeId: id,
+          communeName: existing.name,
+          deletedHamletsCount: usage.hamlets,
+        },
+      },
+    });
+
     return { id, deletedName: existing.name };
   }
 

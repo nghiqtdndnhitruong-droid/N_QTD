@@ -885,10 +885,13 @@ export function LoanValuationSection({
                         onChange={(e) => setSelectedLandCategory(e.target.value)}
                         options={[
                           { value: '', label: '-- Tra cứu nhanh đơn giá đất Quỹ --' },
-                          ...pricingRules.items.map((r: any) => ({
-                            value: r.landCategory,
-                            label: `${r.landCategory} - ${r.locationDescription || ''} (${formatVND(r.pricePerSqMeter)}/m²)`,
-                          })),
+                          ...pricingRules.items.map((r: any) => {
+                            const desc = r.note || r.locationDescription;
+                            return {
+                              value: r.landCategory,
+                              label: `${r.landCategory}${desc ? ` - ${desc}` : ''} (${formatVND(r.pricePerSqMeter)}/m²)`,
+                            };
+                          }),
                         ]}
                       />
                     </div>

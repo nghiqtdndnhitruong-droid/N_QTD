@@ -72,6 +72,23 @@ export class AssetPricingController {
     };
     res.status(200).json(response);
   };
+  reorder = async (req: Request, res: Response): Promise<void> => {
+    const { ruleIds } = req.body;
+    const result = await this.service.reorder(ruleIds);
+    res.status(200).json(result);
+  };
+
+  delete = async (req: Request, res: Response): Promise<void> => {
+    const id = String(req.params.id);
+    const deleted = await this.service.delete(id);
+    const response: ApiResponse<AssetPricingRule> = {
+      success: true,
+      message: 'Xóa đơn giá tài sản thành công',
+      data: deleted,
+      timestamp: new Date().toISOString(),
+    };
+    res.status(200).json(response);
+  };
 }
 
 export const assetPricingController = new AssetPricingController();

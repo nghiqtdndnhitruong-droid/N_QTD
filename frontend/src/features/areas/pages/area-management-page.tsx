@@ -31,11 +31,13 @@ import {
   useAreaTree,
   useCreateAreaGroup,
   useDeleteAreaGroup,
+  useDeleteCommune,
   useDeleteHamlet,
   useUpdateAreaGroup,
   useUpdateHamlet,
 } from '../hooks/use-areas';
 import { QuickCreateHamletDialog } from '../components/quick-create-hamlet-dialog';
+import { QuickCreateCommuneDialog } from '../components/quick-create-commune-dialog';
 import type { AreaGroup, Hamlet } from '../types/area.types';
 
 export function AreaManagementPage() {
@@ -43,6 +45,7 @@ export function AreaManagementPage() {
   const { data: areaGroups = [], isLoading: isLoadingGroups } = useAreaGroups();
   const updateHamletMutation = useUpdateHamlet();
   const deleteHamletMutation = useDeleteHamlet();
+  const deleteCommuneMutation = useDeleteCommune();
   const createGroupMutation = useCreateAreaGroup();
   const updateGroupMutation = useUpdateAreaGroup();
   const deleteGroupMutation = useDeleteAreaGroup();
@@ -50,6 +53,7 @@ export function AreaManagementPage() {
   const [selectedCommuneId, setSelectedCommuneId] = useState<string>('');
   const [searchKeyword, setSearchKeyword] = useState('');
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [createCommuneDialogOpen, setCreateCommuneDialogOpen] = useState(false);
   const [createDefaultCommuneId, setCreateDefaultCommuneId] = useState<string | null>(null);
   const [editingHamlet, setEditingHamlet] = useState<
     (Hamlet & { communeName: string; provinceName: string }) | null
@@ -58,6 +62,11 @@ export function AreaManagementPage() {
   const [deletingHamlet, setDeletingHamlet] = useState<
     (Hamlet & { communeName: string; provinceName: string }) | null
   >(null);
+  const [deletingCommune, setDeletingCommune] = useState<{
+    id: string;
+    name: string;
+    hamletsCount: number;
+  } | null>(null);
 
   const [groupModalOpen, setGroupModalOpen] = useState(false);
   const [editingGroup, setEditingGroup] = useState<AreaGroup | null>(null);
@@ -198,21 +207,45 @@ export function AreaManagementPage() {
     }
   };
 
+  const handleConfirmDeleteCommune = async () => {
+    if (!deletingCommune) return;
+    try {
+      await deleteCommuneMutation.mutateAsync(deletingCommune.id);
+      notifySuccess(`Đã xóa "${deletingCommune.name}" khỏi danh mục địa bàn`);
+      if (selectedCommuneId === deletingCommune.id) {
+        setSelectedCommuneId('');
+      }
+      setDeletingCommune(null);
+    } catch (err) {
+      setDeletingCommune(null);
+      notifyApiError(err);
+    }
+  };
+
   return (
     <div className="space-y-5">
       <PageHeader
         title="Quản lý địa bàn Quỹ tín dụng (Tỉnh → Xã → Ấp)"
-        description="Quản lý tập trung danh mục Tỉnh Vĩnh Long và 3 xã thuộc phạm vi hoạt động của Quỹ (Xã Nhị Trường, Xã Tập Sơn, Xã Long Hiệp). Dùng chung độc lập cho cả Địa chỉ người vay và Địa bàn tài sản thế chấp."
+        description="Quản lý tập trung danh mục Tỉnh Vĩnh Long và các xã, ấp thuộc phạm vi hoạt động của Quỹ. Dùng chung độc lập cho cả Địa chỉ người vay và Địa bàn tài sản thế chấp."
         actions={
-          <Button
-            leftIcon={<Plus className="h-4 w-4" />}
-            onClick={() => {
-              setCreateDefaultCommuneId(selectedCommuneId || null);
-              setCreateDialogOpen(true);
-            }}
-          >
-            Thêm Ấp mới vào Database
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              leftIcon={<Plus className="h-4 w-4" />}
+              onClick={() => setCreateCommuneDialogOpen(true)}
+            >
+              Thêm Xã mới
+            </Button>
+            <Button
+              leftIcon={<Plus className="h-4 w-4" />}
+              onClick={() => {
+                setCreateDefaultCommuneId(selectedCommuneId || null);
+                setCreateDialogOpen(true);
+              }}
+            >
+              Thêm Ấp mới vào Database
+            </Button>
+          </div>
         }
       />
 
@@ -226,11 +259,25 @@ export function AreaManagementPage() {
         <ErrorState error={error} onRetry={() => void refetch()} />
       ) : (
         <>
-          {/* Thẻ tổng quan 3 Xã thuộc Tỉnh Vĩnh Long */}
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            {communes.map((commune) => {
-              const isSelected = selectedCommuneId === commune.id;
-              return (
+          {/* Thẻ tổng quan các Xã thuộc Tỉnh */}
+          {communes.length === 0 ? (
+            <Card className="p-8 text-center">
+              <p className="text-sm text-slate-500">
+                Chưa có Xã nào thuộc tỉnh {province?.name}. Nhấn &quot;Thêm Xã mới&quot; để bổ sung vào danh mục địa bàn.
+              </p>
+              <Button
+                className="mt-3"
+                leftIcon={<Plus className="h-4 w-4" />}
+                onClick={() => setCreateCommuneDialogOpen(true)}
+              >
+                Thêm Xã mới
+              </Button>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              {communes.map((commune) => {
+                const isSelected = selectedCommuneId === commune.id;
+                return (
                 <Card
                   key={commune.id}
                   className={
@@ -281,23 +328,42 @@ export function AreaManagementPage() {
                       >
                         {isSelected ? 'Bỏ lọc xã này' : 'Lọc danh sách ấp của xã'}
                       </button>
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        leftIcon={<Plus className="h-3.5 w-3.5" />}
-                        onClick={() => {
-                          setCreateDefaultCommuneId(commune.id);
-                          setCreateDialogOpen(true);
-                        }}
-                      >
-                        Thêm Ấp
-                      </Button>
+                      <div className="flex items-center gap-1.5">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-danger-600 hover:bg-danger-50 hover:text-danger-700"
+                          leftIcon={<Trash2 className="h-3.5 w-3.5" />}
+                          onClick={() =>
+                            setDeletingCommune({
+                              id: commune.id,
+                              name: commune.name,
+                              hamletsCount: commune.hamlets.length,
+                            })
+                          }
+                          title="Xóa xã này"
+                        >
+                          Xóa xã
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          leftIcon={<Plus className="h-3.5 w-3.5" />}
+                          onClick={() => {
+                            setCreateDefaultCommuneId(commune.id);
+                            setCreateDialogOpen(true);
+                          }}
+                        >
+                          Thêm Ấp
+                        </Button>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
               );
             })}
           </div>
+        )}
 
           {/* Card Phân nhóm địa bàn cấp Xã */}
           <Card>
@@ -525,6 +591,13 @@ export function AreaManagementPage() {
         </>
       )}
 
+      {/* Dialog thêm Xã mới */}
+      <QuickCreateCommuneDialog
+        open={createCommuneDialogOpen}
+        onOpenChange={setCreateCommuneDialogOpen}
+        defaultProvinceId={province?.id}
+      />
+
       {/* Dialog thêm Ấp mới */}
       <QuickCreateHamletDialog
         open={createDialogOpen}
@@ -571,6 +644,22 @@ export function AreaManagementPage() {
         tone="danger"
         isLoading={deleteHamletMutation.isPending}
         onConfirm={handleConfirmDelete}
+      />
+
+      {/* Xác nhận xóa Xã */}
+      <ConfirmDialog
+        open={Boolean(deletingCommune)}
+        onOpenChange={(o) => !o && setDeletingCommune(null)}
+        title={`Xác nhận xóa "${deletingCommune?.name ?? ''}"?`}
+        description={
+          deletingCommune?.hamletsCount && deletingCommune.hamletsCount > 0
+            ? `Cảnh báo: Toàn bộ ${deletingCommune.hamletsCount} ấp trực thuộc cũng sẽ bị xóa. Hệ thống sẽ chặn xóa nếu xã hoặc các ấp đang gắn với bất kỳ hồ sơ thành viên hoặc tài sản thế chấp nào.`
+            : 'Lưu ý: Hệ thống chỉ cho phép xóa Xã chưa được gắn với bất kỳ hồ sơ thành viên hoặc tài sản thế chấp nào.'
+        }
+        confirmText="Xóa Xã"
+        tone="danger"
+        isLoading={deleteCommuneMutation.isPending}
+        onConfirm={handleConfirmDeleteCommune}
       />
 
       {/* Dialog tạo/sửa Nhóm địa bàn */}

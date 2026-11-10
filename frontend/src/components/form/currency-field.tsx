@@ -132,12 +132,13 @@ export interface FormCurrencyFieldProps<
 > extends Omit<CurrencyInputProps, 'name' | 'value' | 'onValueChange' | 'onBlur' | 'error'> {
   control: Control<TFieldValues>;
   name: TName;
+  onChangeValue?: (value: number) => void;
 }
 
 export function FormCurrencyField<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
->({ control, name, ...rest }: FormCurrencyFieldProps<TFieldValues, TName>) {
+>({ control, name, onChangeValue, ...rest }: FormCurrencyFieldProps<TFieldValues, TName>) {
   const {
     field,
     fieldState: { error },
@@ -149,7 +150,11 @@ export function FormCurrencyField<
       ref={field.ref}
       name={field.name}
       value={field.value as number | null | undefined}
-      onValueChange={(val) => field.onChange(val ?? 0)}
+      onValueChange={(val) => {
+        const numVal = val ?? 0;
+        field.onChange(numVal);
+        onChangeValue?.(numVal);
+      }}
       onBlur={field.onBlur}
       error={error?.message}
     />

@@ -76,7 +76,7 @@ export class LoanCalculationService {
 
       return {
         template: 'SUA_NHA' as LoanPlanTemplateKey,
-        purpose: 'Sửa chữa, cải tạo nhà ở của hộ thành viên',
+        purpose: 'Sửa nhà',
         totalCapitalDemand,
         loanAmount,
         ownCapital,
@@ -118,7 +118,7 @@ export class LoanCalculationService {
 
     return {
       template: 'CHAN_NUOI' as LoanPlanTemplateKey,
-      purpose: 'Đầu tư phát triển chăn nuôi gia súc, gia cầm của hộ thành viên',
+      purpose: 'Chăn nuôi bò sinh sản x con',
       totalCapitalDemand,
       loanAmount,
       ownCapital,

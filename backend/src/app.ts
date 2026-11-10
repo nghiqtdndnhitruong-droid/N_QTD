@@ -17,6 +17,8 @@ import { areaRoutes } from './modules/area/area.routes';
 import { wordTemplateRoutes } from './modules/word-template/word-template.routes';
 import { authRoutes } from './modules/auth/auth.routes';
 import { userRoutes } from './modules/user/user.routes';
+import { reportRoutes } from './modules/report/report.routes';
+import { backupRoutes } from './modules/backup/backup.routes';
 
 const app: Application = express();
 
@@ -66,6 +68,8 @@ apiRouter.use('/areas', areaRoutes);
 apiRouter.use('/word-templates', wordTemplateRoutes);
 apiRouter.use('/auth', authRoutes);
 apiRouter.use('/users', userRoutes);
+apiRouter.use('/reports', reportRoutes);
+apiRouter.use('/system', backupRoutes);
 
 app.use(env.apiPrefix, apiRouter);
 
