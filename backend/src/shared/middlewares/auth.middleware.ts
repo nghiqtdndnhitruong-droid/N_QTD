@@ -55,6 +55,35 @@ export async function authenticateToken(
 }
 
 /**
+ * Middleware tùy chọn xác thực JWT:
+ * Nếu có Header Authorization hợp lệ thì gán req.user, nếu không có hoặc token hết hạn thì bỏ qua không chặn request.
+ */
+export async function optionalAuthenticateToken(
+  req: Request,
+  _res: Response,
+  next: NextFunction
+): Promise<void> {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return next();
+  }
+
+  const token = authHeader.split(' ')[1];
+  try {
+    const decoded = jwt.verify(token, env.jwtSecret) as TokenPayload;
+    if (decoded && decoded.userId) {
+      const user = await authRepository.findById(decoded.userId);
+      if (user && user.status !== 'LOCKED') {
+        req.user = authService.formatAuthUser(user);
+      }
+    }
+  } catch (_error) {
+    // Không chặn request đối với middleware tùy chọn
+  }
+  next();
+}
+
+/**
  * Middleware kiểm tra vai trò người dùng (ví dụ: chỉ ADMIN)
  */
 export function requireRole(...allowedRoles: UserRole[]) {

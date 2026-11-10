@@ -2,14 +2,42 @@
  * XML Run Reconciler:
  * Hàn gắn các thẻ Word OpenXML <w:t> nằm trong các <w:r> bị Microsoft Word phân tách.
  * Đảm bảo các tag template {{...}} luôn nằm trọn vẹn trong một thẻ văn bản liên tục.
+ * Đồng thời tự động chuẩn hóa các dấu ngoặc bị dư thừa (vd: {{{{...}}}} -> {{...}}).
  */
+
+/**
+ * Chuẩn hóa các dấu ngoặc nhọn template:
+ * - Thu gọn dấu ngoặc bị gõ cách rời rạc: "{ {" -> "{{", "} }" -> "}}"
+ * - Chuẩn hóa các thẻ bị dư dấu ngoặc nhọn (vd: "{{{{#IF...}}", "{{{{...}}}}", "{{{...}}}") về đúng dạng "{{...}}"
+ */
+export function normalizeTemplateBraces(rawText: string): string {
+  if (!rawText || !rawText.includes('{') || !rawText.includes('}')) return rawText;
+
+  // 1. Chuẩn hóa các dấu ngoặc nhọn bị gõ cách nhau bằng khoảng trắng:
+  let res = rawText.replace(/\{[\s{]*\{/g, '{{').replace(/\}[\s}]*\}/g, '}}');
+
+  // 2. Chuẩn hóa tất cả các tag có từ 2 dấu ngoặc trở lên thành đúng 2 dấu ngoặc {{...}}
+  res = res.replace(/\{{2,}\s*([^{}]+?)\s*\}{2,}/g, (_match, content) => {
+    const cleanContent = content.replace(/^\{+/, '').replace(/\}+$/, '').trim();
+    return `{{${cleanContent}}}`;
+  });
+
+  return res;
+}
+
 export class WordXmlReconciler {
   /**
    * Hàn gắn các đoạn run bị chia cắt trong nội dung XML DOCX
+   * và làm sạch track changes / dư thừa ngoặc nhọn
    */
   public reconcile(xmlContent: string): string {
+    // Xóa sạch các thẻ Track Changes / Revision deletion của Word (nơi lưu các ký tự đã bị xóa nhưng Word vẫn giữ)
+    let cleaned = xmlContent
+      .replace(/<w:del(?:\s[^>]*)?>[\s\S]*?<\/w:del>/g, '')
+      .replace(/<w:delText(?:\s[^>]*)?>[\s\S]*?<\/w:delText>/g, '');
+
     // Regex tìm từng đoạn văn bản <w:p>...</w:p>
-    return xmlContent.replace(/<w:p(?:\s[^>]*)?>[\s\S]*?<\/w:p>/g, (pXml) => {
+    return cleaned.replace(/<w:p(?:\s[^>]*)?>[\s\S]*?<\/w:p>/g, (pXml) => {
       // Nếu đoạn không chứa dấu mở tag '{', giữ nguyên
       if (!pXml.includes('{')) {
         return pXml;
@@ -37,18 +65,27 @@ export class WordXmlReconciler {
       });
     }
 
+    const normalizeRunsInXml = (xml: string): string => {
+      return xml.replace(/(<w:t(?:\s[^>]*)?>)([\s\S]*?)(<\/w:t>)/g, (_m, prefix, text, suffix) => {
+        if (text.includes('{') && text.includes('}')) {
+          return `${prefix}${normalizeTemplateBraces(text)}${suffix}`;
+        }
+        return _m;
+      });
+    };
+
     if (matches.length <= 1) {
-      return pXml;
+      return normalizeRunsInXml(pXml);
     }
 
     // Ghép toàn bộ chuỗi text lại để kiểm tra xem có tag nào bị vắt qua nhiều <w:t> hay không
     const combinedText = matches.map((m) => m.text).join('');
-    if (!combinedText.includes('{{') || !combinedText.includes('}}')) {
+    if (!combinedText.includes('{') || !combinedText.includes('}')) {
       return pXml;
     }
 
-    // Tìm tất cả các tag {{...}} trong combinedText
-    const tagRegex = /\{\{[^}]*?\}\}/g;
+    // Tìm tất cả các tag (chấp nhận 2 hoặc nhiều dấu ngoặc) trong combinedText
+    const tagRegex = /\{{2,}[^}]*?\}{2,}/g;
     let tagMatch: RegExpExecArray | null;
     let hasCrossRunTag = false;
 
@@ -75,17 +112,15 @@ export class WordXmlReconciler {
       }
     }
 
-    // Nếu không có tag nào bị phân cắt giữa các run, không cần gộp
+    // Nếu không có tag nào bị phân cắt giữa các run, chuẩn hóa các run hiện tại
     if (!hasCrossRunTag) {
-      return pXml;
+      return normalizeRunsInXml(pXml);
     }
 
     // Có tag bị phân cắt: Tiến hành gom text của các tag về run đầu tiên
     let newPXml = pXml;
 
     // Tìm các cụm <w:r> có chứa tag bị xé lẻ và dồn text vào run đầu tiên
-    // Cách an toàn nhất: dồn text của paragraph về một run chuẩn nhưng giữ lại các thuộc tính <w:pPr>
-    // Để không làm xáo trộn format các từ ngoài tag, ta chỉ dồn chuỗi tag {{...}} vào run bắt đầu
     let currentPos = 0;
     const matchBoundaries: { start: number; end: number; matchIdx: number }[] = [];
     for (let mIdx = 0; mIdx < matches.length; mIdx++) {
@@ -121,7 +156,7 @@ export class WordXmlReconciler {
 
       if (firstRunIdx === -1) continue;
 
-      // Xóa các phần bị cắt ở các run sau và đặt toàn bộ tag vào run đầu
+      // Xóa các phần bị cắt ở các run sau và đặt toàn bộ tag đã chuẩn hóa vào run đầu
       for (const b of matchBoundaries) {
         if (b.matchIdx < firstRunIdx) continue;
         const overlapStart = Math.max(tagStart, b.start);
@@ -134,10 +169,11 @@ export class WordXmlReconciler {
           const repl = replacements[b.matchIdx];
           if (repl) {
             if (b.matchIdx === firstRunIdx) {
-              // Thay thế phần đầu bằng toàn bộ tag
+              // Thay thế phần đầu bằng toàn bộ tag đã chuẩn hóa
+              const normalizedTag = normalizeTemplateBraces(tagContent);
               const before = repl.newText.slice(0, runOffsetStart);
               const after = repl.newText.slice(runOffsetEnd);
-              repl.newText = before + tagContent + after;
+              repl.newText = before + normalizedTag + after;
             } else {
               // Xóa phần thừa ở run sau
               const before = repl.newText.slice(0, runOffsetStart);
@@ -163,7 +199,7 @@ export class WordXmlReconciler {
       }
     }
 
-    return newPXml;
+    return normalizeRunsInXml(newPXml);
   }
 
   private escapeXml(unsafe: string): string {

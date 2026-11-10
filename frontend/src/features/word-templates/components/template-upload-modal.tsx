@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { FileUp, Upload } from 'lucide-react';
 import {
   Button,
@@ -18,11 +18,13 @@ export interface TemplateUploadModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: (createdId: string) => void;
+  defaultScope?: LoanTypeScope;
 }
 
 const CATEGORY_SUGGESTIONS = [
   'Hồ sơ thế chấp',
   'Hồ sơ tín chấp',
+  'Hồ sơ chung',
   'Biên bản định giá',
   'Hợp đồng & Khế ước',
   'Giấy cam kết & Bảo lãnh',
@@ -33,14 +35,29 @@ export function TemplateUploadModal({
   open,
   onOpenChange,
   onSuccess,
+  defaultScope = 'ALL',
 }: TemplateUploadModalProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [code, setCode] = useState('');
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('Hồ sơ thế chấp');
-  const [loanTypeScope, setLoanTypeScope] = useState<LoanTypeScope>('ALL');
+  const [loanTypeScope, setLoanTypeScope] = useState<LoanTypeScope>(defaultScope);
   const [description, setDescription] = useState('');
   const [isDragging, setIsDragging] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      const scope = defaultScope || 'ALL';
+      setLoanTypeScope(scope);
+      if (scope === 'THE_CHAP') {
+        setCategory('Hồ sơ thế chấp');
+      } else if (scope === 'TIN_CHAP') {
+        setCategory('Hồ sơ tín chấp');
+      } else {
+        setCategory('Hồ sơ chung');
+      }
+    }
+  }, [open, defaultScope]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const uploadMutation = useUploadWordTemplate();
@@ -121,8 +138,15 @@ export function TemplateUploadModal({
     setSelectedFile(null);
     setCode('');
     setTitle('');
-    setCategory('Hồ sơ thế chấp');
-    setLoanTypeScope('ALL');
+    const scope = defaultScope || 'ALL';
+    setLoanTypeScope(scope);
+    setCategory(
+      scope === 'THE_CHAP'
+        ? 'Hồ sơ thế chấp'
+        : scope === 'TIN_CHAP'
+          ? 'Hồ sơ tín chấp'
+          : 'Hồ sơ chung',
+    );
     setDescription('');
   };
 

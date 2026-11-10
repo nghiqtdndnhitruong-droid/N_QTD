@@ -183,7 +183,7 @@ export class WordTemplateController {
     try {
       const id = getParamId(req);
       const { loanId } = previewTemplateSchema.parse(req.body);
-      const previewResult = await wordTemplateService.previewTemplate(id, loanId);
+      const previewResult = await wordTemplateService.previewTemplate(id, loanId, req.user);
 
       res.json({
         success: true,
@@ -197,7 +197,13 @@ export class WordTemplateController {
   public async exportLoan(req: Request, res: Response, next: NextFunction) {
     try {
       const { loanId, templateIds } = exportLoanDocumentsSchema.parse(req.body);
-      const exportFile = await wordTemplateService.exportLoanDocuments(loanId, templateIds);
+      const exportedBy = req.user?.fullName || 'Cán bộ tín dụng';
+      const exportFile = await wordTemplateService.exportLoanDocuments(
+        loanId,
+        templateIds,
+        exportedBy,
+        req.user,
+      );
 
       res.setHeader('Content-Type', exportFile.mimeType);
       res.setHeader(

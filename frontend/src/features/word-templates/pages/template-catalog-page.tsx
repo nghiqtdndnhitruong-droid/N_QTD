@@ -34,6 +34,7 @@ import type { GlobalWordKeyword, MappingDataType } from '../types/word-template.
 
 const CATEGORIES = [
   { value: 'ALL', label: 'Tất cả nhóm' },
+  { value: 'CAN_BO', label: 'Cán bộ đang đăng nhập' },
   { value: 'NGUOI_VAY', label: 'Người vay / Thành viên' },
   { value: 'KHOAN_VAY', label: 'Khoản vay & Khế ước' },
   { value: 'PHUONG_AN', label: 'Phương án vay vốn' },

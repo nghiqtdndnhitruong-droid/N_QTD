@@ -10,6 +10,7 @@ import {
   TextNode,
 } from './template-engine.types';
 import { SafeExpressionParser } from './safe-evaluator';
+import { normalizeTemplateBraces } from './xml-reconciler';
 
 export class TemplateAstParser {
   private expressionParser = new SafeExpressionParser();
@@ -27,8 +28,11 @@ export class TemplateAstParser {
     const detectedLoops: { iterator: string; collection: string }[] = [];
     const detectedConditions: string[] = [];
 
-    // Tách các token: text thông thường và các tag {{...}}
-    const tagRegex = /\{\{([\s\S]*?)\}\}/g;
+    // Chuẩn hóa văn bản đầu vào: loại bỏ dấu ngoặc bị gõ cách hoặc dư thừa dấu ngoặc
+    const templateText = normalizeTemplateBraces(rawTemplateText);
+
+    // Tách các token: text thông thường và các tag {{...}} (hỗ trợ cả trường hợp dư thừa ngoặc)
+    const tagRegex = /\{{2,}\s*([\s\S]*?)\s*\}{2,}/g;
     let lastIndex = 0;
     let match: RegExpExecArray | null;
 
@@ -65,14 +69,15 @@ export class TemplateAstParser {
       return rootNode.body;
     };
 
-    while ((match = tagRegex.exec(rawTemplateText)) !== null) {
+    while ((match = tagRegex.exec(templateText)) !== null) {
       const tagStartIndex = match.index;
-      const fullTag = match[0];
-      const tagContent = (match[1] || '').trim();
+      const rawContent = (match[1] || '').trim();
+      const tagContent = rawContent.replace(/^\{+/, '').replace(/\}+$/, '').trim();
+      const fullTag = `{{${tagContent}}}`;
 
       // Phần text trước tag
       if (tagStartIndex > lastIndex) {
-        const textContent = rawTemplateText.slice(lastIndex, tagStartIndex);
+        const textContent = templateText.slice(lastIndex, tagStartIndex);
         const textNode: TextNode = { type: 'TEXT', content: textContent, raw: textContent };
         getCurrentBody().push(textNode);
       }
@@ -120,8 +125,8 @@ export class TemplateAstParser {
         continue;
       }
 
-      // 2. Tag #ELSE IF <condition> / #ELIF <condition>
-      if (/^#(?:ELSE\s+IF|ELIF)\b/i.test(tagContent)) {
+      // 2. Tag #ELSE IF / #ELIF / ELSE IF <condition>
+      if (/^#?(?:ELSE\s+IF|ELIF)\b/i.test(tagContent)) {
         const top = scopeStack[scopeStack.length - 1];
         if (!top || top.type !== 'IF') {
           diagnostics.push({
@@ -145,7 +150,7 @@ export class TemplateAstParser {
           continue;
         }
 
-        const conditionStr = tagContent.replace(/^#(?:ELSE\s+IF|ELIF)\b/i, '').trim();
+        const conditionStr = tagContent.replace(/^#?(?:ELSE\s+IF|ELIF)\b/i, '').trim();
         detectedConditions.push(conditionStr);
 
         let expr;
@@ -164,13 +169,13 @@ export class TemplateAstParser {
         continue;
       }
 
-      // 3. Tag #ELSE
-      if (/^#ELSE$/i.test(tagContent)) {
+      // 3. Tag #ELSE hoặc ELSE
+      if (/^#?ELSE$/i.test(tagContent)) {
         const top = scopeStack[scopeStack.length - 1];
         if (!top || top.type !== 'IF') {
           diagnostics.push({
             code: 'UNEXPECTED_ELSE',
-            message: `Thẻ "{{#ELSE}}" nằm ngoài khối {{#IF}} hợp lệ.`,
+            message: `Thẻ "${fullTag}" nằm ngoài khối {{#IF}} hợp lệ.`,
             severity: 'ERROR',
             rawSnippet: fullTag,
             suggestion: 'Đảm bảo thẻ {{#ELSE}} nằm giữa {{#IF}} và {{/IF}}.',
@@ -341,8 +346,8 @@ export class TemplateAstParser {
     }
 
     // Phần text còn lại sau tag cuối cùng
-    if (lastIndex < rawTemplateText.length) {
-      const remainingText = rawTemplateText.slice(lastIndex);
+    if (lastIndex < templateText.length) {
+      const remainingText = templateText.slice(lastIndex);
       getCurrentBody().push({ type: 'TEXT', content: remainingText, raw: remainingText });
     }
 

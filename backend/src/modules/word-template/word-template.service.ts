@@ -7,6 +7,7 @@ import { wordTemplateParserService } from './word-template-parser.service';
 import { wordTemplateDataDictionaryService } from './word-template-data-dictionary.service';
 import { wordTemplateGeneratorService } from './word-template-generator.service';
 import { globalWordKeywordService, GlobalWordKeywordInput } from './global-word-keyword.service';
+import { authService } from '../auth/auth.service';
 import { prisma } from '../../config/database';
 import type {
   CreateWordTemplateDto,
@@ -232,6 +233,7 @@ export class WordTemplateService {
   public async previewTemplate(
     templateId: string,
     loanId: string,
+    currentUser?: any,
   ): Promise<TemplatePreviewResult> {
     const [template, loan, areaGroups] = await Promise.all([
       this.getTemplateById(templateId),
@@ -242,8 +244,25 @@ export class WordTemplateService {
       throw AppError.notFound(`Không tìm thấy hồ sơ khoản vay ID: ${loanId}`);
     }
 
+    let officerUser = currentUser;
+    if (!officerUser || !officerUser.profile) {
+      const activeUser = await prisma.user.findFirst({
+        where: { status: 'ACTIVE' },
+        include: { profile: true },
+        orderBy: { createdAt: 'asc' },
+      });
+      if (activeUser) {
+        officerUser = authService.formatAuthUser(activeUser);
+      }
+    }
+
     const { resolvedContext, warnings } =
-      wordTemplateDataDictionaryService.resolveLoanData(loan, template.mappings as any, areaGroups);
+      wordTemplateDataDictionaryService.resolveLoanData(
+        loan,
+        template.mappings as any,
+        areaGroups,
+        officerUser,
+      );
 
     return {
       templateId: template.id,
@@ -261,10 +280,23 @@ export class WordTemplateService {
     loanId: string,
     templateIds: string[],
     exportedBy = 'Cán bộ tín dụng',
+    currentUser?: any,
   ): Promise<ExportResultFile> {
     const loan = await loanRepository.findById(loanId);
     if (!loan) {
       throw AppError.notFound(`Không tìm thấy hồ sơ khoản vay ID: ${loanId}`);
+    }
+
+    let officerUser = currentUser;
+    if (!officerUser || !officerUser.profile) {
+      const activeUser = await prisma.user.findFirst({
+        where: { status: 'ACTIVE' },
+        include: { profile: true },
+        orderBy: { createdAt: 'asc' },
+      });
+      if (activeUser) {
+        officerUser = authService.formatAuthUser(activeUser);
+      }
     }
 
     const generatedFiles: { fileName: string; buffer: Buffer }[] = [];
@@ -298,7 +330,12 @@ export class WordTemplateService {
 
       // Ánh xạ dữ liệu
       const { resolvedContext, warnings } =
-        wordTemplateDataDictionaryService.resolveLoanData(loan, template.mappings as any, areaGroups);
+        wordTemplateDataDictionaryService.resolveLoanData(
+          loan,
+          template.mappings as any,
+          areaGroups,
+          officerUser,
+        );
 
       // Render docx
       const outputBuffer = wordTemplateGeneratorService.generateDocx(

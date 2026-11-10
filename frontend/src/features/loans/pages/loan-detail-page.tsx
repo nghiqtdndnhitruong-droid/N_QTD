@@ -5,7 +5,6 @@ import {
   CheckCircle2,
   FilePenLine,
   FileText,
-  Printer,
   Trash2,
 } from 'lucide-react';
 import { LoanStatus, LoanType } from '@/shared/types';
@@ -26,10 +25,6 @@ import {
   CardTitle,
   DescriptionItem,
   DescriptionList,
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
   LoanStatusBadge,
   Tabs,
   TabsContent,
@@ -42,7 +37,6 @@ import {
   DetailPageSkeleton,
   ErrorState,
   notifyApiError,
-  notifyInfo,
   notifySuccess,
 } from '@/components/feedback';
 import { PageHeader } from '@/components/layout';
@@ -141,13 +135,6 @@ export function LoanDetailPage() {
     }
   };
 
-  const handlePrintDocument = (docLabel: string) => {
-    notifyInfo(
-      `Đang yêu cầu in biểu mẫu: ${docLabel}`,
-      'Kết nối endpoint GET /api/v1/loans/:id/documents/:type để tải file DOCX/PDF chuẩn của Quỹ.',
-    );
-  };
-
   const isMissingRelatedPerson =
     loan?.loanType === LoanType.THE_CHAP &&
     (loan?.loanAmount ?? 0) >= 140_000_000 &&
@@ -189,40 +176,6 @@ export function LoanDetailPage() {
               >
                 Xóa hồ sơ vay
               </Button>
-            </Can>
-
-            <Can perm="document:print">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    leftIcon={<Printer className="h-4 w-4" />}
-                  >
-                    In biểu mẫu
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onSelect={() => handlePrintDocument('Hợp đồng tín dụng')}>
-                    <FileText className="h-4 w-4" />
-                    <span>Hợp đồng tín dụng (.docx / .pdf)</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onSelect={() => handlePrintDocument('Khế ước nhận nợ')}>
-                    <FileText className="h-4 w-4" />
-                    <span>Khế ước nhận nợ (.docx / .pdf)</span>
-                  </DropdownMenuItem>
-                  {loan.loanType === LoanType.THE_CHAP && (
-                    <DropdownMenuItem onSelect={() => handlePrintDocument('Hợp đồng thế chấp QSDĐ')}>
-                      <FileText className="h-4 w-4" />
-                      <span>Hợp đồng thế chấp QSDĐ (.docx / .pdf)</span>
-                    </DropdownMenuItem>
-                  )}
-                  <DropdownMenuItem onSelect={() => handlePrintDocument('Phiếu thu / Phiếu chi')}>
-                    <FileText className="h-4 w-4" />
-                    <span>Phiếu giải ngân / Phiếu thu lãi</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
             </Can>
 
             {isEditable && (

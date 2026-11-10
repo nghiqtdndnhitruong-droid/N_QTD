@@ -1,5 +1,5 @@
 import { safeExpressionEvaluator } from './safe-evaluator';
-import { wordXmlReconciler } from './xml-reconciler';
+import { wordXmlReconciler, normalizeTemplateBraces } from './xml-reconciler';
 
 export interface CompiledTemplateResult {
   compiledXml: string;
@@ -25,7 +25,7 @@ export class WordTemplateCompiler {
 
     // 2. Tiền xử lý các vòng lặp {{#FOR item IN DANH_SACH}} ... {{/FOR}}
     // Cần làm giàu dữ liệu danh sách trước: thêm @index, @number, @first, @last, @length, và alias `item`
-    const forRegex = /\{\{\s*#FOR\s+([a-zA-Z0-9_]+)\s+IN\s+([a-zA-Z0-9_.[\]]+)\s*\}\}/gi;
+    const forRegex = /\{{2,}\s*#FOR\s+([a-zA-Z0-9_]+)\s+IN\s+([a-zA-Z0-9_.[\]]+)\s*\}{2,}/gi;
     let forMatch: RegExpExecArray | null;
 
     const loopConfigs: { iterator: string; collectionPath: string }[] = [];
@@ -51,7 +51,7 @@ export class WordTemplateCompiler {
     // chuyển thành scoped tag của docxtemplater: `{{#DANH_SACH_TAI_SAN}}`
     const iterators = new Set(loopConfigs.map((l) => l.iterator));
     compiled = compiled.replace(
-      /\{\{\s*#FOR\s+([a-zA-Z0-9_]+)\s+IN\s+([a-zA-Z0-9_.[\]]+)\s*\}\}/gi,
+      /\{{2,}\s*#FOR\s+([a-zA-Z0-9_]+)\s+IN\s+([a-zA-Z0-9_.[\]]+)\s*\}{2,}/gi,
       (_match, _iterator, collection) => {
         let cleanColl = collection.trim();
         if (cleanColl.includes('.')) {
@@ -67,14 +67,14 @@ export class WordTemplateCompiler {
     // Cần khớp đóng /FOR với collection tương ứng nếu lồng nhau
     // Để docxtemplater không nhầm lẫn, dùng stack tên collection
     const forCollStack: string[] = [];
-    const forCollRegex = /\{\{\s*#([a-zA-Z0-9_.[\]]+)\s*\}\}|\{\{\s*\/FOR\s*\}\}/gi;
+    const forCollRegex = /\{{2,}\s*#([a-zA-Z0-9_.[\]]+)\s*\}{2,}|\{{2,}\s*\/FOR\s*\}{2,}/gi;
 
     compiled = compiled.replace(forCollRegex, (match, collName) => {
       if (collName) {
         forCollStack.push(collName.trim());
         return `{{#${collName.trim()}}}`;
       }
-      if (/^\{\{\s*\/FOR\s*\}\}$/i.test(match)) {
+      if (/^\{{2,}\s*\/FOR\s*\}{2,}$/i.test(match)) {
         const closingColl = forCollStack.pop() || 'DANH_SACH';
         return `{{/${closingColl}}}`;
       }
@@ -82,21 +82,21 @@ export class WordTemplateCompiler {
     });
 
     // Thay thế các biến vị trí trong vòng lặp (hỗ trợ cả {{@number}} và {{item.@number}})
-    compiled = compiled.replace(/\{\{(?:[a-zA-Z0-9_]+\.)?@index\}\}/gi, '{{_index}}');
-    compiled = compiled.replace(/\{\{(?:[a-zA-Z0-9_]+\.)?@number\}\}/gi, '{{_number}}');
-    compiled = compiled.replace(/\{\{(?:[a-zA-Z0-9_]+\.)?@first\}\}/gi, '{{_first}}');
-    compiled = compiled.replace(/\{\{(?:[a-zA-Z0-9_]+\.)?@last\}\}/gi, '{{_last}}');
-    compiled = compiled.replace(/\{\{(?:[a-zA-Z0-9_]+\.)?@length\}\}/gi, '{{_length}}');
+    compiled = compiled.replace(/\{{2,}(?:[a-zA-Z0-9_]+\.)?@index\s*\}{2,}/gi, '{{_index}}');
+    compiled = compiled.replace(/\{{2,}(?:[a-zA-Z0-9_]+\.)?@number\s*\}{2,}/gi, '{{_number}}');
+    compiled = compiled.replace(/\{{2,}(?:[a-zA-Z0-9_]+\.)?@first\s*\}{2,}/gi, '{{_first}}');
+    compiled = compiled.replace(/\{{2,}(?:[a-zA-Z0-9_]+\.)?@last\s*\}{2,}/gi, '{{_last}}');
+    compiled = compiled.replace(/\{{2,}(?:[a-zA-Z0-9_]+\.)?@length\s*\}{2,}/gi, '{{_length}}');
 
     // Thay thế biến lặp: {{ts.MA_TAI_SAN}} -> {{MA_TAI_SAN}} khi nằm trong loop (chấp nhận khoảng trắng)
     for (const loop of loopConfigs) {
-      const iterPrefixRegex = new RegExp(`\\{\\{\\s*${loop.iterator}\\.\\s*([a-zA-Z0-9_]+)\\s*\\}\\}`, 'gi');
+      const iterPrefixRegex = new RegExp(`\\{{2,}\\s*${loop.iterator}\\.\\s*([a-zA-Z0-9_]+)\\s*\\}{2,}`, 'gi');
       compiled = compiled.replace(iterPrefixRegex, '{{$1}}');
     }
 
     // 4. Xử lý truy cập mảng ngoài vòng lặp: {{DANH_SACH_TAI_SAN[0].MA_TAI_SAN}}
     compiled = compiled.replace(
-      /\{\{([a-zA-Z0-9_]+)\[(\d+)\](?:\.([a-zA-Z0-9_.]+))?\}\}/gi,
+      /\{{2,}([a-zA-Z0-9_]+)\[(\d+)\](?:\.([a-zA-Z0-9_.]+))?\s*\}{2,}/gi,
       (_match, collName, indexStr, prop) => {
         const idx = parseInt(indexStr, 10);
         const uniqueKey = `__arr_${collName}_${idx}_${prop || 'val'}`;
@@ -115,6 +115,14 @@ export class WordTemplateCompiler {
     // 5. Xử lý IF – ELSE IF – ELSE
     // Thuật toán: Quét các khối IF, tính toán giá trị logic của từng nhánh và gắn thẻ boolean cho docxtemplater
     compiled = this.compileIfBlocks(compiled, enrichedData, evaluatedConditions, condCounter, loopConfigs);
+
+    // 6. Chuẩn hóa lần cuối tất cả thẻ <w:t> để đảm bảo mọi tag trả về cho Docxtemplater đều đúng {{...}}
+    compiled = compiled.replace(/(<w:t(?:\s[^>]*)?>)([\s\S]*?)(<\/w:t>)/g, (_m, prefix, text, suffix) => {
+      if (text.includes('{') && text.includes('}')) {
+        return prefix + normalizeTemplateBraces(text) + suffix;
+      }
+      return _m;
+    });
 
     return {
       compiledXml: compiled,
@@ -170,8 +178,8 @@ export class WordTemplateCompiler {
     loopConfigs: { iterator: string; collectionPath: string }[] = []
   ): string {
     const iterators = new Set(loopConfigs.map((l) => l.iterator));
-    // Regex tìm cấu trúc IF/ELSE
-    const ifTokenRegex = /\{\{#IF\s+([\s\S]*?)\}\}|\{\{#(?:ELSE\s+IF|ELIF)\s+([\s\S]*?)\}\}|\{\{#ELSE\}\}|\{\{\/IF\}\}/gi;
+    // Regex tìm cấu trúc IF/ELSE (hỗ trợ cả trường hợp dư thừa dấu ngoặc và linh hoạt có hoặc không có dấu # cho ELSE / ELIF)
+    const ifTokenRegex = /\{{2,}\s*#IF\s+([\s\S]*?)\s*\}{2,}|\{{2,}\s*#?(?:ELSE\s+IF|ELIF)\s+([\s\S]*?)\s*\}{2,}|\{{2,}\s*#?ELSE\s*\}{2,}|\{{2,}\s*\/IF\s*\}{2,}/gi;
 
     interface ActiveIfScope {
       condId: string;
@@ -240,8 +248,8 @@ export class WordTemplateCompiler {
         return `${closePrev}{{#${branchKey}}}`;
       }
 
-      // 3. Gặp #ELSE
-      if (/^\{\{#ELSE\}\}$/i.test(match)) {
+      // 3. Gặp #ELSE hoặc ELSE
+      if (/^\{{2,}\s*#?ELSE\s*\}{2,}$/i.test(match)) {
         const top = ifStack[ifStack.length - 1];
         if (!top) return match;
 
@@ -257,7 +265,7 @@ export class WordTemplateCompiler {
       }
 
       // 4. Gặp /IF
-      if (/^\{\{\/IF\}\}$/i.test(match)) {
+      if (/^\{{2,}\s*\/IF\s*\}{2,}$/i.test(match)) {
         const top = ifStack.pop();
         if (!top) return match;
         return `{{/${top.activeBranchKey}}}`;

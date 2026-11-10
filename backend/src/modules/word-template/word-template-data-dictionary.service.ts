@@ -639,6 +639,28 @@ export class WordTemplateDataDictionaryService {
           },
         ],
       },
+      {
+        id: 'officer',
+        label: '7. Cán bộ lập hồ sơ / Đang đăng nhập (CAN_BO.*)',
+        description: 'Thông tin cá nhân, giấy tờ căn cước của cán bộ đang đăng nhập thao tác trên hệ thống',
+        fields: [
+          { path: 'CAN_BO.HO_TEN', label: 'Họ và tên cán bộ', dataType: 'TEXT', sampleValue: 'Nguyễn Văn Cường' },
+          { path: 'CAN_BO.HO_TEN_IN_HOA', label: 'Họ và tên cán bộ viết in hoa', dataType: 'TEXT', sampleValue: 'NGUYỄN VĂN CƯỜNG' },
+          { path: 'CAN_BO.LOAI_GIAY_TO', label: 'Loại giấy tờ (Căn cước / Căn cước công dân)', dataType: 'TEXT', sampleValue: 'Căn cước công dân' },
+          { path: 'CAN_BO.SO_GIAY_TO', label: 'Số giấy tờ / CCCD cán bộ', dataType: 'TEXT', sampleValue: '084090001234' },
+          { path: 'CAN_BO.SO_CCCD', label: 'Số CCCD cán bộ (bí danh)', dataType: 'TEXT', sampleValue: '084090001234' },
+          { path: 'CAN_BO.NOI_CAP', label: 'Nơi cấp giấy tờ cán bộ', dataType: 'TEXT', sampleValue: 'Cục Cảnh sát QLHC về TTXH' },
+          { path: 'CAN_BO.NGAY_CAP', label: 'Ngày cấp giấy tờ (DD/MM/YYYY)', dataType: 'DATE', sampleValue: '10/05/2021' },
+          { path: 'CAN_BO.NGAY_CAP_NGAY', label: 'Ngày cấp (chỉ số ngày)', dataType: 'TEXT', sampleValue: '10' },
+          { path: 'CAN_BO.NGAY_CAP_THANG', label: 'Ngày cấp (chỉ số tháng)', dataType: 'TEXT', sampleValue: '05' },
+          { path: 'CAN_BO.NGAY_CAP_NAM', label: 'Ngày cấp (chỉ số năm)', dataType: 'TEXT', sampleValue: '2021' },
+          { path: 'CAN_BO.GIOI_TINH', label: 'Giới tính (Nam/Nữ)', dataType: 'TEXT', sampleValue: 'Nam' },
+          { path: 'CAN_BO.NAM_SINH', label: 'Năm sinh cán bộ', dataType: 'TEXT', sampleValue: '1990' },
+          { path: 'CAN_BO.DANH_XUNG', label: 'Danh xưng (Ông/Bà)', dataType: 'GENDER_TITLE', sampleValue: 'Ông' },
+          { path: 'CAN_BO.XUNG_HO', label: 'Xưng hô (Ông/Bà)', dataType: 'TEXT', sampleValue: 'Ông' },
+          { path: 'CAN_BO.CHUC_VU', label: 'Chức danh / Vai trò', dataType: 'TEXT', sampleValue: 'Cán bộ tín dụng' },
+        ],
+      },
     ];
   }
 
@@ -649,12 +671,13 @@ export class WordTemplateDataDictionaryService {
     loan: any,
     mappings: WordTemplateMappingDto[],
     areaGroups?: any[],
+    currentUserInput?: any,
   ): {
     resolvedContext: Record<string, any>;
     warnings: KeywordValidationWarning[];
   } {
     const warnings: KeywordValidationWarning[] = [];
-    const rawData = this.buildRawLoanData(loan, areaGroups);
+    const rawData = this.buildRawLoanData(loan, areaGroups, currentUserInput);
 
     // Context cuối cùng truyền cho docxtemplater: gán sẵn các biến hệ thống mặc định, danh sách và đối tượng lồng nhau
     const resolvedContext: Record<string, any> = {
@@ -838,7 +861,7 @@ export class WordTemplateDataDictionaryService {
     };
   }
 
-  public buildRawLoanData(loan: any, areaGroupsInput?: any[]) {
+  public buildRawLoanData(loan: any, areaGroupsInput?: any[], currentUserInput?: any) {
     const member = loan.member || {};
     const collaterals = loan.collaterals || [];
     const relatedPersons = loan.relatedPersons || [];
@@ -846,6 +869,113 @@ export class WordTemplateDataDictionaryService {
     const mortgage = loan.mortgageContract || null;
     const now = dayjs();
     const areaGroups: any[] = areaGroupsInput || loan.areaGroups || [];
+
+    // Trích xuất thông tin cán bộ đang đăng nhập / cán bộ lập hồ sơ
+    const currentUser = currentUserInput || loan.currentUser || loan.officer || null;
+    const officerProfile = currentUser?.profile || currentUser?.user?.profile || currentUser || {};
+
+    const canBoHoTen = (
+      officerProfile.fullName ||
+      currentUser?.fullName ||
+      currentUser?.username ||
+      ''
+    ).trim();
+    const canBoHoTenInHoa = canBoHoTen.toUpperCase();
+
+    let canBoLoaiGiayTo = 'Căn cước công dân';
+    const rawIdType = officerProfile.idType ? String(officerProfile.idType).trim() : '';
+    if (rawIdType === 'CAN_CUOC' || rawIdType === 'Căn cước') {
+      canBoLoaiGiayTo = 'Căn cước';
+    } else if (rawIdType === 'CAN_CUOC_CONG_DAN' || rawIdType === 'Căn cước công dân') {
+      canBoLoaiGiayTo = 'Căn cước công dân';
+    } else if (rawIdType) {
+      canBoLoaiGiayTo = rawIdType;
+    }
+
+    const canBoSoGiayTo = officerProfile.idNumber ? String(officerProfile.idNumber).trim() : '';
+    const canBoNoiCap = officerProfile.idIssuePlace ? String(officerProfile.idIssuePlace).trim() : '';
+
+    let canBoNgayCap = '';
+    let canBoNgayCapNgay = '';
+    let canBoNgayCapThang = '';
+    let canBoNgayCapNam = '';
+
+    if (officerProfile.idIssueDate) {
+      const d = dayjs(officerProfile.idIssueDate);
+      if (d.isValid()) {
+        canBoNgayCap = d.format('DD/MM/YYYY');
+        canBoNgayCapNgay = d.format('DD');
+        canBoNgayCapThang = d.format('MM');
+        canBoNgayCapNam = d.format('YYYY');
+      } else if (typeof officerProfile.idIssueDate === 'string') {
+        const rawDate = officerProfile.idIssueDate.trim();
+        const parts = rawDate.split(/[-/]/);
+        if (parts.length === 3) {
+          if (parts[0].length === 4) {
+            canBoNgayCapNam = parts[0];
+            canBoNgayCapThang = parts[1].padStart(2, '0');
+            canBoNgayCapNgay = parts[2].padStart(2, '0');
+          } else {
+            canBoNgayCapNgay = parts[0].padStart(2, '0');
+            canBoNgayCapThang = parts[1].padStart(2, '0');
+            canBoNgayCapNam = parts[2];
+          }
+          canBoNgayCap = `${canBoNgayCapNgay}/${canBoNgayCapThang}/${canBoNgayCapNam}`;
+        } else {
+          canBoNgayCap = rawDate;
+        }
+      }
+    }
+
+    let canBoGioiTinh = 'Nam';
+    const rawGender = officerProfile.gender ? String(officerProfile.gender).trim() : '';
+    if (rawGender === 'NU' || rawGender === 'Nữ' || rawGender.toLowerCase() === 'nu') {
+      canBoGioiTinh = 'Nữ';
+    } else if (rawGender === 'NAM' || rawGender === 'Nam' || rawGender.toLowerCase() === 'nam') {
+      canBoGioiTinh = 'Nam';
+    } else if (rawGender) {
+      canBoGioiTinh = rawGender;
+    }
+
+    const canBoNamSinh = officerProfile.yearOfBirth ? String(officerProfile.yearOfBirth).trim() : '';
+    const canBoDanhXung = canBoGioiTinh === 'Nữ' ? 'Bà' : 'Ông';
+    const canBoChucVu =
+      currentUser?.title ||
+      (currentUser?.role === 'ADMIN' ? 'Quản trị hệ thống' : 'Cán bộ tín dụng');
+
+    const canBoObject = {
+      HO_TEN: canBoHoTen,
+      HO_TEN_IN_HOA: canBoHoTenInHoa,
+      HO_TEN_VIET_HOA: canBoHoTenInHoa,
+      LOAI_GIAY_TO: canBoLoaiGiayTo,
+      SO_GIAY_TO: canBoSoGiayTo,
+      SO_CCCD: canBoSoGiayTo,
+      NOI_CAP: canBoNoiCap,
+      NOI_CAP_GIAY_TO: canBoNoiCap,
+      NOI_CAP_CCCD: canBoNoiCap,
+      NGAY_CAP: canBoNgayCap,
+      NGAY_CAP_GIAY_TO: canBoNgayCap,
+      NGAY_CAP_CCCD: canBoNgayCap,
+      NGAY_CAP_NGAY: canBoNgayCapNgay,
+      NGAY_CAP_THANG: canBoNgayCapThang,
+      NGAY_CAP_NAM: canBoNgayCapNam,
+      GIOI_TINH: canBoGioiTinh,
+      NAM_SINH: canBoNamSinh,
+      DANH_XUNG: canBoDanhXung,
+      XUNG_HO: canBoDanhXung,
+      CHUC_VU: canBoChucVu,
+      VAI_TRO: canBoChucVu,
+      fullName: canBoHoTen,
+      idType: canBoLoaiGiayTo,
+      idNumber: canBoSoGiayTo,
+      idIssuePlace: canBoNoiCap,
+      idIssueDate: canBoNgayCap,
+      gender: canBoGioiTinh,
+      yearOfBirth: canBoNamSinh,
+      toString() {
+        return canBoHoTen;
+      },
+    };
 
     // Xử lý phân nhóm địa bàn cấp Xã
     const effectiveAreaGroups =
@@ -2424,6 +2554,8 @@ export class WordTemplateDataDictionaryService {
     };
 
     const nested = {
+      CAN_BO: canBoObject,
+      can_bo: canBoObject,
       phuong_an: {
         purpose: planPurpose,
         term: planTerm,
@@ -2835,6 +2967,77 @@ export class WordTemplateDataDictionaryService {
 
     // Tạo phẳng một số biến tiện dụng
     const flatVariables: Record<string, any> = {
+      // Thông tin Cán bộ đang đăng nhập / Cán bộ lập hồ sơ
+      'CAN_BO.HO_TEN': canBoHoTen,
+      'CAN_BO.HO_TEN_IN_HOA': canBoHoTenInHoa,
+      'CAN_BO.HO_TEN_VIET_HOA': canBoHoTenInHoa,
+      'CAN_BO.LOAI_GIAY_TO': canBoLoaiGiayTo,
+      'CAN_BO.SO_GIAY_TO': canBoSoGiayTo,
+      'CAN_BO.SO_CCCD': canBoSoGiayTo,
+      'CAN_BO.NOI_CAP': canBoNoiCap,
+      'CAN_BO.NOI_CAP_GIAY_TO': canBoNoiCap,
+      'CAN_BO.NOI_CAP_CCCD': canBoNoiCap,
+      'CAN_BO.NGAY_CAP': canBoNgayCap,
+      'CAN_BO.NGAY_CAP_GIAY_TO': canBoNgayCap,
+      'CAN_BO.NGAY_CAP_CCCD': canBoNgayCap,
+      'CAN_BO.NGAY_CAP_NGAY': canBoNgayCapNgay,
+      'CAN_BO.NGAY_CAP_THANG': canBoNgayCapThang,
+      'CAN_BO.NGAY_CAP_NAM': canBoNgayCapNam,
+      'CAN_BO.GIOI_TINH': canBoGioiTinh,
+      'CAN_BO.NAM_SINH': canBoNamSinh,
+      'CAN_BO.DANH_XUNG': canBoDanhXung,
+      'CAN_BO.XUNG_HO': canBoDanhXung,
+      'CAN_BO.CHUC_VU': canBoChucVu,
+      'CAN_BO.VAI_TRO': canBoChucVu,
+
+      // CAN_BO bí danh không dấu chấm
+      CAN_BO: canBoObject,
+      CAN_BO_HO_TEN: canBoHoTen,
+      CAN_BO_HO_TEN_IN_HOA: canBoHoTenInHoa,
+      CAN_BO_HO_TEN_VIET_HOA: canBoHoTenInHoa,
+      CAN_BO_LOAI_GIAY_TO: canBoLoaiGiayTo,
+      CAN_BO_SO_GIAY_TO: canBoSoGiayTo,
+      CAN_BO_SO_CCCD: canBoSoGiayTo,
+      CAN_BO_NOI_CAP: canBoNoiCap,
+      CAN_BO_NOI_CAP_GIAY_TO: canBoNoiCap,
+      CAN_BO_NOI_CAP_CCCD: canBoNoiCap,
+      CAN_BO_NGAY_CAP: canBoNgayCap,
+      CAN_BO_NGAY_CAP_GIAY_TO: canBoNgayCap,
+      CAN_BO_NGAY_CAP_CCCD: canBoNgayCap,
+      CAN_BO_NGAY_CAP_NGAY: canBoNgayCapNgay,
+      CAN_BO_NGAY_CAP_THANG: canBoNgayCapThang,
+      CAN_BO_NGAY_CAP_NAM: canBoNgayCapNam,
+      CAN_BO_GIOI_TINH: canBoGioiTinh,
+      CAN_BO_NAM_SINH: canBoNamSinh,
+      CAN_BO_DANH_XUNG: canBoDanhXung,
+      CAN_BO_XUNG_HO: canBoDanhXung,
+      CAN_BO_CHUC_VU: canBoChucVu,
+      CAN_BO_VAI_TRO: canBoChucVu,
+
+      // can_bo chữ thường
+      'can_bo.ho_ten': canBoHoTen,
+      'can_bo.ho_ten_in_hoa': canBoHoTenInHoa,
+      'can_bo.loai_giay_to': canBoLoaiGiayTo,
+      'can_bo.so_giay_to': canBoSoGiayTo,
+      'can_bo.so_cccd': canBoSoGiayTo,
+      'can_bo.noi_cap': canBoNoiCap,
+      'can_bo.ngay_cap': canBoNgayCap,
+      'can_bo.ngay_cap_ngay': canBoNgayCapNgay,
+      'can_bo.ngay_cap_thang': canBoNgayCapThang,
+      'can_bo.ngay_cap_nam': canBoNgayCapNam,
+      'can_bo.gioi_tinh': canBoGioiTinh,
+      'can_bo.nam_sinh': canBoNamSinh,
+      'can_bo.danh_xung': canBoDanhXung,
+      'can_bo.xung_ho': canBoDanhXung,
+      'can_bo.chuc_vu': canBoChucVu,
+      can_bo_ho_ten: canBoHoTen,
+      can_bo_so_giay_to: canBoSoGiayTo,
+      can_bo_so_cccd: canBoSoGiayTo,
+      can_bo_noi_cap: canBoNoiCap,
+      can_bo_ngay_cap: canBoNgayCap,
+      can_bo_gioi_tinh: canBoGioiTinh,
+      can_bo_nam_sinh: canBoNamSinh,
+
       HO_TEN_NGUOI_VAY: nested.member.fullName,
       'NGUOI_VAY.HO_TEN': nested.member.fullName,
       'NGUOI_VAY.DANH_XUNG': nested.member.genderTitle,

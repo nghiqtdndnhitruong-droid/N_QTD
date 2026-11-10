@@ -2,8 +2,12 @@ import { Router } from 'express';
 import multer from 'multer';
 import { wordTemplateController } from './word-template.controller';
 import { AppError } from '../../shared/errors';
+import { optionalAuthenticateToken } from '../../shared/middlewares';
 
 const router = Router();
+
+// Tự động nhận diện cán bộ đang đăng nhập (gán req.user nếu có Bearer token)
+router.use(optionalAuthenticateToken);
 
 // Cấu hình Multer upload vào MemoryBuffer để kiểm tra an toàn
 const upload = multer({

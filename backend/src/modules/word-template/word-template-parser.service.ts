@@ -1,7 +1,7 @@
 import PizZip from 'pizzip';
 import { AppError } from '../../shared/errors';
 import type { ParsedKeywordInfo } from './word-template.types';
-import { wordXmlReconciler } from './engine/xml-reconciler';
+import { wordXmlReconciler, normalizeTemplateBraces } from './engine/xml-reconciler';
 import { templateAstParser } from './engine/template-ast-parser';
 import type { TemplateValidationResult } from './engine/template-engine.types';
 
@@ -82,22 +82,29 @@ export class WordTemplateParserService {
 
   /**
    * Ghép các thẻ <w:t>...</w:t> liền kề thành đoạn văn bản hoàn chỉnh
+   * Đồng thời loại bỏ các dấu vết Track Changes và chuẩn hóa ngoặc nhọn
    */
   private extractTextFromXml(xml: string): string {
-    let text = xml.replace(/<w:p[^>]*>/g, '\n');
+    // Loại bỏ track changes / deletions trong Word
+    let cleaned = xml
+      .replace(/<w:del(?:\s[^>]*)?>[\s\S]*?<\/w:del>/g, '')
+      .replace(/<w:delText(?:\s[^>]*)?>[\s\S]*?<\/w:delText>/g, '');
+
+    let text = cleaned.replace(/<w:p[^>]*>/g, '\n');
     text = text.replace(/<w:tab[^>]*\/>/g, '\t');
     text = text.replace(/<w:br[^>]*\/>/g, '\n');
 
     const matches = text.match(/<w:t[^>]*>([\s\S]*?)<\/w:t>/g);
+    let raw: string;
     if (!matches) {
-      return text.replace(/<[^>]+>/g, '');
+      raw = text.replace(/<[^>]+>/g, '');
+    } else {
+      raw = matches
+        .map((t) => t.replace(/<w:t[^>]*>/, '').replace(/<\/w:t>/, ''))
+        .join('');
     }
 
-    const raw = matches
-      .map((t) => t.replace(/<w:t[^>]*>/, '').replace(/<\/w:t>/, ''))
-      .join('');
-
-    return raw
+    const decoded = raw
       .replace(/&amp;lt;/g, '<')
       .replace(/&lt;/g, '<')
       .replace(/&amp;gt;/g, '>')
@@ -108,6 +115,8 @@ export class WordTemplateParserService {
       .replace(/&apos;/g, "'")
       .replace(/&amp;amp;/g, '&')
       .replace(/&amp;/g, '&');
+
+    return normalizeTemplateBraces(decoded);
   }
 }
 
