@@ -4,7 +4,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Save } from 'lucide-react';
 import { Gender, IdDocumentType } from '@/shared/types';
 import { GENDER_LABELS, ID_DOCUMENT_TYPE_LABELS } from '@/shared/constants';
-import { toApiDate, toDate } from '@/shared/format';
+import { formatDateVN, toApiDate, toDate } from '@/shared/format';
+import { Alert } from '@/components/feedback';
+import { checkIdExpiryStatus } from '@/features/loans/utils/loan-warnings';
 import {
   getCanonicalIdIssuePlace,
   parseCitizenIdInfo,
@@ -89,6 +91,8 @@ export function MemberForm({
   const watchedIdNumber = useWatch({ control, name: 'idNumber' });
   const watchedIdType = useWatch({ control, name: 'idType' });
   const watchedMemberCode = useWatch({ control, name: 'memberCode' });
+  const watchedIdExpiry = useWatch({ control, name: 'idExpiry' });
+  const expiryStatus = checkIdExpiryStatus(watchedIdExpiry);
   const isBlankCode = !watchedMemberCode || watchedMemberCode.trim().length === 0;
 
   // Tự động xác định giới tính và năm sinh từ số CCCD 12 số (Mục 3.1)
@@ -223,6 +227,20 @@ export function MemberForm({
             name="idExpiry"
             label="Ngày hết hạn (nếu có)"
           />
+          {expiryStatus?.isExpired && (
+            <div className="sm:col-span-2 lg:col-span-3">
+              <Alert tone="warning" title="Giấy tờ tùy thân đã hết hạn">
+                Ngày hết hạn đã qua ({formatDateVN(watchedIdExpiry)}). Hệ thống vẫn cho phép lưu hồ sơ thành viên, nhưng cán bộ cần nhắc nhở thành viên làm thủ tục cấp đổi giấy tờ trước khi hoàn thiện hồ sơ vay vốn.
+              </Alert>
+            </div>
+          )}
+          {expiryStatus?.isExpiringSoon && (
+            <div className="sm:col-span-2 lg:col-span-3">
+              <Alert tone="warning" title="Giấy tờ tùy thân sắp hết hạn (< 6 tháng)">
+                Giấy tờ sẽ hết hạn vào ngày {formatDateVN(watchedIdExpiry)} (còn {expiryStatus.daysRemaining} ngày, dưới 6 tháng). Cán bộ lưu ý nhắc nhở thành viên gia hạn giấy tờ.
+              </Alert>
+            </div>
+          )}
         </div>
       </div>
 

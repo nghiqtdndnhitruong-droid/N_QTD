@@ -43,6 +43,7 @@ import { PageHeader } from '@/components/layout';
 import { Can } from '@/features/auth/components/can';
 import { isLoanEligibleForRelatedPerson } from '@/shared/utils/identity-document';
 import { buildInterestExpenseItemName } from '../utils/loan-plan-templates';
+import { computeLoanWarnings } from '../utils/loan-warnings';
 import { CollateralsSection } from '../components/collaterals-section';
 import { HouseholdMembersSection } from '../components/household-members-section';
 import { LoanValuationSection } from '../components/loan-valuation-section';
@@ -85,6 +86,30 @@ export function LoanDetailPage() {
         c.ownerType === CollateralOwnerType.NGUOI_THUA_KE_HO,
     );
   }, [loan?.collaterals]);
+
+  const loanWarnings = useMemo(() => {
+    if (!loan) return [];
+    if (loan.warnings && loan.warnings.length > 0) return loan.warnings;
+    return computeLoanWarnings({
+      loanType: loan.loanType,
+      termMonths: loan.termMonths,
+      expectedMaturityDate: loan.expectedMaturityDate,
+      maturityDate: loan.maturityDate,
+      member: loan.member,
+      heir: loan.heir,
+      relatedPersons: loan.relatedPersons,
+      mortgageContract: loan.mortgageContract,
+    });
+  }, [loan]);
+
+  const enrichedSummary = useMemo(() => {
+    if (!summary) return summary;
+    if (summary.warnings && summary.warnings.length > 0) return summary;
+    return {
+      ...summary,
+      warnings: loanWarnings,
+    };
+  }, [summary, loanWarnings]);
 
   if (isLoading) return <DetailPageSkeleton />;
   if (error || !loan) return <ErrorState error={error} onRetry={() => void refetch()} />;
@@ -226,7 +251,7 @@ export function LoanDetailPage() {
       />
 
       {/* Dải thẻ tóm tắt tài chính thời gian thực */}
-      <LoanSummaryStrip summary={summary} isLoading={isSummaryLoading} />
+      <LoanSummaryStrip summary={enrichedSummary} isLoading={isSummaryLoading} />
 
       {/* Cảnh báo thiếu Người liên quan nếu khoản vay thế chấp >= 140tr */}
       {isRelatedPersonEligible && (loan.relatedPersons?.length ?? 0) === 0 && (

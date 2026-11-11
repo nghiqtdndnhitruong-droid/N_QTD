@@ -1,8 +1,9 @@
 import dayjs from 'dayjs';
 import ExcelJS from 'exceljs';
 import { prisma } from '../../config/database';
-import { LoanStatus, LoanType } from '@prisma/client';
+import { LoanStatus, LoanType, UserRole } from '@prisma/client';
 import { AppError } from '../../shared/errors/app-error';
+import { AuthUserResponse } from '../auth/auth.types';
 import {
   DisbursedLoanItemDto,
   DisbursedLoansFilterQuery,
@@ -79,13 +80,17 @@ export class ReportService {
   /**
    * Truy vấn danh sách khoản vay đã giải ngân theo khoảng thời gian
    */
-  public async getDisbursedLoans(query: DisbursedLoansFilterQuery): Promise<DisbursedLoansResponse> {
+  public async getDisbursedLoans(
+    query: DisbursedLoansFilterQuery,
+    currentUser?: AuthUserResponse
+  ): Promise<DisbursedLoansResponse> {
     const fromDateStr = query.fromDate ? query.fromDate.trim() : '';
     const toDateStr = query.toDate ? query.toDate.trim() : '';
 
     const where: any = {
       status: LoanStatus.DA_GIAI_NGAN,
       isDeleted: { not: true },
+      ...(currentUser?.role === UserRole.CREDIT_OFFICER ? { createdById: currentUser.id } : {}),
     };
 
     if (fromDateStr || toDateStr) {
@@ -238,8 +243,11 @@ export class ReportService {
   /**
    * Xuất file Excel danh sách giải ngân gồm 2 sheet: Tín chấp và Thế chấp
    */
-  public async exportDisbursedLoansExcel(query: DisbursedLoansFilterQuery): Promise<{ buffer: Buffer; filename: string }> {
-    const data = await this.getDisbursedLoans(query);
+  public async exportDisbursedLoansExcel(
+    query: DisbursedLoansFilterQuery,
+    currentUser?: AuthUserResponse
+  ): Promise<{ buffer: Buffer; filename: string }> {
+    const data = await this.getDisbursedLoans(query, currentUser);
 
     const workbook = new ExcelJS.Workbook();
     workbook.creator = 'Quỹ Tín Dụng Nhân Dân Nhị Trường';
@@ -559,7 +567,10 @@ export class ReportService {
   /**
    * Lấy danh sách khoản vay tới hạn theo Tháng và Năm
    */
-  public async getMaturityLoans(query: MaturityLoansFilterQuery): Promise<MaturityLoansResponse> {
+  public async getMaturityLoans(
+    query: MaturityLoansFilterQuery,
+    currentUser?: AuthUserResponse
+  ): Promise<MaturityLoansResponse> {
     const month = parseInt(String(query.month || dayjs().month() + 1), 10);
     const year = parseInt(String(query.year || dayjs().year()), 10);
 
@@ -575,6 +586,7 @@ export class ReportService {
       where: {
         status: { in: [LoanStatus.DA_GIAI_NGAN, LoanStatus.QUA_HAN] },
         isDeleted: { not: true },
+        ...(currentUser?.role === UserRole.CREDIT_OFFICER ? { createdById: currentUser.id } : {}),
       },
       include: {
         member: {
@@ -660,8 +672,11 @@ export class ReportService {
   /**
    * Xuất file Excel danh sách tới hạn cho 1 tháng cụ thể
    */
-  public async exportMaturityLoansExcel(query: MaturityLoansFilterQuery): Promise<{ buffer: Buffer; filename: string }> {
-    const data = await this.getMaturityLoans(query);
+  public async exportMaturityLoansExcel(
+    query: MaturityLoansFilterQuery,
+    currentUser?: AuthUserResponse
+  ): Promise<{ buffer: Buffer; filename: string }> {
+    const data = await this.getMaturityLoans(query, currentUser);
 
     const workbook = new ExcelJS.Workbook();
     workbook.creator = 'Quỹ Tín Dụng Nhân Dân Nhị Trường';
@@ -799,7 +814,10 @@ export class ReportService {
   /**
    * Lấy danh sách khoản vay chưa đóng lãi (3 tháng, 4 tháng... theo bộ lọc)
    */
-  public async getUnpaidInterestLoans(query: UnpaidInterestFilterQuery): Promise<UnpaidInterestResponse> {
+  public async getUnpaidInterestLoans(
+    query: UnpaidInterestFilterQuery,
+    currentUser?: AuthUserResponse
+  ): Promise<UnpaidInterestResponse> {
     const filterMonths = query.months !== undefined ? String(query.months).trim() : 'gte_3';
     const search = query.search ? query.search.trim().toLowerCase() : '';
 
@@ -807,6 +825,7 @@ export class ReportService {
       where: {
         status: { in: [LoanStatus.DA_GIAI_NGAN, LoanStatus.QUA_HAN] },
         isDeleted: { not: true },
+        ...(currentUser?.role === UserRole.CREDIT_OFFICER ? { createdById: currentUser.id } : {}),
       },
       include: {
         member: {
@@ -945,9 +964,10 @@ export class ReportService {
    * Xuất file Excel danh sách các khoản vay chậm đóng lãi
    */
   public async exportUnpaidInterestExcel(
-    query: UnpaidInterestFilterQuery
+    query: UnpaidInterestFilterQuery,
+    currentUser?: AuthUserResponse
   ): Promise<{ buffer: Buffer; filename: string }> {
-    const data = await this.getUnpaidInterestLoans(query);
+    const data = await this.getUnpaidInterestLoans(query, currentUser);
 
     const workbook = new ExcelJS.Workbook();
     workbook.creator = 'Quỹ Tín Dụng Nhân Dân Nhị Trường';

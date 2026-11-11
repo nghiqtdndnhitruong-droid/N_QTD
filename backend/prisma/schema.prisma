@@ -209,6 +209,10 @@ model Member {
   deletedAt     DateTime?
   deletedReason String?
 
+  // Cán bộ tín dụng tạo / quản lý hồ sơ thành viên
+  createdById   String?        @db.ObjectId
+  createdBy     User?          @relation("UserMembers", fields: [createdById], references: [id])
+
   loans         Loan[]
 
   createdAt     DateTime       @default(now())
@@ -218,6 +222,7 @@ model Member {
   @@index([fullName])
   @@index([communeId, hamletId])
   @@index([isDeleted])
+  @@index([createdById])
   @@map("members")
 }
 
@@ -298,6 +303,10 @@ model Loan {
   deletedAt        DateTime?
   deletedReason    String?
 
+  // Cán bộ tín dụng tạo / quản lý khoản vay
+  createdById      String?          @db.ObjectId
+  createdBy        User?            @relation("UserLoans", fields: [createdById], references: [id])
+
   // Embedded objects
   heir             Heir?            // Người thừa kế (tùy chọn)
   loanPlan         LoanPlan?        // Phương án vay
@@ -319,6 +328,7 @@ model Loan {
   @@index([loanType])
   @@index([maturityDate])
   @@index([contractNumber])
+  @@index([createdById])
   @@map("loans")
 }
 
@@ -742,6 +752,8 @@ model User {
   updatedAt    DateTime      @updatedAt
 
   profile      UserProfile?
+  loans        Loan[]        @relation("UserLoans")
+  members      Member[]      @relation("UserMembers")
 
   @@map("users")
 }

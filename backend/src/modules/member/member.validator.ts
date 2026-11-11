@@ -136,6 +136,7 @@ export const memberFilterQuerySchema = z.object({
   search: z.string().trim().optional(),
   sortBy: z.string().optional().default('createdAt'),
   sortOrder: z.enum(['asc', 'desc']).optional().default('desc'),
+  createdById: objectIdSchema.optional(),
   gender: z.nativeEnum(Gender).optional(),
   idType: z.nativeEnum(IdDocumentType).optional(),
   provinceId: objectIdSchema.optional(),

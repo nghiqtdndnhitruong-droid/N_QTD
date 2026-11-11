@@ -36,7 +36,7 @@ import {
   LOAN_TERM_TYPE_LABELS,
   LOAN_TYPE_LABELS,
 } from '@/shared/constants';
-import { formatDateVN, formatInterestRate, formatVND, toApiDate } from '@/shared/format';
+import { formatInterestRate, formatVND, toApiDate } from '@/shared/format';
 import {
   getCanonicalIdIssuePlace,
   isLoanEligibleForRelatedPerson,
@@ -102,6 +102,7 @@ import {
   type MortgageContractFormValues,
 } from '../schemas/loan.schema';
 import { formatContractNumber } from '../utils/contract-number';
+import { computeLoanWarnings } from '../utils/loan-warnings';
 import {
   calculateLoanPlanTemplate,
   buildInterestExpenseItemName,
@@ -313,6 +314,22 @@ export function LoanCreatePage() {
     name: 'contractExpiryDate',
   });
 
+  const memberWarning = useMemo(() => {
+    if (!selectedMember) return null;
+    const warnings = computeLoanWarnings({ member: selectedMember });
+    return warnings.find((w) => w.target === 'MEMBER') || null;
+  }, [selectedMember]);
+
+  const watchedHeirIdExpiry = useWatch({ control: heirForm.control, name: 'idExpiry' });
+  const watchedHeirFullName = useWatch({ control: heirForm.control, name: 'fullName' });
+  const heirWarning = useMemo(() => {
+    if (!watchedHeirIdExpiry) return null;
+    const warnings = computeLoanWarnings({
+      heir: { fullName: watchedHeirFullName, idExpiry: watchedHeirIdExpiry },
+    });
+    return warnings.find((w) => w.target === 'HEIR') || null;
+  }, [watchedHeirIdExpiry, watchedHeirFullName]);
+
   const expectedMaturityDate = useMemo(() => {
     if (!draftLoan) return null;
     const base = draftLoan.loanStartDate || draftLoan.contractDate || new Date();
@@ -321,11 +338,31 @@ export function LoanCreatePage() {
     return d;
   }, [draftLoan]);
 
-  const isMortgageExpiryShort = useMemo(() => {
-    if (!watchedMortgageExpiry || !expectedMaturityDate) return false;
-    const exp = new Date(watchedMortgageExpiry);
-    return !Number.isNaN(exp.getTime()) && exp.getTime() < expectedMaturityDate.getTime();
-  }, [watchedMortgageExpiry, expectedMaturityDate]);
+  const mortgageContractWarnings = useMemo(() => {
+    if (!watchedMortgageExpiry) return [];
+    return computeLoanWarnings({
+      loanType: LoanType.THE_CHAP,
+      termMonths: draftLoan?.termMonths ?? 12,
+      expectedMaturityDate,
+      mortgageContract: {
+        contractNumber: mortgageForm.getValues('contractNumber'),
+        contractExpiryDate: watchedMortgageExpiry,
+      },
+    });
+  }, [watchedMortgageExpiry, expectedMaturityDate, draftLoan?.termMonths, mortgageForm]);
+
+  const dossierWarnings = useMemo(() => {
+    return computeLoanWarnings({
+      loanType: draftLoan?.loanType,
+      termMonths: draftLoan?.termMonths,
+      expectedMaturityDate,
+      maturityDate: draftLoan?.maturityDate,
+      member: selectedMember || draftLoan?.member,
+      heir: draftLoan?.heir,
+      relatedPersons: draftLoan?.relatedPersons,
+      mortgageContract: draftLoan?.mortgageContract,
+    });
+  }, [draftLoan, selectedMember, expectedMaturityDate]);
 
   // Đồng bộ dữ liệu khi mở lại bản nháp (DANG_TAO)
   useEffect(() => {
@@ -836,6 +873,13 @@ export function LoanCreatePage() {
                 setMemberError(undefined);
               }}
             />
+            {memberWarning && (
+              <div className="mt-4">
+                <Alert tone="warning" title={memberWarning.title}>
+                  {memberWarning.message}
+                </Alert>
+              </div>
+            )}
           </CardContent>
           <CardFooter>
             <Button
@@ -1053,6 +1097,12 @@ export function LoanCreatePage() {
                 label="Ngày cấp"
                 required
               />
+              <FormDateField
+                control={heirForm.control}
+                name="idExpiry"
+                label="Ngày hết hạn"
+                hint="Tùy chọn (để trống nếu không thời hạn)"
+              />
               <FormTextField
                 control={heirForm.control}
                 name="idIssuePlace"
@@ -1078,6 +1128,13 @@ export function LoanCreatePage() {
                   </button>
                 }
               />
+              {heirWarning && (
+                <div className="sm:col-span-2">
+                  <Alert tone="warning" title={heirWarning.title}>
+                    {heirWarning.message}
+                  </Alert>
+                </div>
+              )}
             </CardContent>
             <CardFooter className="justify-between">
               <Button variant="outline" onClick={() => setStepIndex(1)}>
@@ -1494,19 +1551,11 @@ export function LoanCreatePage() {
                     />
                   </div>
 
-                  {isMortgageExpiryShort && expectedMaturityDate && (
-                    <Alert
-                      tone="warning"
-                      title="Thời hạn hợp đồng thế chấp ngắn hơn thời hạn vay dự kiến"
-                    >
-                      Hợp đồng thế chấp hết hạn ngày{' '}
-                      <strong>{formatDateVN(watchedMortgageExpiry)}</strong>, ngắn hơn thời hạn vay
-                      dự kiến ({draftLoan.termMonths} tháng — đến ngày{' '}
-                      <strong>{formatDateVN(expectedMaturityDate)}</strong>). Ngày đáo hạn thực tế
-                      của khoản vay sẽ được điều chỉnh theo ngày hết hạn HĐ thế chấp. Hồ sơ vẫn được
-                      phép lưu và tiếp tục bình thường.
+                  {mortgageContractWarnings.map((w, idx) => (
+                    <Alert key={idx} tone="warning" title={w.title}>
+                      {w.message}
                     </Alert>
-                  )}
+                  ))}
                 </CardContent>
                 <CardFooter className="justify-between">
                   <Button variant="outline" onClick={() => setStepIndex(3)}>
@@ -1662,6 +1711,20 @@ export function LoanCreatePage() {
                 </>
               )}
             </div>
+
+            {/* Cảnh báo nghiệp vụ thời hạn giấy tờ / HĐTC */}
+            {dossierWarnings.length > 0 && (
+              <div className="space-y-3">
+                <div className="text-xs font-semibold uppercase tracking-wider text-amber-700">
+                  Cảnh báo nghiệp vụ cần lưu ý (Hồ sơ vẫn được phép hoàn thành):
+                </div>
+                {dossierWarnings.map((w, idx) => (
+                  <Alert key={idx} tone="warning" title={w.title}>
+                    {w.message}
+                  </Alert>
+                ))}
+              </div>
+            )}
           </CardContent>
           <CardFooter className="justify-between">
             <Button variant="outline" onClick={() => setStepIndex(4)}>

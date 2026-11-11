@@ -12,6 +12,7 @@ import { BREADCRUMB_NAME_MAP, NAVIGATION_SECTIONS, type NavItem } from '@/app/na
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth.store';
 import { useUiStore } from '@/stores/ui.store';
+import { queryClient } from '@/lib/query';
 import { usePermission } from '@/features/auth/hooks/use-permission';
 import { logoutApi } from '@/features/auth/api/auth.api';
 import {
@@ -158,6 +159,7 @@ export function AppShell() {
 
   const handleLogout = async () => {
     await logoutApi();
+    queryClient.clear();
     clearSession();
     navigate('/login', { replace: true });
   };

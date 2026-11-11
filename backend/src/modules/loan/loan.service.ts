@@ -4,6 +4,7 @@ import {
   CreateLoanDto,
   DeleteLoanResult,
   LoanFilterQuery,
+  LoanWarningItem,
   UpdateLoanDto,
 } from './loan.types';
 import { interestRateService } from '../interest-rate/interest-rate.service';
@@ -13,7 +14,8 @@ import { MemberRepository, memberRepository } from '../member/member.repository'
 import { AppError } from '../../shared/errors/app-error';
 import { ErrorCode } from '../../shared/errors/error-codes';
 import { LOAN_CONSTANTS } from '../../shared/constants';
-import { LoanStatus, LoanTermType, LoanType, Prisma } from '@prisma/client';
+import { LoanStatus, LoanTermType, LoanType, Prisma, UserRole } from '@prisma/client';
+import { AuthUserResponse } from '../auth/auth.types';
 import { createPaginationMeta, parsePagination } from '../../shared/utils/pagination.util';
 import { addMonthsToDate, formatDate } from '../../shared/utils/date.util';
 import { areaService } from '../area/area.service';
@@ -65,10 +67,23 @@ export class LoanService {
     if (loanType === LoanType.THE_CHAP && mortgageExpiryDateRaw) {
       const expiryDate = new Date(mortgageExpiryDateRaw);
       if (!Number.isNaN(expiryDate.getTime())) {
+        const now = dayjs().startOf('day');
+        const expDay = dayjs(expiryDate).startOf('day');
+        const daysFromNow = expDay.diff(now, 'day');
+        const daysFromStart = expDay.diff(dayjs(startDate).startOf('day'), 'day');
+
         if (dayjs(expiryDate).isBefore(dayjs(expectedMaturityDate), 'day')) {
           maturityDate = expiryDate;
           isMortgageShortened = true;
           warningMessage = `Hợp đồng thế chấp hết hạn ngày ${formatDate(expiryDate)}, ngắn hơn thời hạn vay dự kiến (${termMonths} tháng - đến ngày ${formatDate(expectedMaturityDate)}). Ngày đáo hạn thực tế sẽ được điều chỉnh theo HĐ thế chấp.`;
+        }
+
+        if (daysFromNow < 0) {
+          const expiredWarning = `Hợp đồng thế chấp đã hết hạn vào ngày ${formatDate(expiryDate)}. Vui lòng làm thủ tục gia hạn hoặc bổ sung hợp đồng mới.`;
+          warningMessage = warningMessage ? `${warningMessage} ${expiredWarning}` : expiredWarning;
+        } else if (daysFromNow <= 365 || daysFromStart <= 365) {
+          const soonWarning = `Hợp đồng thế chấp chỉ còn hiệu lực từ 1 năm trở lại (hết hạn ngày ${formatDate(expiryDate)}). Cán bộ lưu ý thời hạn hiệu lực để kịp thời theo dõi hoặc gia hạn hợp đồng.`;
+          warningMessage = warningMessage ? `${warningMessage} ${soonWarning}` : soonWarning;
         }
       }
     }
@@ -90,6 +105,139 @@ export class LoanService {
       isMortgageShortened,
       warningMessage,
     };
+  }
+
+  /**
+   * Kiểm tra cảnh báo nghiệp vụ thời hạn giấy tờ tùy thân (< 6 tháng hoặc hết hạn)
+   * và thời hạn hợp đồng thế chấp (<= 1 năm hoặc hết hạn).
+   */
+  checkLoanWarnings(loan: any): LoanWarningItem[] {
+    const warnings: LoanWarningItem[] = [];
+    const now = dayjs().startOf('day');
+
+    // 1. Kiểm tra thời hạn giấy tờ của người vay (Thành viên)
+    const member = loan.member;
+    if (member?.idExpiry) {
+      const exp = dayjs(member.idExpiry).startOf('day');
+      const days = exp.diff(now, 'day');
+      if (days < 0) {
+        warnings.push({
+          code: 'ID_EXPIRED',
+          target: 'MEMBER',
+          title: 'Giấy tờ tùy thân của thành viên đã hết hạn',
+          message: `Giấy tờ tùy thân (${member.idType || 'CCCD'}) của thành viên ${member.fullName || ''} đã hết hạn vào ngày ${formatDate(member.idExpiry)}. Hệ thống vẫn cho phép tạo/quản lý khoản vay, vui lòng nhắc nhở thành viên làm thủ tục cấp đổi giấy tờ.`,
+          expiryDate: member.idExpiry,
+          daysRemaining: days,
+        });
+      } else if (days <= 180) {
+        warnings.push({
+          code: 'ID_EXPIRING_SOON',
+          target: 'MEMBER',
+          title: 'Giấy tờ tùy thân của thành viên sắp hết hạn (< 6 tháng)',
+          message: `Giấy tờ tùy thân (${member.idType || 'CCCD'}) của thành viên ${member.fullName || ''} sẽ hết hạn vào ngày ${formatDate(member.idExpiry)} (còn ${days} ngày, dưới 6 tháng). Hệ thống vẫn cho phép tạo/quản lý khoản vay, vui lòng lưu ý thời hạn.`,
+          expiryDate: member.idExpiry,
+          daysRemaining: days,
+        });
+      }
+    }
+
+    // 2. Kiểm tra thời hạn giấy tờ của Người thừa kế (Heir)
+    const heir = loan.heir;
+    if (heir?.idExpiry) {
+      const exp = dayjs(heir.idExpiry).startOf('day');
+      const days = exp.diff(now, 'day');
+      if (days < 0) {
+        warnings.push({
+          code: 'ID_EXPIRED',
+          target: 'HEIR',
+          title: 'Giấy tờ tùy thân của Người thừa kế đã hết hạn',
+          message: `Giấy tờ tùy thân của Người thừa kế ${heir.fullName || ''} đã hết hạn vào ngày ${formatDate(heir.idExpiry)}.`,
+          expiryDate: heir.idExpiry,
+          daysRemaining: days,
+        });
+      } else if (days <= 180) {
+        warnings.push({
+          code: 'ID_EXPIRING_SOON',
+          target: 'HEIR',
+          title: 'Giấy tờ tùy thân của Người thừa kế sắp hết hạn (< 6 tháng)',
+          message: `Giấy tờ tùy thân của Người thừa kế ${heir.fullName || ''} sẽ hết hạn vào ngày ${formatDate(heir.idExpiry)} (còn ${days} ngày).`,
+          expiryDate: heir.idExpiry,
+          daysRemaining: days,
+        });
+      }
+    }
+
+    // 3. Kiểm tra thời hạn giấy tờ của Người liên quan (RelatedPersons)
+    if (loan.relatedPersons && Array.isArray(loan.relatedPersons)) {
+      for (const rp of loan.relatedPersons) {
+        if (!rp.isDeleted && rp.idExpiry) {
+          const exp = dayjs(rp.idExpiry).startOf('day');
+          const days = exp.diff(now, 'day');
+          if (days < 0) {
+            warnings.push({
+              code: 'ID_EXPIRED',
+              target: 'RELATED_PERSON',
+              title: `Giấy tờ của Người liên quan (${rp.fullName}) đã hết hạn`,
+              message: `Giấy tờ tùy thân của Người liên quan ${rp.fullName} đã hết hạn vào ngày ${formatDate(rp.idExpiry)}.`,
+              expiryDate: rp.idExpiry,
+              daysRemaining: days,
+            });
+          } else if (days <= 180) {
+            warnings.push({
+              code: 'ID_EXPIRING_SOON',
+              target: 'RELATED_PERSON',
+              title: `Giấy tờ của Người liên quan (${rp.fullName}) sắp hết hạn (< 6 tháng)`,
+              message: `Giấy tờ tùy thân của Người liên quan ${rp.fullName} sẽ hết hạn vào ngày ${formatDate(rp.idExpiry)} (còn ${days} ngày).`,
+              expiryDate: rp.idExpiry,
+              daysRemaining: days,
+            });
+          }
+        }
+      }
+    }
+
+    // 4. Kiểm tra thời hạn Hợp đồng thế chấp (MortgageContract)
+    if (loan.loanType === LoanType.THE_CHAP && loan.mortgageContract?.contractExpiryDate) {
+      const exp = dayjs(loan.mortgageContract.contractExpiryDate).startOf('day');
+      const days = exp.diff(now, 'day');
+      const contractNum = loan.mortgageContract.contractNumber ? `số ${loan.mortgageContract.contractNumber}` : '';
+
+      if (days < 0) {
+        warnings.push({
+          code: 'MORTGAGE_EXPIRED',
+          target: 'MORTGAGE_CONTRACT',
+          title: 'Hợp đồng thế chấp đã hết hạn',
+          message: `Hợp đồng thế chấp ${contractNum} đã hết hạn vào ngày ${exp.format('DD/MM/YYYY')}. Cán bộ vui lòng lưu ý để theo dõi hoặc gia hạn hợp đồng thế chấp.`,
+          expiryDate: loan.mortgageContract.contractExpiryDate,
+          daysRemaining: days,
+        });
+      } else if (days <= 365) {
+        warnings.push({
+          code: 'MORTGAGE_EXPIRING_SOON',
+          target: 'MORTGAGE_CONTRACT',
+          title: 'Hợp đồng thế chấp còn hiệu lực từ 1 năm trở lại',
+          message: `Hợp đồng thế chấp ${contractNum} chỉ còn hiệu lực từ 1 năm trở lại (hết hạn ngày ${exp.format('DD/MM/YYYY')}, còn ${days} ngày). Cán bộ vui lòng lưu ý thời hạn hiệu lực để kịp thời theo dõi hoặc gia hạn hợp đồng thế chấp.`,
+          expiryDate: loan.mortgageContract.contractExpiryDate,
+          daysRemaining: days,
+        });
+      }
+
+      if (
+        loan.expectedMaturityDate &&
+        loan.maturityDate &&
+        dayjs(loan.maturityDate).isBefore(dayjs(loan.expectedMaturityDate), 'day')
+      ) {
+        warnings.push({
+          code: 'MORTGAGE_SHORTENED',
+          target: 'MORTGAGE_CONTRACT',
+          title: 'Thời hạn vay được xác định theo Hợp đồng thế chấp',
+          message: `Hợp đồng thế chấp hết hạn ngày ${exp.format('DD/MM/YYYY')}, ngắn hơn kỳ hạn gói vay dự kiến (${loan.termMonths} tháng — đến ngày ${formatDate(loan.expectedMaturityDate)}). Ngày đáo hạn thực tế được điều chỉnh theo HĐ thế chấp.`,
+          expiryDate: loan.mortgageContract.contractExpiryDate,
+        });
+      }
+    }
+
+    return warnings;
   }
 
   private async ensureUniqueContractNumber(contractNumber?: string | null, excludeLoanId?: string) {
@@ -315,6 +463,11 @@ export class LoanService {
         }
       }
 
+      (createdLoan as any).warnings = this.checkLoanWarnings({
+        ...createdLoan,
+        member,
+      });
+
       return createdLoan;
     } catch (err) {
       if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
@@ -338,10 +491,21 @@ export class LoanService {
     }
   }
 
-  async getById(id: string) {
+  async getById(id: string, currentUser?: AuthUserResponse) {
     const loan = await this.repo.findById(id);
     if (!loan) {
       throw AppError.notFound(`Không tìm thấy khoản vay với ID: ${id}`, ErrorCode.LOAN_NOT_FOUND);
+    }
+
+    if (
+      currentUser &&
+      currentUser.role === UserRole.CREDIT_OFFICER &&
+      loan.createdById &&
+      loan.createdById !== currentUser.id
+    ) {
+      throw AppError.forbidden(
+        'Bạn không có quyền truy cập hồ sơ vay này (hồ sơ do cán bộ khác tạo)'
+      );
     }
 
     if (!loan.loanStartDate) {
@@ -414,10 +578,14 @@ export class LoanService {
       (loan as any).isMissingRelatedPerson = ((loan as any).relatedPersons?.length ?? 0) === 0;
     }
 
+    (loan as any).warnings = this.checkLoanWarnings(loan);
     return loan;
   }
 
-  async findMany(query: LoanFilterQuery) {
+  async findMany(query: LoanFilterQuery, currentUser?: AuthUserResponse) {
+    if (currentUser?.role === UserRole.CREDIT_OFFICER) {
+      query.createdById = currentUser.id;
+    }
     const { loans, total } = await this.repo.findMany(query);
     const { page, limit } = parsePagination(query);
     const pagination = createPaginationMeta(total, page, limit);
@@ -457,8 +625,8 @@ export class LoanService {
     };
   }
 
-  async update(id: string, dto: UpdateLoanDto) {
-    const existing = await this.getById(id);
+  async update(id: string, dto: UpdateLoanDto, currentUser?: AuthUserResponse) {
+    const existing = await this.getById(id, currentUser);
 
     // 1. Kiểm tra trùng Số khế ước (nếu thay đổi, loại trừ chính id hiện tại)
     if (dto.contractNumber !== undefined) {
@@ -555,7 +723,12 @@ export class LoanService {
     );
 
     try {
-      return await this.repo.update(id, dto, effectiveLoanAmount, timeline);
+      const updated = await this.repo.update(id, dto, effectiveLoanAmount, timeline);
+      (updated as any).warnings = this.checkLoanWarnings({
+        ...updated,
+        member: existing.member,
+      });
+      return updated;
     } catch (err) {
       if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
         const target = (err.meta as any)?.target;
@@ -578,8 +751,8 @@ export class LoanService {
     }
   }
 
-  async updateStatus(id: string, newStatus: LoanStatus) {
-    const loan = await this.getById(id);
+  async updateStatus(id: string, newStatus: LoanStatus, currentUser?: AuthUserResponse) {
+    const loan = await this.getById(id, currentUser);
 
     if (newStatus === LoanStatus.DA_HOAN_THANH_HO_SO) {
       // Quy tắc mới (Mục 3.7): Cả Vay thế chấp VÀ Vay tín chấp đều bắt buộc khai báo ít nhất 1 tài sản
@@ -652,8 +825,8 @@ export class LoanService {
     return this.repo.updateStatus(id, newStatus);
   }
 
-  async delete(id: string, reason?: string): Promise<DeleteLoanResult> {
-    const loan = await this.getById(id);
+  async delete(id: string, reason?: string, currentUser?: AuthUserResponse): Promise<DeleteLoanResult> {
+    const loan = await this.getById(id, currentUser);
 
     const activeDisbursements = (loan.disbursements || []).filter((d) => !d.isDeleted);
     const activeRepayments = (loan.repayments || []).filter((r) => !r.isDeleted);
@@ -701,8 +874,8 @@ export class LoanService {
     };
   }
 
-  async getSummary(id: string) {
-    const loan = await this.getById(id);
+  async getSummary(id: string, currentUser?: AuthUserResponse) {
+    const loan = await this.getById(id, currentUser);
     const summary = loanCalculationService.computeLoanSummary(loan as any);
 
     if (summary.isOverdue && loan.status === LoanStatus.DA_GIAI_NGAN) {
@@ -710,17 +883,17 @@ export class LoanService {
       summary.status = LoanStatus.QUA_HAN;
     }
 
+    summary.warnings = this.checkLoanWarnings(loan);
+
     return summary;
   }
 
-  async clone(sourceLoanId: string, options?: { targetMemberId?: string }) {
-    const sourceLoan = await this.repo.findById(sourceLoanId);
-    if (!sourceLoan) {
-      throw AppError.notFound(
-        `Không tìm thấy khoản vay gốc với ID: ${sourceLoanId}`,
-        ErrorCode.LOAN_NOT_FOUND
-      );
-    }
+  async clone(
+    sourceLoanId: string,
+    options?: { targetMemberId?: string },
+    currentUser?: AuthUserResponse
+  ) {
+    const sourceLoan = await this.getById(sourceLoanId, currentUser);
 
     const targetMemberId = options?.targetMemberId || sourceLoan.memberId;
     const member = await this.memberRepo.findById(targetMemberId);
@@ -747,6 +920,7 @@ export class LoanService {
     // 2. Tạo bản ghi khoản vay mới ở trạng thái DANG_TAO (Bản nháp)
     const clonedLoan = await prisma.loan.create({
       data: {
+        createdById: currentUser?.id ?? sourceLoan.createdById,
         memberId: targetMemberId,
         loanType: sourceLoan.loanType,
         termType: sourceLoan.termType,

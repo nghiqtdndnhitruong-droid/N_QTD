@@ -2,6 +2,7 @@ import { IdDocumentType, Gender, Member } from '@prisma/client';
 import { PaginationQuery } from '../../shared/types';
 
 export interface CreateMemberDto {
+  createdById?: string | null;
   memberCode?: string | null;
   isNewMember?: boolean;
   fullName: string;
@@ -23,6 +24,7 @@ export interface CreateMemberDto {
 export interface UpdateMemberDto extends Partial<CreateMemberDto> {}
 
 export interface MemberFilterQuery extends PaginationQuery {
+  createdById?: string;
   gender?: Gender;
   idType?: IdDocumentType;
   provinceId?: string;

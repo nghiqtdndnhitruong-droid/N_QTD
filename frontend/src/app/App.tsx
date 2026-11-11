@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { RouterProvider } from 'react-router';
 import { Loader2 } from 'lucide-react';
 import { configureHttpAuth } from '@/lib/http';
+import { queryClient } from '@/lib/query';
 import { useAuthStore } from '@/stores/auth.store';
 import { restoreSessionApi } from '@/features/auth/api/auth.api';
 import { AppProviders } from './providers';
@@ -35,6 +36,7 @@ configureHttpAuth({
     } catch {
       // ignore
     }
+    queryClient.clear();
     useAuthStore.getState().clearSession();
   },
 });

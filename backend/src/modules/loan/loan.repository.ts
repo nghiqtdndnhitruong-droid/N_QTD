@@ -38,6 +38,10 @@ export class LoanRepository {
       isDeleted: { not: true },
     };
 
+    if (query.createdById) {
+      where.createdById = query.createdById;
+    }
+
     if (query.memberId) {
       where.memberId = query.memberId;
     }
@@ -226,6 +230,7 @@ export class LoanRepository {
     const createdLoan = await prisma.loan.create({
       data: {
         memberId: data.memberId,
+        createdById: data.createdById ?? null,
         loanType: data.loanType,
         termType: data.termType,
         termMonths,

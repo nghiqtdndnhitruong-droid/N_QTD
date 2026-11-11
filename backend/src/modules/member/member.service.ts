@@ -17,6 +17,9 @@ import {
 import { areaService } from '../area/area.service';
 import { prisma } from '../../config/database';
 
+import { AuthUserResponse } from '../auth/auth.types';
+import { UserRole } from '@prisma/client';
+
 export class MemberService {
   constructor(private readonly repo: MemberRepository = memberRepository) {}
 
@@ -81,7 +84,7 @@ export class MemberService {
     );
   }
 
-  async getById(id: string) {
+  async getById(id: string, currentUser?: AuthUserResponse) {
     const member = await this.repo.findById(id);
     if (!member) {
       throw AppError.notFound(
@@ -89,10 +92,19 @@ export class MemberService {
         ErrorCode.MEMBER_NOT_FOUND
       );
     }
+    // Cán bộ tín dụng chỉ được xem thành viên do chính mình tạo (hoặc thành viên chưa gán cán bộ)
+    if (
+      currentUser &&
+      currentUser.role === UserRole.CREDIT_OFFICER &&
+      member.createdById &&
+      member.createdById !== currentUser.id
+    ) {
+      throw AppError.forbidden('Bạn không có quyền truy cập hồ sơ thành viên này');
+    }
     return member;
   }
 
-  async getByMemberCode(code: string) {
+  async getByMemberCode(code: string, currentUser?: AuthUserResponse) {
     const member = await this.repo.findByMemberCode(code);
     if (!member) {
       throw AppError.notFound(
@@ -100,11 +112,25 @@ export class MemberService {
         ErrorCode.MEMBER_NOT_FOUND
       );
     }
+    if (
+      currentUser &&
+      currentUser.role === UserRole.CREDIT_OFFICER &&
+      member.createdById &&
+      member.createdById !== currentUser.id
+    ) {
+      throw AppError.forbidden('Bạn không có quyền truy cập hồ sơ thành viên này');
+    }
     return member;
   }
 
-  async findMany(query: MemberFilterQuery) {
-    const { members, total } = await this.repo.findMany(query);
+  async findMany(query: MemberFilterQuery, currentUser?: AuthUserResponse) {
+    // Nếu là Cán bộ tín dụng: chỉ xem danh sách thành viên do chính mình tạo
+    const effectiveQuery = { ...query };
+    if (currentUser && currentUser.role === UserRole.CREDIT_OFFICER) {
+      effectiveQuery.createdById = currentUser.id;
+    }
+
+    const { members, total } = await this.repo.findMany(effectiveQuery);
     const { page, limit } = parsePagination(query);
     const pagination = createPaginationMeta(total, page, limit);
 
@@ -114,8 +140,8 @@ export class MemberService {
     };
   }
 
-  async update(id: string, dto: UpdateMemberDto) {
-    const member = await this.getById(id);
+  async update(id: string, dto: UpdateMemberDto, currentUser?: AuthUserResponse) {
+    const member = await this.getById(id, currentUser);
 
     const cleanMemberCode =
       dto.memberCode !== undefined
@@ -192,8 +218,8 @@ export class MemberService {
     return this.repo.update(id, normalizedDto, location);
   }
 
-  async delete(id: string, reason?: string): Promise<DeleteMemberResult> {
-    const member = await this.getById(id);
+  async delete(id: string, reason?: string, currentUser?: AuthUserResponse): Promise<DeleteMemberResult> {
+    const member = await this.getById(id, currentUser);
     const obligations = await this.repo.countMemberLoanObligations(id);
 
     const memberDisplay = member.memberCode ? ` (${member.memberCode})` : '';

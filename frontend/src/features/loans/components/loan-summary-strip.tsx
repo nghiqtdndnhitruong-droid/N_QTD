@@ -53,6 +53,18 @@ export function LoanSummaryStrip({
         </Alert>
       )}
 
+      {summary.warnings && summary.warnings.length > 0 && (
+        <div className="space-y-3">
+          {summary.warnings
+            .filter((w) => w.code !== 'MORTGAGE_SHORTENED')
+            .map((w, idx) => (
+              <Alert key={idx} tone="warning" title={w.title}>
+                {w.message}
+              </Alert>
+            ))}
+        </div>
+      )}
+
       {summary.isMortgageShortened && (
         <Alert
           tone="warning"

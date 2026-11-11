@@ -11,7 +11,7 @@ export class ReportController {
       const fromDate = typeof req.query.fromDate === 'string' ? req.query.fromDate : undefined;
       const toDate = typeof req.query.toDate === 'string' ? req.query.toDate : undefined;
 
-      const result = await reportService.getDisbursedLoans({ fromDate, toDate });
+      const result = await reportService.getDisbursedLoans({ fromDate, toDate }, req.user);
       res.status(200).json({
         success: true,
         data: result,
@@ -30,7 +30,7 @@ export class ReportController {
       const fromDate = typeof req.query.fromDate === 'string' ? req.query.fromDate : undefined;
       const toDate = typeof req.query.toDate === 'string' ? req.query.toDate : undefined;
 
-      const { buffer, filename } = await reportService.exportDisbursedLoansExcel({ fromDate, toDate });
+      const { buffer, filename } = await reportService.exportDisbursedLoansExcel({ fromDate, toDate }, req.user);
 
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
       res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(filename)}"`);
@@ -50,7 +50,7 @@ export class ReportController {
       const month = req.query.month ? String(req.query.month) : undefined;
       const year = req.query.year ? String(req.query.year) : undefined;
 
-      const result = await reportService.getMaturityLoans({ month, year });
+      const result = await reportService.getMaturityLoans({ month, year }, req.user);
       res.status(200).json({
         success: true,
         data: result,
@@ -69,7 +69,7 @@ export class ReportController {
       const month = req.query.month ? String(req.query.month) : undefined;
       const year = req.query.year ? String(req.query.year) : undefined;
 
-      const { buffer, filename } = await reportService.exportMaturityLoansExcel({ month, year });
+      const { buffer, filename } = await reportService.exportMaturityLoansExcel({ month, year }, req.user);
 
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
       res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(filename)}"`);
@@ -89,7 +89,7 @@ export class ReportController {
       const months = req.query.months ? String(req.query.months) : undefined;
       const search = req.query.search ? String(req.query.search) : undefined;
 
-      const result = await reportService.getUnpaidInterestLoans({ months, search });
+      const result = await reportService.getUnpaidInterestLoans({ months, search }, req.user);
       res.status(200).json({
         success: true,
         data: result,
@@ -108,7 +108,7 @@ export class ReportController {
       const months = req.query.months ? String(req.query.months) : undefined;
       const search = req.query.search ? String(req.query.search) : undefined;
 
-      const { buffer, filename } = await reportService.exportUnpaidInterestExcel({ months, search });
+      const { buffer, filename } = await reportService.exportUnpaidInterestExcel({ months, search }, req.user);
 
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
       res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(filename)}"`);

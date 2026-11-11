@@ -39,6 +39,10 @@ export class MemberRepository {
       isDeleted: { not: true },
     };
 
+    if (query.createdById) {
+      where.createdById = query.createdById;
+    }
+
     if (search) {
       where.OR = [
         { fullName: { contains: search, mode: 'insensitive' } },
@@ -99,6 +103,7 @@ export class MemberRepository {
       data: {
         memberCode: cleanCode,
         isNewMember,
+        createdById: data.createdById ?? null,
         fullName: data.fullName.trim(),
         yearOfBirth: data.yearOfBirth,
         idType: data.idType,

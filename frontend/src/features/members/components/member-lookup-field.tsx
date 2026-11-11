@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Check, Search, UserPlus } from 'lucide-react';
 import { useDebounce } from '@/hooks/use-debounce';
 import { GENDER_LABELS, ID_DOCUMENT_TYPE_LABELS } from '@/shared/constants';
+import { formatDateVN } from '@/shared/format';
+import { checkIdExpiryStatus } from '@/features/loans/utils/loan-warnings';
 import {
   Badge,
   DescriptionItem,
@@ -127,6 +129,24 @@ export function MemberLookupField({ value, onChange, error }: MemberLookupFieldP
                       <div className="mt-0.5 text-xs text-slate-500">
                         CCCD: <span className="font-mono font-medium text-slate-700">{m.idNumber}</span> · Năm sinh:{' '}
                         {m.yearOfBirth} · {m.address}
+                        {(() => {
+                          const expStatus = checkIdExpiryStatus(m.idExpiry);
+                          if (expStatus?.isExpired) {
+                            return (
+                              <span className="ml-1.5 inline-flex items-center rounded bg-rose-50 px-1 py-0.5 text-[10px] font-semibold text-rose-700 border border-rose-200">
+                                ⚠️ Hết hạn
+                              </span>
+                            );
+                          }
+                          if (expStatus?.isExpiringSoon) {
+                            return (
+                              <span className="ml-1.5 inline-flex items-center rounded bg-amber-50 px-1 py-0.5 text-[10px] font-semibold text-amber-700 border border-amber-200">
+                                ⚠️ Sắp hết hạn (&lt; 6th)
+                              </span>
+                            );
+                          }
+                          return null;
+                        })()}
                       </div>
                     </div>
                     {isSelected ? (
@@ -163,10 +183,40 @@ export function MemberLookupField({ value, onChange, error }: MemberLookupFieldP
               mono
             />
             <DescriptionItem
+              label="Hạn giấy tờ"
+              value={
+                selectedMember.idExpiry ? (
+                  <span className="inline-flex items-center gap-1 font-mono">
+                    {formatDateVN(selectedMember.idExpiry)}
+                    {(() => {
+                      const expStatus = checkIdExpiryStatus(selectedMember.idExpiry);
+                      if (expStatus?.isExpired) {
+                        return (
+                          <span className="rounded bg-rose-50 px-1 py-0.5 text-[10px] font-semibold text-rose-700 border border-rose-200">
+                            Đã hết hạn
+                          </span>
+                        );
+                      }
+                      if (expStatus?.isExpiringSoon) {
+                        return (
+                          <span className="rounded bg-amber-50 px-1 py-0.5 text-[10px] font-semibold text-amber-700 border border-amber-200">
+                            Sắp hết hạn (&lt; 6th)
+                          </span>
+                        );
+                      }
+                      return null;
+                    })()}
+                  </span>
+                ) : (
+                  'Không thời hạn'
+                )
+              }
+            />
+            <DescriptionItem
               label="Năm sinh / Giới tính"
               value={`${selectedMember.yearOfBirth} (${GENDER_LABELS[selectedMember.gender]})`}
             />
-            <DescriptionItem label="Địa chỉ thường trú" value={selectedMember.address} />
+            <DescriptionItem label="Địa chỉ thường trú" value={selectedMember.address} span={3} />
           </DescriptionList>
         </div>
       )}

@@ -22,6 +22,7 @@ import {
   LoanStatusBadge,
 } from '@/components/ui';
 import {
+  Alert,
   ConfirmDialog,
   DetailPageSkeleton,
   EmptyState,
@@ -32,6 +33,7 @@ import {
 import { PageHeader } from '@/components/layout';
 import { Can } from '@/features/auth/components/can';
 import { useLoansList } from '@/features/loans/hooks/use-loans';
+import { checkIdExpiryStatus } from '@/features/loans/utils/loan-warnings';
 import { useDeleteMember, useMemberDetail } from '../hooks/use-members';
 
 export function MemberDetailPage() {
@@ -49,6 +51,8 @@ export function MemberDetailPage() {
 
   if (isLoading) return <DetailPageSkeleton />;
   if (error || !member) return <ErrorState error={error} onRetry={() => void refetch()} />;
+
+  const expiryStatus = checkIdExpiryStatus(member.idExpiry);
 
   const loans = memberLoans?.items ?? [];
   const activeLoans = loans.filter((l) => l.status !== LoanStatus.DA_TAT_TOAN);
@@ -133,6 +137,26 @@ export function MemberDetailPage() {
         }
       />
 
+      {expiryStatus?.isExpired && (
+        <Alert
+          tone="danger"
+          title="Giấy tờ tùy thân của thành viên đã hết hạn"
+        >
+          Loại giấy tờ ({ID_DOCUMENT_TYPE_LABELS[member.idType]}) của thành viên {member.fullName} đã hết hạn vào ngày{' '}
+          <strong>{formatDateVN(member.idExpiry)}</strong>. Vui lòng nhắc nhở thành viên làm thủ tục cấp đổi giấy tờ để đảm bảo tính pháp lý khi lập hồ sơ vay.
+        </Alert>
+      )}
+
+      {expiryStatus?.isExpiringSoon && (
+        <Alert
+          tone="warning"
+          title="Giấy tờ tùy thân của thành viên sắp hết hạn (< 6 tháng)"
+        >
+          Loại giấy tờ ({ID_DOCUMENT_TYPE_LABELS[member.idType]}) của thành viên {member.fullName} sẽ hết hạn vào ngày{' '}
+          <strong>{formatDateVN(member.idExpiry)}</strong> (còn {expiryStatus.daysRemaining} ngày, dưới 6 tháng). Cán bộ lưu ý nhắc nhở thành viên kế hoạch gia hạn/cấp đổi giấy tờ.
+        </Alert>
+      )}
+
       <Card>
         <CardHeader>
           <div>
@@ -171,7 +195,25 @@ export function MemberDetailPage() {
             <DescriptionItem label="Nơi cấp" value={member.idIssuePlace} span={2} />
             <DescriptionItem
               label="Ngày hết hạn"
-              value={member.idExpiry ? formatDateVN(member.idExpiry) : 'Không thời hạn'}
+              value={
+                member.idExpiry ? (
+                  <span className="inline-flex items-center gap-1.5 font-mono">
+                    {formatDateVN(member.idExpiry)}
+                    {expiryStatus?.isExpired && (
+                      <span className="rounded bg-rose-50 px-1.5 py-0.5 text-[10px] font-semibold text-rose-700 border border-rose-200">
+                        Đã hết hạn
+                      </span>
+                    )}
+                    {expiryStatus?.isExpiringSoon && (
+                      <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 border border-amber-200">
+                        Sắp hết hạn (&lt; 6th)
+                      </span>
+                    )}
+                  </span>
+                ) : (
+                  'Không thời hạn'
+                )
+              }
               mono
             />
             <DescriptionItem

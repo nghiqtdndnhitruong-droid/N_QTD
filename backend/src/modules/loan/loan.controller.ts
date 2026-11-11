@@ -8,7 +8,11 @@ export class LoanController {
   constructor(private readonly service: LoanService = loanService) {}
 
   create = async (req: Request, res: Response): Promise<void> => {
-    const loan = await this.service.create(req.body);
+    const createdById = req.user?.id;
+    const loan = await this.service.create({
+      ...req.body,
+      createdById: req.body.createdById || createdById,
+    });
     const response: ApiResponse<Loan> = {
       success: true,
       message: 'Tạo khoản vay mới thành công',
@@ -20,7 +24,7 @@ export class LoanController {
 
   getById = async (req: Request, res: Response): Promise<void> => {
     const id = String(req.params.id);
-    const loan = await this.service.getById(id);
+    const loan = await this.service.getById(id, req.user);
     const response: ApiResponse<Loan> = {
       success: true,
       message: 'Lấy thông tin chi tiết khoản vay thành công',
@@ -31,7 +35,7 @@ export class LoanController {
   };
 
   findMany = async (req: Request, res: Response): Promise<void> => {
-    const result = await this.service.findMany(req.query as any);
+    const result = await this.service.findMany(req.query as any, req.user);
     const response: PaginatedResponse<Loan> = {
       success: true,
       message: 'Lấy danh sách khoản vay thành công',
@@ -44,7 +48,7 @@ export class LoanController {
 
   update = async (req: Request, res: Response): Promise<void> => {
     const id = String(req.params.id);
-    const updated = await this.service.update(id, req.body);
+    const updated = await this.service.update(id, req.body, req.user);
     const response: ApiResponse<Loan> = {
       success: true,
       message: 'Cập nhật khoản vay thành công',
@@ -57,7 +61,7 @@ export class LoanController {
   updateStatus = async (req: Request, res: Response): Promise<void> => {
     const id = String(req.params.id);
     const { status } = req.body;
-    const updated = await this.service.updateStatus(id, status);
+    const updated = await this.service.updateStatus(id, status, req.user);
     const response: ApiResponse<Loan> = {
       success: true,
       message: `Cập nhật trạng thái khoản vay sang ${status} thành công`,
@@ -70,7 +74,7 @@ export class LoanController {
   delete = async (req: Request, res: Response): Promise<void> => {
     const id = String(req.params.id);
     const reason = req.body?.reason ? String(req.body.reason) : undefined;
-    const result = await this.service.delete(id, reason);
+    const result = await this.service.delete(id, reason, req.user);
     const response: ApiResponse<DeleteLoanResult> = {
       success: true,
       message: `Đã xóa/hủy hồ sơ khoản vay ${result.contractNumber || `#${result.id.slice(-6)}`} thành công`,
@@ -82,7 +86,7 @@ export class LoanController {
 
   getSummary = async (req: Request, res: Response): Promise<void> => {
     const id = String(req.params.id);
-    const summary = await this.service.getSummary(id);
+    const summary = await this.service.getSummary(id, req.user);
     const response: ApiResponse<LoanSummary> = {
       success: true,
       message: 'Lấy tóm tắt tài chính và dư nợ khoản vay thành công',
@@ -106,7 +110,7 @@ export class LoanController {
   clone = async (req: Request, res: Response): Promise<void> => {
     const id = String(req.params.id);
     const targetMemberId = req.body?.targetMemberId ? String(req.body.targetMemberId) : undefined;
-    const cloned = await this.service.clone(id, { targetMemberId });
+    const cloned = await this.service.clone(id, { targetMemberId }, req.user);
     const response: ApiResponse<Loan> = {
       success: true,
       message: 'Đã sao chép hồ sơ khoản vay thành công',

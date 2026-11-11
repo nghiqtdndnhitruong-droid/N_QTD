@@ -50,6 +50,7 @@ export interface CalculateLoanPlanTemplateQuery {
 
 export interface CreateLoanDto {
   memberId: string;
+  createdById?: string | null;
   loanType: LoanType;
   termType: LoanTermType;
   loanAmount: number;
@@ -69,6 +70,7 @@ export interface UpdateLoanDto extends Partial<Omit<CreateLoanDto, 'memberId'>> 
 }
 
 export interface LoanFilterQuery extends PaginationQuery {
+  createdById?: string;
   memberId?: string;
   loanType?: LoanType;
   termType?: LoanTermType;
@@ -129,6 +131,21 @@ export interface LoanSummary {
   halfTermPrincipalPaid: number | null;
   isOverdue: boolean;
   overdueDays: number;
+  warnings?: LoanWarningItem[];
+}
+
+export interface LoanWarningItem {
+  code:
+    | 'ID_EXPIRED'
+    | 'ID_EXPIRING_SOON'
+    | 'MORTGAGE_EXPIRED'
+    | 'MORTGAGE_EXPIRING_SOON'
+    | 'MORTGAGE_SHORTENED';
+  target: 'MEMBER' | 'HEIR' | 'RELATED_PERSON' | 'MORTGAGE_CONTRACT';
+  title: string;
+  message: string;
+  expiryDate?: Date | string | null;
+  daysRemaining?: number;
 }
 
 export type LoanEntity = Loan;

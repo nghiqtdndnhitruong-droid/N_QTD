@@ -17,6 +17,7 @@ import {
 } from '@/components/feedback';
 import { Can } from '@/features/auth/components/can';
 import { useAreaTree } from '@/features/areas/hooks/use-areas';
+import { checkIdExpiryStatus } from '@/features/loans/utils/loan-warnings';
 import { useDeleteMember, useMembersList } from '../hooks/use-members';
 import type { Member } from '../types/member.types';
 
@@ -116,15 +117,32 @@ export function MemberListPage() {
       {
         accessorKey: 'idNumber',
         header: 'Giấy tờ tùy thân',
-        cell: ({ row }) => (
-          <div>
-            <div className="font-mono font-medium text-slate-900">{row.original.idNumber}</div>
-            <div className="text-[11px] text-slate-500">
-              {ID_DOCUMENT_TYPE_LABELS[row.original.idType]} · Cấp:{' '}
-              {formatDateVN(row.original.idIssueDate)}
+        cell: ({ row }) => {
+          const expiryStatus = checkIdExpiryStatus(row.original.idExpiry);
+          return (
+            <div>
+              <div className="font-mono font-medium text-slate-900">{row.original.idNumber}</div>
+              <div className="text-[11px] text-slate-500">
+                {ID_DOCUMENT_TYPE_LABELS[row.original.idType]} · Cấp:{' '}
+                {formatDateVN(row.original.idIssueDate)}
+              </div>
+              {expiryStatus?.isExpired && (
+                <div className="mt-1">
+                  <span className="inline-flex items-center gap-1 rounded bg-rose-50 px-1.5 py-0.5 text-[10px] font-semibold text-rose-700 border border-rose-200">
+                    ⚠️ Hết hạn: {formatDateVN(row.original.idExpiry)}
+                  </span>
+                </div>
+              )}
+              {expiryStatus?.isExpiringSoon && (
+                <div className="mt-1">
+                  <span className="inline-flex items-center gap-1 rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 border border-amber-200">
+                    ⚠️ Sắp hết hạn (&lt; 6th): {formatDateVN(row.original.idExpiry)}
+                  </span>
+                </div>
+              )}
             </div>
-          </div>
-        ),
+          );
+        },
       },
       {
         accessorKey: 'address',

@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { memberController } from './member.controller';
 import { validate } from '../../shared/middlewares/validate.middleware';
 import { asyncHandler } from '../../shared/middlewares/async-handler.middleware';
+import { optionalAuthenticateToken } from '../../shared/middlewares/auth.middleware';
 import {
   createMemberSchema,
   updateMemberSchema,
@@ -10,6 +11,9 @@ import {
 } from './member.validator';
 
 const router = Router();
+
+// Tự động nhận diện cán bộ đang đăng nhập nếu có Bearer token
+router.use(optionalAuthenticateToken);
 
 router.post(
   '/',

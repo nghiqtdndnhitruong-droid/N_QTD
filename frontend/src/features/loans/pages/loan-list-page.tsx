@@ -20,6 +20,7 @@ import {
   notifySuccess,
 } from '@/components/feedback';
 import { Can } from '@/features/auth/components/can';
+import { checkIdExpiryStatus, checkMortgageExpiryStatus } from '../utils/loan-warnings';
 import { useDeleteLoan, useLoansList } from '../hooks/use-loans';
 import type { Loan } from '../types/loan.types';
 
@@ -75,18 +76,35 @@ export function LoanListPage() {
       {
         id: 'member',
         header: 'Thành viên vay vốn',
-        cell: ({ row }) => (
-          <div>
-            <div className="font-medium text-slate-900">
-              {row.original.member?.fullName ?? '—'}
-            </div>
-            {row.original.member?.memberCode && (
-              <div className="font-mono text-xs text-slate-500">
-                {row.original.member.memberCode}
+        cell: ({ row }) => {
+          const idExpiryStatus = checkIdExpiryStatus(row.original.member?.idExpiry);
+          return (
+            <div>
+              <div className="font-medium text-slate-900">
+                {row.original.member?.fullName ?? '—'}
               </div>
-            )}
-          </div>
-        ),
+              {row.original.member?.memberCode && (
+                <div className="font-mono text-xs text-slate-500">
+                  {row.original.member.memberCode}
+                </div>
+              )}
+              {idExpiryStatus?.isExpired && (
+                <div className="mt-1">
+                  <span className="inline-flex items-center gap-0.5 rounded bg-rose-50 px-1.5 py-0.5 text-[10px] font-semibold text-rose-700 border border-rose-200">
+                    ⚠️ Giấy tờ hết hạn
+                  </span>
+                </div>
+              )}
+              {idExpiryStatus?.isExpiringSoon && (
+                <div className="mt-1">
+                  <span className="inline-flex items-center gap-0.5 rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 border border-amber-200">
+                    ⚠️ Giấy tờ sắp hết hạn (&lt; 6th)
+                  </span>
+                </div>
+              )}
+            </div>
+          );
+        },
       },
       {
         accessorKey: 'loanType',
@@ -137,21 +155,41 @@ export function LoanListPage() {
         accessorKey: 'maturityDate',
         header: 'Ngày đáo hạn',
         meta: { sortableId: 'maturityDate' },
-        cell: ({ row }) => (
-          <div>
-            <span className="tabular-nums text-xs">
-              {formatDateVN(row.original.maturityDate, 'Chưa giải ngân')}
-            </span>
-            {row.original.expectedMaturityDate &&
-              row.original.maturityDate &&
-              row.original.expectedMaturityDate.slice(0, 10) !==
-                row.original.maturityDate.slice(0, 10) && (
-                <div className="text-[10px] font-medium text-amber-700">
-                  Rút ngắn theo HĐTC
+        cell: ({ row }) => {
+          const mortgageStatus =
+            row.original.loanType === LoanType.THE_CHAP
+              ? checkMortgageExpiryStatus(row.original.mortgageContract?.contractExpiryDate)
+              : null;
+          return (
+            <div>
+              <span className="tabular-nums text-xs">
+                {formatDateVN(row.original.maturityDate, 'Chưa giải ngân')}
+              </span>
+              {row.original.expectedMaturityDate &&
+                row.original.maturityDate &&
+                row.original.expectedMaturityDate.slice(0, 10) !==
+                  row.original.maturityDate.slice(0, 10) && (
+                  <div className="text-[10px] font-medium text-amber-700">
+                    Rút ngắn theo HĐTC
+                  </div>
+                )}
+              {mortgageStatus?.isExpired && (
+                <div className="mt-1">
+                  <span className="inline-flex items-center gap-0.5 rounded bg-rose-50 px-1.5 py-0.5 text-[10px] font-semibold text-rose-700 border border-rose-200">
+                    ⚠️ HĐTC hết hạn
+                  </span>
                 </div>
               )}
-          </div>
-        ),
+              {mortgageStatus?.isExpiringSoon && (
+                <div className="mt-1">
+                  <span className="inline-flex items-center gap-0.5 rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 border border-amber-200">
+                    ⚠️ HĐTC còn ≤ 1 năm
+                  </span>
+                </div>
+              )}
+            </div>
+          );
+        },
       },
       {
         accessorKey: 'status',

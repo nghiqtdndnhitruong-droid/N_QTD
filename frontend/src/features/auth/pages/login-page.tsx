@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router';
 import { ConfigProvider, Form, Input, Button, Alert, theme } from 'antd';
 import { UserOutlined, LockOutlined, BankOutlined, ArrowRightOutlined } from '@ant-design/icons';
 import { useAuthStore } from '@/stores/auth.store';
+import { queryClient } from '@/lib/query';
 import { notifySuccess } from '@/components/feedback';
 import { loginApi, type LoginPayload } from '../api/auth.api';
 
@@ -25,6 +26,7 @@ export function LoginPage() {
         password: values.password,
       });
 
+      queryClient.clear();
       setSession({ accessToken: session.accessToken, user: session.user });
       notifySuccess(`Xin chào, ${session.user.fullName}`, session.user.title);
 

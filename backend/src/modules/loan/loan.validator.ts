@@ -130,6 +130,7 @@ export const loanFilterQuerySchema = z.object({
   search: z.string().trim().optional(),
   sortBy: z.string().optional().default('createdAt'),
   sortOrder: z.enum(['asc', 'desc']).optional().default('desc'),
+  createdById: z.string().optional(),
   memberId: z.string().optional(),
   loanType: z.nativeEnum(LoanType).optional(),
   termType: z.nativeEnum(LoanTermType).optional(),

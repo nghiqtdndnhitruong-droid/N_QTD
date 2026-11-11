@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { queryClient } from '@/lib/query';
 
 export type UserRole = 'CREDIT_OFFICER' | 'ADMIN';
 
@@ -158,12 +159,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   accessToken: null,
   user: null,
   isInitialized: false,
-  setSession: ({ accessToken, user }) =>
+  setSession: ({ accessToken, user }) => {
+    const current = get().user;
+    if (!current || current.id !== user.id) {
+      queryClient.clear();
+    }
     set({
       accessToken,
       user,
       isInitialized: true,
-    }),
+    });
+  },
   updateUserProfile: (profile) => {
     const current = get().user;
     if (!current) return;
@@ -175,12 +181,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       },
     });
   },
-  clearSession: () =>
+  clearSession: () => {
+    queryClient.clear();
     set({
       accessToken: null,
       user: null,
       isInitialized: true,
-    }),
+    });
+  },
   setInitialized: (isInitialized) => set({ isInitialized }),
 }));
 
