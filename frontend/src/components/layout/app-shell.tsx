@@ -255,7 +255,7 @@ export function AppShell() {
             )}
 
             {user && (
-              <DropdownMenu>
+              <DropdownMenu modal={false}>
                 <DropdownMenuTrigger asChild>
                   <button
                     type="button"

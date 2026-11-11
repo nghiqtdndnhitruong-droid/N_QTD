@@ -47,6 +47,7 @@
     line-height: 1.5;
     color: #0f172a;
     background-color: #f6f8fb;
+    scrollbar-gutter: stable;
   }
 
   /* Hiển thị số tiền và mã số thẳng cột trong bảng */
