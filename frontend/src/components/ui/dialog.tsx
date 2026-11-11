@@ -8,7 +8,7 @@ export const DialogTrigger = DialogPrimitive.Trigger;
 export const DialogClose = DialogPrimitive.Close;
 
 export interface DialogContentProps extends DialogPrimitive.DialogContentProps {
-  size?: 'sm' | 'md' | 'lg' | 'xl';
+  size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl';
   hideCloseButton?: boolean;
 }
 
@@ -17,6 +17,8 @@ const SIZE_CLASSES: Record<NonNullable<DialogContentProps['size']>, string> = {
   md: 'max-w-lg',
   lg: 'max-w-2xl',
   xl: 'max-w-4xl',
+  '2xl': 'max-w-5xl',
+  '3xl': 'max-w-6xl',
 };
 
 export function DialogContent({

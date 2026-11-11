@@ -6,6 +6,7 @@ import type {
   CreateAreaGroupPayload,
   CreateCommunePayload,
   CreateHamletPayload,
+  CreateProvincePayload,
   Hamlet,
   Province,
   UpdateAreaGroupPayload,
@@ -39,6 +40,14 @@ export const areasApi = {
     return apiGet<Province[]>('/areas/provinces', {
       params: search ? { search } : undefined,
     });
+  },
+
+  createProvince(payload: CreateProvincePayload): Promise<Province> {
+    return apiPost<Province, CreateProvincePayload>('/areas/provinces', payload);
+  },
+
+  deleteProvince(id: string): Promise<{ id: string; deletedName: string }> {
+    return apiDelete<{ id: string; deletedName: string }>(`/areas/provinces/${id}`);
   },
 
   getCommunesByProvince(provinceId: string, search?: string): Promise<Commune[]> {

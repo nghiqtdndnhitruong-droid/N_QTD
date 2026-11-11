@@ -89,9 +89,44 @@ export async function updateWordTemplateApi(
 }
 
 export async function reorderWordTemplatesApi(
-  items: { id: string; sortOrder: number }[],
+  items: { id: string; sortOrder: number; loanTypeScope?: string }[],
 ): Promise<void> {
   await httpClient.put<ApiResponse<void>>('/word-templates/reorder', { items });
+}
+
+export async function uploadMultipleWordTemplatesApi(
+  files: File[],
+  defaults?: { loanTypeScope?: string; category?: string },
+): Promise<{ total: number; successCount: number; failedCount: number }> {
+  const formData = new FormData();
+  for (const f of files) {
+    formData.append('files', f);
+  }
+  if (defaults?.loanTypeScope) {
+    formData.append('loanTypeScope', defaults.loanTypeScope);
+  }
+  if (defaults?.category) {
+    formData.append('category', defaults.category);
+  }
+
+  const res = await httpClient.post<ApiResponse<{ total: number; successCount: number; failedCount: number }>>(
+    '/word-templates/upload-multiple',
+    formData,
+    {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    },
+  );
+  return res.data.data!;
+}
+
+export async function bulkDeleteWordTemplatesApi(
+  ids: string[],
+): Promise<{ deletedCount: number; failedCount: number }> {
+  const res = await httpClient.post<ApiResponse<{ deletedCount: number; failedCount: number }>>(
+    '/word-templates/bulk-delete',
+    { ids },
+  );
+  return res.data.data!;
 }
 
 export async function saveWordTemplateMappingsApi(

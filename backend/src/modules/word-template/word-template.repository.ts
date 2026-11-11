@@ -42,11 +42,14 @@ export class WordTemplateRepository {
     });
   }
 
-  public async reorderTemplates(items: { id: string; sortOrder: number }[]) {
+  public async reorderTemplates(items: { id: string; sortOrder: number; loanTypeScope?: any }[]) {
     const updates = items.map((item) =>
       prisma.wordTemplate.update({
         where: { id: item.id },
-        data: { sortOrder: item.sortOrder },
+        data: {
+          sortOrder: item.sortOrder,
+          ...(item.loanTypeScope ? { loanTypeScope: item.loanTypeScope } : {}),
+        },
       })
     );
     return prisma.$transaction(updates);

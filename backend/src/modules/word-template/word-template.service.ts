@@ -79,7 +79,6 @@ export class WordTemplateService {
     });
 
     // 4. Đối chiếu với Thư viện Từ khóa Toàn cục (Global Catalog)
-    await globalWordKeywordService.seedDefaultCatalog();
     const globalKeywords = await prisma.globalWordKeyword.findMany();
     const globalKeywordMap = new Map(globalKeywords.map((g) => [g.keyword, g]));
 
@@ -213,6 +212,87 @@ export class WordTemplateService {
 
     // 3. Xóa dữ liệu trong cơ sở dữ liệu
     return wordTemplateRepository.delete(id);
+  }
+
+  public async deleteMultipleTemplates(ids: string[]) {
+    if (!Array.isArray(ids) || ids.length === 0) {
+      throw AppError.badRequest('Vui lòng chọn ít nhất một biểu mẫu để xóa');
+    }
+    const results = [];
+    for (const id of ids) {
+      try {
+        await this.deleteTemplate(id);
+        results.push({ id, success: true });
+      } catch (err: any) {
+        results.push({ id, success: false, error: err.message });
+      }
+    }
+    return {
+      deletedCount: results.filter((r) => r.success).length,
+      failedCount: results.filter((r) => !r.success).length,
+      details: results,
+    };
+  }
+
+  public async createMultipleTemplatesWithFiles(
+    files: Express.Multer.File[],
+    defaults?: { loanTypeScope?: string; category?: string }
+  ) {
+    if (!files || files.length === 0) {
+      throw AppError.badRequest('Vui lòng chọn ít nhất một file .docx');
+    }
+    const results = [];
+    const scope = (defaults?.loanTypeScope as any) || 'ALL';
+    const category = (defaults?.category as any) || 'OTHER';
+
+    for (const file of files) {
+      try {
+        let originalName = file.originalname;
+        try {
+          originalName = Buffer.from(file.originalname, 'latin1').toString('utf8');
+        } catch {
+          // giữ nguyên nếu decode lỗi
+        }
+        const baseName = originalName.replace(/\.docx$/i, '').trim() || 'Bieu_Mau';
+
+        let cleanCode = baseName
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .replace(/[^A-Za-z0-9_-]/g, '_')
+          .toUpperCase()
+          .slice(0, 30);
+
+        if (!cleanCode) {
+          cleanCode = `MAU_${Date.now().toString().slice(-6)}`;
+        }
+
+        let uniqueCode = cleanCode;
+        let counter = 1;
+        while (await wordTemplateRepository.findByCode(uniqueCode)) {
+          uniqueCode = `${cleanCode.slice(0, 24)}_${counter++}`;
+        }
+
+        const template = await this.createTemplateWithFile(
+          {
+            code: uniqueCode,
+            title: baseName,
+            loanTypeScope: scope,
+            category: category,
+          },
+          file
+        );
+        results.push({ success: true, title: baseName, code: uniqueCode, template });
+      } catch (err: any) {
+        results.push({ success: false, fileName: file.originalname, error: err.message });
+      }
+    }
+
+    return {
+      total: files.length,
+      successCount: results.filter((r) => r.success).length,
+      failedCount: results.filter((r) => !r.success).length,
+      results,
+    };
   }
 
   public async getTemplateFileBuffer(id: string): Promise<{ buffer: Buffer; fileName: string }> {
@@ -638,7 +718,6 @@ export class WordTemplateService {
   }
 
   public async getCatalog(category?: string, search?: string) {
-    await globalWordKeywordService.seedDefaultCatalog();
     return globalWordKeywordService.getCatalog(category, search);
   }
 

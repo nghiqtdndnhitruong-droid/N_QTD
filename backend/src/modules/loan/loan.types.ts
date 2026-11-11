@@ -86,7 +86,7 @@ export interface DeleteLoanResult {
   id: string;
   contractNumber: string | null;
   status: LoanStatus;
-  deleteMode: 'SOFT_DELETE';
+  deleteMode: 'HARD_DELETE' | 'SOFT_DELETE';
   releasedCollateralsCount: number;
 }
 

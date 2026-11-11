@@ -77,6 +77,18 @@ export class UserController {
       message: result.message,
     });
   }
+
+  public async deleteUser(req: Request, res: Response): Promise<void> {
+    const result = await userService.deleteUser(
+      String(req.params.id),
+      req.user!.id,
+      req.user!.role
+    );
+    res.status(200).json({
+      success: true,
+      message: result.message,
+    });
+  }
 }
 
 export const userController = new UserController();

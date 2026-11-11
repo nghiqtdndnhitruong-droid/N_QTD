@@ -5,6 +5,7 @@ import type {
   CreateAreaGroupPayload,
   CreateCommunePayload,
   CreateHamletPayload,
+  CreateProvincePayload,
   UpdateAreaGroupPayload,
   UpdateHamletPayload,
 } from '../types/area.types';
@@ -40,6 +41,26 @@ export function useHamletsByCommune(communeId: string | undefined | null) {
     queryFn: () => areasApi.getHamletsByCommune(communeId!),
     enabled: Boolean(communeId),
     staleTime: 30_000,
+  });
+}
+
+export function useCreateProvince() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: CreateProvincePayload) => areasApi.createProvince(payload),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: queryKeys.areas.all });
+    },
+  });
+}
+
+export function useDeleteProvince() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => areasApi.deleteProvince(id),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: queryKeys.areas.all });
+    },
   });
 }
 

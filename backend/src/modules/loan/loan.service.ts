@@ -677,10 +677,10 @@ export class LoanService {
       data: {
         entityType: 'LOAN',
         entityId: loan.id,
-        action: 'SOFT_DELETE',
+        action: 'HARD_DELETE',
         reason:
           reason ||
-          'Xóa mềm hồ sơ vay chưa phát sinh giao dịch giải ngân/thu nợ và giải phóng tài sản thế chấp',
+          'Xóa vĩnh viễn hồ sơ vay và toàn bộ dữ liệu phụ thuộc khỏi cơ sở dữ liệu',
         metadata: {
           contractNumber: loan.contractNumber,
           memberId: loan.memberId,
@@ -696,7 +696,7 @@ export class LoanService {
       id: loan.id,
       contractNumber: loan.contractNumber,
       status: loan.status,
-      deleteMode: 'SOFT_DELETE',
+      deleteMode: 'HARD_DELETE',
       releasedCollateralsCount: releasedCount,
     };
   }

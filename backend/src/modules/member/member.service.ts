@@ -205,32 +205,17 @@ export class MemberService {
       );
     }
 
-    if (obligations.totalLoanCount > 0) {
-      await this.repo.softDelete(member, reason);
-      await prisma.auditLog.create({
-        data: {
-          entityType: 'MEMBER',
-          entityId: member.id,
-          action: 'SOFT_DELETE',
-          reason:
-            reason ||
-            'Xóa mềm thành viên đã có lịch sử hồ sơ vay đã tất toán để bảo toàn dấu vết kiểm toán',
-          metadata: {
-            memberCode: member.memberCode,
-            fullName: member.fullName,
-            idNumber: member.idNumber,
-            historicalLoans: obligations.totalLoanCount,
-          },
-        },
-      });
-
-      return {
-        id: member.id,
-        memberCode: member.memberCode,
-        fullName: member.fullName,
-        deleteMode: 'SOFT_DELETE',
-      };
+    // Xóa sạch các khoản vay và dữ liệu phụ thuộc của thành viên này khỏi cơ sở dữ liệu
+    const loans = await prisma.loan.findMany({ where: { memberId: id }, select: { id: true } });
+    for (const l of loans) {
+      await prisma.collateral.deleteMany({ where: { loanId: l.id } });
+      await prisma.loanValuation.deleteMany({ where: { loanId: l.id } });
+      await prisma.relatedPerson.deleteMany({ where: { loanId: l.id } });
+      await prisma.disbursement.deleteMany({ where: { loanId: l.id } });
+      await prisma.repayment.deleteMany({ where: { loanId: l.id } });
+      await prisma.wordExportLog.deleteMany({ where: { loanId: l.id } });
     }
+    await prisma.loan.deleteMany({ where: { memberId: id } });
 
     await this.repo.hardDelete(member.id);
     await prisma.auditLog.create({
@@ -238,7 +223,7 @@ export class MemberService {
         entityType: 'MEMBER',
         entityId: member.id,
         action: 'HARD_DELETE',
-        reason: reason || 'Xóa vĩnh viễn thành viên chưa phát sinh hồ sơ vay',
+        reason: reason || 'Xóa vĩnh viễn thành viên khỏi cơ sở dữ liệu',
         metadata: {
           memberCode: member.memberCode,
           fullName: member.fullName,

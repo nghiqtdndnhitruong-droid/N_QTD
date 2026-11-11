@@ -50,6 +50,16 @@ router.post('/upload', upload.single('file'), (req, res, next) =>
   wordTemplateController.uploadNew(req, res, next),
 );
 
+// Upload nhiều mẫu mới cùng lúc (tối đa 50 file .docx)
+router.post('/upload-multiple', upload.array('files', 50), (req, res, next) =>
+  wordTemplateController.uploadMultiple(req, res, next),
+);
+
+// Xóa nhiều biểu mẫu cùng lúc (Bulk delete)
+router.post('/bulk-delete', (req, res, next) =>
+  wordTemplateController.bulkDelete(req, res, next),
+);
+
 // 4. Xuất tài liệu khoản vay (Single hoặc Batch ZIP)
 router.post('/export-loan', (req, res, next) =>
   wordTemplateController.exportLoan(req, res, next),

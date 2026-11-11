@@ -630,7 +630,7 @@ export function CollateralsSection({
 
       {/* Drawer thêm / sửa TSTC */}
       <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
-        <DrawerContent size="xl">
+        <DrawerContent size="3xl">
           <DrawerHeader
             title={
               editingItem

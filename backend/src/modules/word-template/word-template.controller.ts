@@ -82,6 +82,31 @@ export class WordTemplateController {
     }
   }
 
+  public async uploadMultiple(req: Request, res: Response, next: NextFunction) {
+    try {
+      const files = req.files as Express.Multer.File[];
+      if (!files || !Array.isArray(files) || files.length === 0) {
+        throw AppError.badRequest('Vui lòng chọn ít nhất một file biểu mẫu định dạng .docx');
+      }
+
+      const loanTypeScope = req.body.loanTypeScope || 'ALL';
+      const category = req.body.category || 'OTHER';
+
+      const result = await wordTemplateService.createMultipleTemplatesWithFiles(files, {
+        loanTypeScope,
+        category,
+      });
+
+      res.status(201).json({
+        success: true,
+        message: `Đã tải lên thành công ${result.successCount}/${result.total} biểu mẫu.`,
+        data: result,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+
   public async uploadVersion(req: Request, res: Response, next: NextFunction) {
     try {
       const id = getParamId(req);
@@ -157,6 +182,23 @@ export class WordTemplateController {
       res.json({
         success: true,
         message: 'Đã xóa biểu mẫu thành công.',
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  public async bulkDelete(req: Request, res: Response, next: NextFunction) {
+    try {
+      const ids = req.body.ids as string[];
+      if (!Array.isArray(ids) || ids.length === 0) {
+        throw AppError.badRequest('Vui lòng chọn danh sách ID biểu mẫu cần xóa');
+      }
+      const result = await wordTemplateService.deleteMultipleTemplates(ids);
+      res.json({
+        success: true,
+        message: `Đã xóa thành công ${result.deletedCount} biểu mẫu.${result.failedCount > 0 ? ` Có ${result.failedCount} biểu mẫu xóa thất bại.` : ''}`,
+        data: result,
       });
     } catch (err) {
       next(err);

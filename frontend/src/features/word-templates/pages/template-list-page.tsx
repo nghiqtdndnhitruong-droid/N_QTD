@@ -7,6 +7,7 @@ import {
   Download,
   FileCode,
   FileText,
+  GripVertical,
   Layers,
   Play,
   Plus,
@@ -15,6 +16,8 @@ import {
   Shield,
   Trash2,
   UserCheck,
+  CheckSquare,
+  Square,
 } from 'lucide-react';
 import {
   Badge,
@@ -29,6 +32,7 @@ import {
   useUpdateWordTemplate,
   useReorderWordTemplates,
   useDownloadOriginalTemplate,
+  useBulkDeleteWordTemplates,
 } from '../hooks/use-word-templates';
 import { TemplateUploadModal } from '../components/template-upload-modal';
 import { TemplatePreviewModal } from '../components/template-preview-modal';
@@ -43,12 +47,22 @@ export function TemplateListPage() {
   const [previewTemplate, setPreviewTemplate] = useState<WordTemplate | null>(null);
   const [deletingTemplate, setDeletingTemplate] = useState<WordTemplate | null>(null);
 
-  const { data: templates = [], isLoading } = useWordTemplates({
+  // Quản lý chọn nhiều mẫu để xóa cùng lúc
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [confirmBulkDeleteOpen, setConfirmBulkDeleteOpen] = useState(false);
+
+  // Quản lý trạng thái Drag and Drop
+  const [draggingTemplateId, setDraggingTemplateId] = useState<string | null>(null);
+  const [dragOverTargetId, setDragOverTargetId] = useState<string | null>(null);
+  const [dragOverColumnScope, setDragOverColumnScope] = useState<LoanTypeScope | null>(null);
+
+  const { data: templates = [], isLoading, refetch } = useWordTemplates({
     search: search || undefined,
     category: selectedCategory || undefined,
   });
 
   const deleteMutation = useDeleteWordTemplate();
+  const bulkDeleteMutation = useBulkDeleteWordTemplates();
   const updateMutation = useUpdateWordTemplate();
   const downloadMutation = useDownloadOriginalTemplate();
   const reorderMutation = useReorderWordTemplates();
@@ -70,6 +84,184 @@ export function TemplateListPage() {
   const openUploadModal = (scope: LoanTypeScope = 'ALL') => {
     setUploadScope(scope);
     setUploadModalOpen(true);
+  };
+
+  // --- Logic chọn nhiều biểu mẫu ---
+  const handleToggleSelect = (id: string, checked: boolean) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (checked) {
+        next.add(id);
+      } else {
+        next.delete(id);
+      }
+      return next;
+    });
+  };
+
+  const handleSelectAll = () => {
+    if (selectedIds.size === templates.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(templates.map((t) => t.id)));
+    }
+  };
+
+  const handleClearSelection = () => {
+    setSelectedIds(new Set());
+  };
+
+  const handleConfirmBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    try {
+      const ids = Array.from(selectedIds);
+      const res = await bulkDeleteMutation.mutateAsync(ids);
+      notifySuccess(
+        'Xóa nhiều biểu mẫu thành công',
+        `Đã xóa thành công ${res.deletedCount} biểu mẫu.${res.failedCount > 0 ? ` Có ${res.failedCount} mẫu không thể xóa.` : ''}`,
+      );
+      setSelectedIds(new Set());
+      setConfirmBulkDeleteOpen(false);
+      refetch();
+    } catch (err) {
+      notifyApiError(err);
+    }
+  };
+
+  // --- Logic Drag and Drop Kéo thả sắp xếp ---
+  const handleDragStart = (e: React.DragEvent, template: WordTemplate) => {
+    setDraggingTemplateId(template.id);
+    e.dataTransfer.setData('text/plain', template.id);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragEnd = () => {
+    setDraggingTemplateId(null);
+    setDragOverTargetId(null);
+    setDragOverColumnScope(null);
+  };
+
+  const handleCardDragOver = (e: React.DragEvent, targetTemplateId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (draggingTemplateId !== targetTemplateId) {
+      setDragOverTargetId(targetTemplateId);
+    }
+  };
+
+  const handleColumnDragOver = (e: React.DragEvent, scope: LoanTypeScope) => {
+    e.preventDefault();
+    setDragOverColumnScope(scope);
+  };
+
+  const handleDropOnCard = async (
+    e: React.DragEvent,
+    targetTemplate: WordTemplate,
+    targetScope: LoanTypeScope,
+  ) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const draggedId = draggingTemplateId || e.dataTransfer.getData('text/plain');
+    if (!draggedId || draggedId === targetTemplate.id) {
+      handleDragEnd();
+      return;
+    }
+
+    const draggedTemplate = templates.find((t) => t.id === draggedId);
+    if (!draggedTemplate) {
+      handleDragEnd();
+      return;
+    }
+
+    // Danh sách các template hiện tại trong cột đích
+    let targetColList = templates.filter(
+      (t) => t.loanTypeScope === targetScope && t.id !== draggedId,
+    );
+
+    // Tìm vị trí của targetTemplate trong cột đích
+    const targetIdx = targetColList.findIndex((t) => t.id === targetTemplate.id);
+    const insertIdx = targetIdx >= 0 ? targetIdx : targetColList.length;
+
+    // Chèn template được kéo vào trước targetIdx
+    targetColList.splice(insertIdx, 0, {
+      ...draggedTemplate,
+      loanTypeScope: targetScope,
+    });
+
+    // Các template ở các cột khác
+    const otherTemplates = templates.filter(
+      (t) => t.loanTypeScope !== targetScope && t.id !== draggedId,
+    );
+
+    const fullUpdatedList = [...targetColList, ...otherTemplates];
+
+    const reorderedItems = fullUpdatedList.map((t, idx) => ({
+      id: t.id,
+      sortOrder: idx,
+      loanTypeScope: t.loanTypeScope,
+    }));
+
+    try {
+      await reorderMutation.mutateAsync(reorderedItems as any);
+      notifySuccess(
+        `Đã sắp xếp lại biểu mẫu "${draggedTemplate.title}"`,
+        draggedTemplate.loanTypeScope !== targetScope
+          ? `Đã chuyển sang cột ${targetScope === 'THE_CHAP' ? 'Thế chấp' : targetScope === 'TIN_CHAP' ? 'Tín chấp' : 'Dùng chung'}`
+          : undefined,
+      );
+      refetch();
+    } catch (err) {
+      notifyApiError(err);
+    } finally {
+      handleDragEnd();
+    }
+  };
+
+  const handleDropOnColumn = async (e: React.DragEvent, targetScope: LoanTypeScope) => {
+    e.preventDefault();
+    const draggedId = draggingTemplateId || e.dataTransfer.getData('text/plain');
+    if (!draggedId) {
+      handleDragEnd();
+      return;
+    }
+
+    const draggedTemplate = templates.find((t) => t.id === draggedId);
+    if (!draggedTemplate) {
+      handleDragEnd();
+      return;
+    }
+
+    // Nếu thả vào cột trống hoặc cuối cột
+    const targetColList = templates.filter(
+      (t) => t.loanTypeScope === targetScope && t.id !== draggedId,
+    );
+    targetColList.push({ ...draggedTemplate, loanTypeScope: targetScope });
+
+    const otherTemplates = templates.filter(
+      (t) => t.loanTypeScope !== targetScope && t.id !== draggedId,
+    );
+    const fullUpdatedList = [...targetColList, ...otherTemplates];
+
+    const reorderedItems = fullUpdatedList.map((t, idx) => ({
+      id: t.id,
+      sortOrder: idx,
+      loanTypeScope: t.loanTypeScope,
+    }));
+
+    try {
+      await reorderMutation.mutateAsync(reorderedItems as any);
+      notifySuccess(
+        `Đã di chuyển biểu mẫu "${draggedTemplate.title}" sang cột ${
+          targetScope === 'THE_CHAP' ? 'Thế chấp' : targetScope === 'TIN_CHAP' ? 'Tín chấp' : 'Dùng chung'
+        }`,
+      );
+      refetch();
+    } catch (err) {
+      notifyApiError(err);
+    } finally {
+      handleDragEnd();
+    }
   };
 
   const handleMoveInColumn = async (
@@ -109,6 +301,7 @@ export function TemplateListPage() {
       notifySuccess(
         `Đã di chuyển biểu mẫu "${currentItem.title}" ${direction === 'UP' ? 'lên trên' : 'xuống dưới'}`,
       );
+      refetch();
     } catch (err) {
       notifyApiError(err);
     }
@@ -124,12 +317,12 @@ export function TemplateListPage() {
       const scopeLabel =
         newScope === 'THE_CHAP' ? 'Thế chấp' : newScope === 'TIN_CHAP' ? 'Tín chấp' : 'Dùng chung';
       notifySuccess(`Đã chuyển biểu mẫu "${template.title}" sang cột ${scopeLabel}`);
+      refetch();
     } catch (err) {
       notifyApiError(err);
     }
   };
 
-  // Danh sách các nhóm biểu mẫu duy nhất để lọc
   const categories = useMemo(() => {
     const set = new Set<string>();
     templates.forEach((t) => {
@@ -144,6 +337,7 @@ export function TemplateListPage() {
       await deleteMutation.mutateAsync(deletingTemplate.id);
       notifySuccess(`Đã xóa biểu mẫu "${deletingTemplate.title}"`);
       setDeletingTemplate(null);
+      refetch();
     } catch (err) {
       notifyApiError(err);
     }
@@ -158,6 +352,7 @@ export function TemplateListPage() {
       notifySuccess(
         `Đã ${!template.isActive ? 'kích hoạt' : 'ngừng sử dụng'} biểu mẫu "${template.title}"`,
       );
+      refetch();
     } catch (err) {
       notifyApiError(err);
     }
@@ -216,7 +411,7 @@ export function TemplateListPage() {
     <div className="space-y-6">
       <PageHeader
         title="Quản lý biểu mẫu Word"
-        description="Quản lý các file mẫu Word (.docx) chia theo 3 cột: Thế chấp, Tín chấp và Chung. Cấu hình ánh xạ từ khóa tự động trích xuất cho hồ sơ vay."
+        description="Quản lý các file mẫu Word (.docx) chia theo 3 cột: Thế chấp, Tín chấp và Chung. Kéo thả để sắp xếp vị trí hoặc chuyển cột, hỗ trợ tải lên và xóa nhiều mẫu cùng lúc."
         actions={
           <div className="flex flex-wrap items-center gap-2.5">
             <Link to="/templates/catalog">
@@ -283,33 +478,82 @@ export function TemplateListPage() {
         </Card>
       </div>
 
-      {/* Thanh tìm kiếm và bộ lọc */}
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3">
-        <div className="relative min-w-[260px] flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Tìm theo tên biểu mẫu, mã hoặc nhóm..."
-            className="h-9 w-full rounded-md border border-slate-300 pl-9 pr-3 text-xs focus:border-primary-600 focus:outline-none"
-          />
+      {/* Thanh tìm kiếm, bộ lọc & Thanh tác vụ chọn nhiều */}
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3">
+          <div className="relative min-w-[260px] flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Tìm theo tên biểu mẫu, mã hoặc nhóm..."
+              className="h-9 w-full rounded-md border border-slate-300 pl-9 pr-3 text-xs focus:border-primary-600 focus:outline-none"
+            />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="h-9 rounded-md border border-slate-300 bg-white px-3 text-xs text-slate-700 focus:border-primary-600 focus:outline-none"
+            >
+              <option value="">Tất cả nhóm biểu mẫu</option>
+              {categories.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
+            </select>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSelectAll}
+              className="h-9 text-xs gap-1.5"
+            >
+              {selectedIds.size === templates.length && templates.length > 0 ? (
+                <>
+                  <CheckSquare className="h-3.5 w-3.5 text-primary-600" />
+                  Bỏ chọn tất cả
+                </>
+              ) : (
+                <>
+                  <Square className="h-3.5 w-3.5 text-slate-500" />
+                  Chọn tất cả ({templates.length})
+                </>
+              )}
+            </Button>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <select
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-            className="h-9 rounded-md border border-slate-300 bg-white px-3 text-xs text-slate-700 focus:border-primary-600 focus:outline-none"
-          >
-            <option value="">Tất cả nhóm biểu mẫu</option>
-            {categories.map((cat) => (
-              <option key={cat} value={cat}>
-                {cat}
-              </option>
-            ))}
-          </select>
-        </div>
+        {/* Thanh tác vụ khi chọn nhiều mẫu (Bulk Action Bar) */}
+        {selectedIds.size > 0 && (
+          <div className="flex items-center justify-between p-3 rounded-lg bg-rose-50 border border-rose-200 text-xs shadow-xs animate-in fade-in duration-200">
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-rose-900">
+                Đã chọn {selectedIds.size} / {templates.length} biểu mẫu
+              </span>
+              <button
+                type="button"
+                onClick={handleClearSelection}
+                className="text-slate-500 hover:text-slate-800 underline ml-2"
+              >
+                Hủy chọn
+              </button>
+            </div>
+
+            <Button
+              variant="danger"
+              size="sm"
+              className="h-8 text-xs font-semibold gap-1.5 shadow-2xs"
+              onClick={() => setConfirmBulkDeleteOpen(true)}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              Xóa {selectedIds.size} mẫu đã chọn
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Giao diện 3 Cột Biểu Mẫu */}
@@ -339,10 +583,18 @@ export function TemplateListPage() {
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 items-start">
           {columnsConfig.map((col) => {
             const Icon = col.icon;
+            const isColumnHovered = dragOverColumnScope === col.scope;
+
             return (
               <div
                 key={col.scope}
-                className="flex flex-col rounded-xl border border-slate-200 bg-slate-50/60 p-4 shadow-sm min-h-[450px]"
+                onDragOver={(e) => handleColumnDragOver(e, col.scope)}
+                onDrop={(e) => handleDropOnColumn(e, col.scope)}
+                className={`flex flex-col rounded-xl border p-4 shadow-sm min-h-[450px] transition-colors ${
+                  isColumnHovered
+                    ? 'border-primary-400 bg-primary-50/30'
+                    : 'border-slate-200 bg-slate-50/60'
+                }`}
               >
                 {/* Header của từng cột */}
                 <div className="mb-4 flex items-center justify-between border-b border-slate-200/80 pb-3">
@@ -376,7 +628,11 @@ export function TemplateListPage() {
                 {/* Danh sách thẻ biểu mẫu trong cột */}
                 <div className="space-y-3 flex-1">
                   {col.items.length === 0 ? (
-                    <div className="rounded-lg border border-dashed border-slate-300 bg-white/70 p-6 text-center">
+                    <div
+                      onDragOver={(e) => handleColumnDragOver(e, col.scope)}
+                      onDrop={(e) => handleDropOnColumn(e, col.scope)}
+                      className="rounded-lg border border-dashed border-slate-300 bg-white/70 p-6 text-center"
+                    >
                       <Icon className="mx-auto h-8 w-8 text-slate-300 mb-2" />
                       <div className="text-xs font-semibold text-slate-600">
                         Chưa có mẫu {col.title.toLowerCase()}
@@ -384,7 +640,7 @@ export function TemplateListPage() {
                       <p className="mt-1 text-[11px] text-slate-400">
                         {search || selectedCategory
                           ? 'Không tìm thấy mẫu phù hợp bộ lọc.'
-                          : 'Tải file Word lên cột này để cấu hình.'}
+                          : 'Kéo thả biểu mẫu vào đây hoặc bấm Thêm để tải lên.'}
                       </p>
                       <Button
                         size="sm"
@@ -397,151 +653,189 @@ export function TemplateListPage() {
                       </Button>
                     </div>
                   ) : (
-                    col.items.map((template, index) => (
-                      <Card
-                        key={template.id}
-                        className={`flex flex-col justify-between transition-all hover:shadow-md ${
-                          !template.isActive ? 'opacity-70 bg-slate-100/90' : 'bg-white'
-                        }`}
-                      >
-                        <div className="p-3.5">
-                          <div className="flex items-start justify-between gap-2">
-                            <button
-                              type="button"
-                              onClick={() => handleToggleActive(template)}
-                              className="cursor-pointer text-left"
-                              title={
-                                template.isActive
-                                  ? 'Nhấp để tạm dừng mẫu'
-                                  : 'Nhấp để kích hoạt mẫu'
-                              }
-                            >
-                              <Badge tone={template.isActive ? 'success' : 'neutral'}>
-                                {template.isActive ? 'Đang dùng' : 'Tạm dừng'}
-                              </Badge>
-                            </button>
+                    col.items.map((template, index) => {
+                      const isDragging = draggingTemplateId === template.id;
+                      const isDragOver = dragOverTargetId === template.id;
+                      const isSelected = selectedIds.has(template.id);
 
-                            <div className="flex items-center gap-1.5">
-                              {/* Nút di chuyển lên / xuống trong cùng cột */}
-                              <div className="flex items-center rounded border border-slate-200 bg-white shadow-2xs">
-                                <button
-                                  type="button"
-                                  disabled={index === 0 || reorderMutation.isPending}
-                                  onClick={() => handleMoveInColumn(col.scope, index, 'UP')}
-                                  className="p-1 text-slate-500 hover:text-primary-700 disabled:opacity-25 disabled:cursor-not-allowed"
-                                  title="Di chuyển lên trên trong cột này"
+                      return (
+                        <Card
+                          key={template.id}
+                          draggable
+                          onDragStart={(e) => handleDragStart(e, template)}
+                          onDragEnd={handleDragEnd}
+                          onDragOver={(e) => handleCardDragOver(e, template.id)}
+                          onDrop={(e) => handleDropOnCard(e, template, col.scope)}
+                          className={`flex flex-col justify-between transition-all select-none ${
+                            isDragging
+                              ? 'opacity-30 border-dashed border-2 border-primary-500 scale-95'
+                              : isDragOver
+                                ? 'border-t-4 border-t-primary-600 shadow-lg bg-primary-50/40'
+                                : isSelected
+                                  ? 'border-rose-300 bg-rose-50/20 shadow-xs'
+                                  : !template.isActive
+                                    ? 'opacity-70 bg-slate-100/90'
+                                    : 'bg-white hover:shadow-md'
+                          }`}
+                        >
+                          <div className="p-3.5">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex items-center gap-2">
+                                {/* Grip Drag Handle */}
+                                <div
+                                  className="cursor-grab active:cursor-grabbing text-slate-400 hover:text-slate-700 p-0.5 rounded hover:bg-slate-100"
+                                  title="Giữ và kéo thả để đổi thứ tự hoặc đổi cột"
                                 >
-                                  <ArrowUp className="h-3.5 w-3.5" />
-                                </button>
-                                <div className="h-3 w-[1px] bg-slate-200" />
+                                  <GripVertical className="h-4 w-4" />
+                                </div>
+
+                                {/* Checkbox chọn nhiều */}
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  onChange={(e) => handleToggleSelect(template.id, e.target.checked)}
+                                  className="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
+                                  title="Chọn biểu mẫu này"
+                                />
+
                                 <button
                                   type="button"
-                                  disabled={
-                                    index === col.items.length - 1 || reorderMutation.isPending
+                                  onClick={() => handleToggleActive(template)}
+                                  className="cursor-pointer text-left"
+                                  title={
+                                    template.isActive
+                                      ? 'Nhấp để tạm dừng mẫu'
+                                      : 'Nhấp để kích hoạt mẫu'
                                   }
-                                  onClick={() => handleMoveInColumn(col.scope, index, 'DOWN')}
-                                  className="p-1 text-slate-500 hover:text-primary-700 disabled:opacity-25 disabled:cursor-not-allowed"
-                                  title="Di chuyển xuống dưới trong cột này"
                                 >
-                                  <ArrowDown className="h-3.5 w-3.5" />
+                                  <Badge tone={template.isActive ? 'success' : 'neutral'}>
+                                    {template.isActive ? 'Đang dùng' : 'Tạm dừng'}
+                                  </Badge>
                                 </button>
                               </div>
-                              <span className="font-mono text-[10px] font-semibold text-slate-400">
-                                v{template.currentVersion}
-                              </span>
+
+                              <div className="flex items-center gap-1.5">
+                                {/* Nút di chuyển lên / xuống bằng nút bấm */}
+                                <div className="flex items-center rounded border border-slate-200 bg-white shadow-2xs">
+                                  <button
+                                    type="button"
+                                    disabled={index === 0 || reorderMutation.isPending}
+                                    onClick={() => handleMoveInColumn(col.scope, index, 'UP')}
+                                    className="p-1 text-slate-500 hover:text-primary-700 disabled:opacity-25 disabled:cursor-not-allowed"
+                                    title="Di chuyển lên trên trong cột này"
+                                  >
+                                    <ArrowUp className="h-3.5 w-3.5" />
+                                  </button>
+                                  <div className="h-3 w-[1px] bg-slate-200" />
+                                  <button
+                                    type="button"
+                                    disabled={
+                                      index === col.items.length - 1 || reorderMutation.isPending
+                                    }
+                                    onClick={() => handleMoveInColumn(col.scope, index, 'DOWN')}
+                                    className="p-1 text-slate-500 hover:text-primary-700 disabled:opacity-25 disabled:cursor-not-allowed"
+                                    title="Di chuyển xuống dưới trong cột này"
+                                  >
+                                    <ArrowDown className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
+                                <span className="font-mono text-[10px] font-semibold text-slate-400">
+                                  v{template.currentVersion}
+                                </span>
+                              </div>
                             </div>
-                          </div>
 
-                          <div className="mt-2.5">
-                            <h3
-                              onClick={() => navigate(`/templates/${template.id}`)}
-                              className="cursor-pointer font-bold text-slate-900 hover:text-primary-700 text-xs sm:text-sm line-clamp-2"
-                              title={template.title}
-                            >
-                              {template.title}
-                            </h3>
-                            <div className="mt-1 font-mono text-[11px] text-slate-500">
-                              {template.code}
-                            </div>
-                          </div>
-
-                          <div className="mt-2.5 flex flex-wrap items-center gap-1.5 text-[11px]">
-                            <Badge tone="info" className="text-[10px]">
-                              {template.category}
-                            </Badge>
-                            <Badge tone="primary" className="text-[10px]">
-                              {template._count?.mappings ?? 0} từ khóa
-                            </Badge>
-
-                            {/* Dropdown chuyển cột nhanh */}
-                            <div className="ml-auto flex items-center gap-1">
-                              <select
-                                value={template.loanTypeScope}
-                                onChange={(e) =>
-                                  handleChangeScope(template, e.target.value as LoanTypeScope)
-                                }
-                                className="h-5 rounded border border-slate-200 bg-slate-50 px-1 text-[10px] font-medium text-slate-600 hover:bg-white hover:border-slate-300 focus:border-primary-500 focus:outline-none cursor-pointer"
-                                title="Chuyển sang cột khác"
+                            <div className="mt-2.5">
+                              <h3
+                                onClick={() => navigate(`/templates/${template.id}`)}
+                                className="cursor-pointer font-bold text-slate-900 hover:text-primary-700 text-xs sm:text-sm line-clamp-2"
+                                title={template.title}
                               >
-                                <option value="THE_CHAP">Cột Thế chấp</option>
-                                <option value="TIN_CHAP">Cột Tín chấp</option>
-                                <option value="ALL">Cột Chung</option>
-                              </select>
+                                {template.title}
+                              </h3>
+                              <div className="mt-1 font-mono text-[11px] text-slate-500">
+                                {template.code}
+                              </div>
                             </div>
+
+                            <div className="mt-2.5 flex flex-wrap items-center gap-1.5 text-[11px]">
+                              <Badge tone="info" className="text-[10px]">
+                                {template.category}
+                              </Badge>
+                              <Badge tone="primary" className="text-[10px]">
+                                {template._count?.mappings ?? 0} từ khóa
+                              </Badge>
+
+                              {/* Dropdown chuyển cột nhanh */}
+                              <div className="ml-auto flex items-center gap-1">
+                                <select
+                                  value={template.loanTypeScope}
+                                  onChange={(e) =>
+                                    handleChangeScope(template, e.target.value as LoanTypeScope)
+                                  }
+                                  className="h-5 rounded border border-slate-200 bg-slate-50 px-1 text-[10px] font-medium text-slate-600 hover:bg-white hover:border-slate-300 focus:border-primary-500 focus:outline-none cursor-pointer"
+                                  title="Chuyển sang cột khác"
+                                >
+                                  <option value="THE_CHAP">Cột Thế chấp</option>
+                                  <option value="TIN_CHAP">Cột Tín chấp</option>
+                                  <option value="ALL">Cột Chung</option>
+                                </select>
+                              </div>
+                            </div>
+
+                            {template.description && (
+                              <p className="mt-2 line-clamp-2 text-[11px] text-slate-500">
+                                {template.description}
+                              </p>
+                            )}
                           </div>
 
-                          {template.description && (
-                            <p className="mt-2 line-clamp-2 text-[11px] text-slate-500">
-                              {template.description}
-                            </p>
-                          )}
-                        </div>
+                          <div className="border-t border-slate-100 bg-slate-50/70 p-2.5">
+                            <div className="flex items-center justify-between gap-1">
+                              <div className="flex items-center gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  title="Tải file mẫu gốc"
+                                  onClick={() => handleDownloadOriginal(template)}
+                                  className="h-7 w-7 p-0"
+                                >
+                                  <Download className="h-3.5 w-3.5 text-slate-600" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  title="Kiểm tra & chạy thử"
+                                  onClick={() => setPreviewTemplate(template)}
+                                  className="h-7 w-7 p-0 text-primary-600"
+                                >
+                                  <Play className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  title="Xóa mẫu"
+                                  onClick={() => setDeletingTemplate(template)}
+                                  className="h-7 w-7 p-0 text-danger-600"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
 
-                        <div className="border-t border-slate-100 bg-slate-50/70 p-2.5">
-                          <div className="flex items-center justify-between gap-1">
-                            <div className="flex items-center gap-1">
                               <Button
-                                variant="ghost"
                                 size="sm"
-                                title="Tải file mẫu gốc"
-                                onClick={() => handleDownloadOriginal(template)}
-                                className="h-7 w-7 p-0"
+                                variant="primary"
+                                onClick={() => navigate(`/templates/${template.id}`)}
+                                leftIcon={<Settings className="h-3 w-3" />}
+                                className="h-7 text-xs px-2.5"
                               >
-                                <Download className="h-3.5 w-3.5 text-slate-600" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                title="Kiểm tra & chạy thử"
-                                onClick={() => setPreviewTemplate(template)}
-                                className="h-7 w-7 p-0 text-primary-600"
-                              >
-                                <Play className="h-3.5 w-3.5" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                title="Xóa mẫu"
-                                onClick={() => setDeletingTemplate(template)}
-                                className="h-7 w-7 p-0 text-danger-600"
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
+                                Cấu hình
                               </Button>
                             </div>
-
-                            <Button
-                              size="sm"
-                              variant="primary"
-                              onClick={() => navigate(`/templates/${template.id}`)}
-                              leftIcon={<Settings className="h-3 w-3" />}
-                              className="h-7 text-xs px-2.5"
-                            >
-                              Cấu hình
-                            </Button>
                           </div>
-                        </div>
-                      </Card>
-                    ))
+                        </Card>
+                      );
+                    })
                   )}
                 </div>
               </div>
@@ -550,12 +844,14 @@ export function TemplateListPage() {
         </div>
       )}
 
-      {/* Modal Upload */}
+      {/* Modal Upload (Không tự chuyển trang khi thêm xong) */}
       <TemplateUploadModal
         open={uploadModalOpen}
         onOpenChange={setUploadModalOpen}
         defaultScope={uploadScope}
-        onSuccess={(createdId) => navigate(`/templates/${createdId}`)}
+        onSuccess={() => {
+          refetch();
+        }}
       />
 
       {/* Modal Preview */}
@@ -567,7 +863,7 @@ export function TemplateListPage() {
         />
       )}
 
-      {/* Modal Xác nhận xóa */}
+      {/* Modal Xác nhận xóa 1 mẫu */}
       <ConfirmDialog
         open={Boolean(deletingTemplate)}
         onOpenChange={(open) => !open && setDeletingTemplate(null)}
@@ -577,6 +873,18 @@ export function TemplateListPage() {
         tone="danger"
         isLoading={deleteMutation.isPending}
         onConfirm={handleDelete}
+      />
+
+      {/* Modal Xác nhận xóa NHIỀU mẫu (Bulk Delete) */}
+      <ConfirmDialog
+        open={confirmBulkDeleteOpen}
+        onOpenChange={setConfirmBulkDeleteOpen}
+        title={`Xác nhận xóa ${selectedIds.size} biểu mẫu đã chọn?`}
+        description="Thao tác này sẽ xóa đồng loạt các biểu mẫu đã chọn cùng toàn bộ cấu hình ánh xạ từ khóa tương ứng. Dữ liệu đã xóa không thể khôi phục."
+        confirmText={`Xóa ${selectedIds.size} biểu mẫu`}
+        tone="danger"
+        isLoading={bulkDeleteMutation.isPending}
+        onConfirm={handleConfirmBulkDelete}
       />
     </div>
   );

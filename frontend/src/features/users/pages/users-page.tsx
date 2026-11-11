@@ -11,6 +11,7 @@ import {
   Search,
   Shield,
   ShieldCheck,
+  Trash2,
   Unlock,
   UserCheck,
 } from 'lucide-react';
@@ -48,6 +49,7 @@ import {
   useResetUserPassword,
   useUpdateUser,
   useUpdateUserStatus,
+  useDeleteUser,
   useUsersList,
 } from '../hooks/use-users';
 import {
@@ -171,9 +173,10 @@ export function UsersPage() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<AuthUser | null>(null);
 
-  // Modal reset password & lock confirm
+  // Modal reset password & lock confirm & delete confirm
   const [resetPwdUser, setResetPwdUser] = useState<AuthUser | null>(null);
   const [statusTargetUser, setStatusTargetUser] = useState<AuthUser | null>(null);
+  const [deletingUser, setDeletingUser] = useState<AuthUser | null>(null);
 
   const { data, isLoading } = useUsersList({
     search: searchTerm || undefined,
@@ -184,6 +187,7 @@ export function UsersPage() {
   const updateUserMutation = useUpdateUser();
   const updateStatusMutation = useUpdateUserStatus();
   const resetPasswordMutation = useResetUserPassword();
+  const deleteUserMutation = useDeleteUser();
 
   const [isGenderManuallyChanged, setIsGenderManuallyChanged] = useState(false);
 
@@ -353,6 +357,17 @@ export function UsersPage() {
       setStatusTargetUser(null);
     } catch (err: any) {
       notifyError(err?.message || 'Không thể thay đổi trạng thái tài khoản');
+    }
+  };
+
+  const handleDeleteUserConfirm = async () => {
+    if (!deletingUser) return;
+    try {
+      const res = await deleteUserMutation.mutateAsync(deletingUser.id);
+      notifySuccess(res.message || `Đã xóa vĩnh viễn tài khoản [${deletingUser.username}] khỏi cơ sở dữ liệu.`);
+      setDeletingUser(null);
+    } catch (err: any) {
+      notifyError(err?.message || 'Không thể xóa tài khoản người dùng');
     }
   };
 
@@ -535,6 +550,19 @@ export function UsersPage() {
                             >
                               <KeyRound className="h-3.5 w-3.5 text-amber-600" />
                             </Button>
+
+                            {!isAdmin && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setDeletingUser(u)}
+                                title="Xóa vĩnh viễn tài khoản khỏi cơ sở dữ liệu"
+                                className="text-danger-600 hover:text-danger-700 hover:bg-danger-50"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -788,6 +816,18 @@ export function UsersPage() {
         tone={statusTargetUser?.status === 'LOCKED' ? 'primary' : 'danger'}
         isLoading={updateStatusMutation.isPending}
         onConfirm={handleToggleStatusConfirm}
+      />
+
+      {/* Confirm: Xóa vĩnh viễn tài khoản người dùng */}
+      <ConfirmDialog
+        open={!!deletingUser}
+        onOpenChange={(open) => !open && setDeletingUser(null)}
+        title={`Xóa vĩnh viễn tài khoản: ${deletingUser?.username}?`}
+        description="CẢNH BÁO: Thao tác này sẽ XÓA VĨNH VIỄN tài khoản và toàn bộ hồ sơ của cán bộ này khỏi cơ sở dữ liệu. Thao tác này không thể hoàn tác!"
+        confirmText="Tôi chắc chắn, Xóa tài khoản này"
+        tone="danger"
+        isLoading={deleteUserMutation.isPending}
+        onConfirm={handleDeleteUserConfirm}
       />
     </div>
   );

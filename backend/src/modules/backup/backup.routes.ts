@@ -47,5 +47,22 @@ router.post(
   asyncHandler(backupController.cleanDatabase.bind(backupController))
 );
 
+// Khôi phục từ khóa Word từ file keywords.sql mặc định của dự án (chỉ ADMIN)
+router.post(
+  '/keywords/restore-default',
+  authenticateToken,
+  requireRole(UserRole.ADMIN),
+  asyncHandler(backupController.restoreKeywordsDefault.bind(backupController))
+);
+
+// Nạp lại từ khóa Word từ file SQL người dùng tải lên (chỉ ADMIN)
+router.post(
+  '/keywords/upload-sql',
+  authenticateToken,
+  requireRole(UserRole.ADMIN),
+  upload.single('file'),
+  asyncHandler(backupController.uploadKeywordsSql.bind(backupController))
+);
+
 export const backupRoutes = router;
 

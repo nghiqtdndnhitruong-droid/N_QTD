@@ -48,4 +48,11 @@ router.patch(
   asyncHandler(userController.resetPassword.bind(userController))
 );
 
+router.delete(
+  '/:id',
+  authenticateToken,
+  requirePermission('user:manage'),
+  asyncHandler(userController.deleteUser.bind(userController))
+);
+
 export const userRoutes = router;

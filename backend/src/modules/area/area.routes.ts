@@ -7,6 +7,7 @@ import {
   createAreaGroupSchema,
   createCommuneSchema,
   createHamletSchema,
+  createProvinceSchema,
   updateAreaGroupSchema,
   updateHamletSchema,
 } from './area.validator';
@@ -28,6 +29,12 @@ router.put(
 router.delete('/groups/:id', asyncHandler(areaController.deleteAreaGroup));
 
 router.get('/provinces', asyncHandler(areaController.getProvinces));
+router.post(
+  '/provinces',
+  validate({ body: createProvinceSchema }),
+  asyncHandler(areaController.createProvince)
+);
+router.delete('/provinces/:id', asyncHandler(areaController.deleteProvince));
 router.get('/provinces/:provinceId/communes', asyncHandler(areaController.getCommunesByProvince));
 router.get('/communes/:communeId/hamlets', asyncHandler(areaController.getHamletsByCommune));
 router.get(

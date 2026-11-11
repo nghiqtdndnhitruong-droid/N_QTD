@@ -33,9 +33,11 @@ import {
   useDeleteAreaGroup,
   useDeleteCommune,
   useDeleteHamlet,
+  useDeleteProvince,
   useUpdateAreaGroup,
   useUpdateHamlet,
 } from '../hooks/use-areas';
+import { QuickCreateProvinceDialog } from '../components/quick-create-province-dialog';
 import { QuickCreateHamletDialog } from '../components/quick-create-hamlet-dialog';
 import { QuickCreateCommuneDialog } from '../components/quick-create-commune-dialog';
 import type { AreaGroup, Hamlet } from '../types/area.types';
@@ -43,6 +45,7 @@ import type { AreaGroup, Hamlet } from '../types/area.types';
 export function AreaManagementPage() {
   const { data: tree = [], isLoading, isError, error, refetch } = useAreaTree();
   const { data: areaGroups = [], isLoading: isLoadingGroups } = useAreaGroups();
+  const deleteProvinceMutation = useDeleteProvince();
   const updateHamletMutation = useUpdateHamlet();
   const deleteHamletMutation = useDeleteHamlet();
   const deleteCommuneMutation = useDeleteCommune();
@@ -50,8 +53,10 @@ export function AreaManagementPage() {
   const updateGroupMutation = useUpdateAreaGroup();
   const deleteGroupMutation = useDeleteAreaGroup();
 
+  const [selectedProvinceId, setSelectedProvinceId] = useState<string>('');
   const [selectedCommuneId, setSelectedCommuneId] = useState<string>('');
   const [searchKeyword, setSearchKeyword] = useState('');
+  const [createProvinceDialogOpen, setCreateProvinceDialogOpen] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [createCommuneDialogOpen, setCreateCommuneDialogOpen] = useState(false);
   const [createDefaultCommuneId, setCreateDefaultCommuneId] = useState<string | null>(null);
@@ -67,6 +72,11 @@ export function AreaManagementPage() {
     name: string;
     hamletsCount: number;
   } | null>(null);
+  const [deletingProvince, setDeletingProvince] = useState<{
+    id: string;
+    name: string;
+    communesCount: number;
+  } | null>(null);
 
   const [groupModalOpen, setGroupModalOpen] = useState(false);
   const [editingGroup, setEditingGroup] = useState<AreaGroup | null>(null);
@@ -76,8 +86,15 @@ export function AreaManagementPage() {
   const [groupFormCommuneIds, setGroupFormCommuneIds] = useState<string[]>([]);
   const [deletingGroup, setDeletingGroup] = useState<AreaGroup | null>(null);
 
-  const province = tree[0];
-  const communes = useMemo(() => province?.communes ?? [], [province]);
+  const activeProvince = useMemo(() => {
+    if (selectedProvinceId) {
+      return tree.find((p) => p.id === selectedProvinceId) ?? tree[0];
+    }
+    return tree[0];
+  }, [tree, selectedProvinceId]);
+
+  const province = activeProvince;
+  const communes = useMemo(() => activeProvince?.communes ?? [], [activeProvince]);
 
   const communeGroupMap = useMemo(() => {
     const map = new Map<string, string[]>();
@@ -207,6 +224,22 @@ export function AreaManagementPage() {
     }
   };
 
+  const handleConfirmDeleteProvince = async () => {
+    if (!deletingProvince) return;
+    try {
+      await deleteProvinceMutation.mutateAsync(deletingProvince.id);
+      notifySuccess(`Đã xóa "${deletingProvince.name}" khỏi danh mục địa bàn`);
+      if (selectedProvinceId === deletingProvince.id) {
+        setSelectedProvinceId('');
+      }
+      setSelectedCommuneId('');
+      setDeletingProvince(null);
+    } catch (err) {
+      setDeletingProvince(null);
+      notifyApiError(err);
+    }
+  };
+
   const handleConfirmDeleteCommune = async () => {
     if (!deletingCommune) return;
     try {
@@ -226,9 +259,16 @@ export function AreaManagementPage() {
     <div className="space-y-5">
       <PageHeader
         title="Quản lý địa bàn Quỹ tín dụng (Tỉnh → Xã → Ấp)"
-        description="Quản lý tập trung danh mục Tỉnh Vĩnh Long và các xã, ấp thuộc phạm vi hoạt động của Quỹ. Dùng chung độc lập cho cả Địa chỉ người vay và Địa bàn tài sản thế chấp."
+        description="Quản lý tập trung danh mục Tỉnh, Xã, Ấp thuộc phạm vi hoạt động của Quỹ. Dùng chung độc lập cho cả Địa chỉ người vay và Địa bàn tài sản thế chấp."
         actions={
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              leftIcon={<Plus className="h-4 w-4" />}
+              onClick={() => setCreateProvinceDialogOpen(true)}
+            >
+              Thêm Tỉnh mới
+            </Button>
             <Button
               variant="outline"
               leftIcon={<Plus className="h-4 w-4" />}
@@ -248,6 +288,68 @@ export function AreaManagementPage() {
           </div>
         }
       />
+
+      {/* Thanh chọn Tỉnh/Thành phố đang quản lý */}
+      {tree.length > 0 && (
+        <Card className="bg-slate-50/70 border-slate-200">
+          <CardContent className="py-3 px-4 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <MapPin className="h-4 w-4 text-primary-600" />
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-700">
+                Tỉnh / Thành phố:
+              </span>
+              <div className="flex flex-wrap items-center gap-1.5">
+                {tree.map((p) => {
+                  const isCurrent = (province?.id === p.id);
+                  return (
+                    <div
+                      key={p.id}
+                      className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1 text-sm font-medium transition-all ${
+                        isCurrent
+                          ? 'border-primary-500 bg-primary-50 text-primary-800 shadow-sm'
+                          : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-100 hover:text-slate-900 cursor-pointer'
+                      }`}
+                      onClick={() => {
+                        setSelectedProvinceId(p.id);
+                        setSelectedCommuneId('');
+                      }}
+                    >
+                      <span>{p.name}</span>
+                      <span className="text-xs text-slate-500">({p.communes.length} xã)</span>
+                      {tree.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeletingProvince({
+                              id: p.id,
+                              name: p.name,
+                              communesCount: p.communes.length,
+                            });
+                          }}
+                          className="ml-1 rounded p-0.5 text-slate-400 hover:bg-danger-50 hover:text-danger-600 transition-colors"
+                          title="Xóa Tỉnh này"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <Button
+              size="sm"
+              variant="secondary"
+              leftIcon={<Plus className="h-3.5 w-3.5" />}
+              onClick={() => setCreateProvinceDialogOpen(true)}
+            >
+              Thêm Tỉnh khác
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {isLoading ? (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -591,6 +693,16 @@ export function AreaManagementPage() {
         </>
       )}
 
+      {/* Dialog thêm Tỉnh mới */}
+      <QuickCreateProvinceDialog
+        open={createProvinceDialogOpen}
+        onOpenChange={setCreateProvinceDialogOpen}
+        onCreated={(newProv) => {
+          setSelectedProvinceId(newProv.id);
+          setSelectedCommuneId('');
+        }}
+      />
+
       {/* Dialog thêm Xã mới */}
       <QuickCreateCommuneDialog
         open={createCommuneDialogOpen}
@@ -660,6 +772,22 @@ export function AreaManagementPage() {
         tone="danger"
         isLoading={deleteCommuneMutation.isPending}
         onConfirm={handleConfirmDeleteCommune}
+      />
+
+      {/* Xác nhận xóa Tỉnh */}
+      <ConfirmDialog
+        open={Boolean(deletingProvince)}
+        onOpenChange={(o) => !o && setDeletingProvince(null)}
+        title={`Xác nhận xóa "${deletingProvince?.name ?? ''}"?`}
+        description={
+          deletingProvince?.communesCount && deletingProvince.communesCount > 0
+            ? `Cảnh báo: Toàn bộ ${deletingProvince.communesCount} xã và các ấp trực thuộc cũng sẽ bị xóa khỏi danh mục. Hệ thống sẽ chặn xóa nếu tỉnh hoặc các xã/ấp đang gắn với bất kỳ hồ sơ thành viên hoặc tài sản thế chấp nào.`
+            : 'Lưu ý: Hệ thống chỉ cho phép xóa Tỉnh chưa được gắn với bất kỳ hồ sơ thành viên hoặc tài sản thế chấp nào.'
+        }
+        confirmText="Xóa Tỉnh"
+        tone="danger"
+        isLoading={deleteProvinceMutation.isPending}
+        onConfirm={handleConfirmDeleteProvince}
       />
 
       {/* Dialog tạo/sửa Nhóm địa bàn */}

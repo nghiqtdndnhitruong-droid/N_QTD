@@ -141,3 +141,19 @@ export async function cleanDatabaseApi(): Promise<{ success: boolean; message: s
   const res = await httpClient.post<{ success: boolean; message: string }>('/system/clean');
   return res.data;
 }
+
+export async function restoreKeywordsDefaultApi(): Promise<{ success: boolean; message: string; count: number }> {
+  const res = await httpClient.post<{ success: boolean; message: string; count: number }>('/system/keywords/restore-default');
+  return res.data;
+}
+
+export async function uploadKeywordsSqlApi(file: File): Promise<{ success: boolean; message: string; count: number }> {
+  const formData = new FormData();
+  formData.append('file', file);
+  const res = await httpClient.post<{ success: boolean; message: string; count: number }>('/system/keywords/upload-sql', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  return res.data;
+}

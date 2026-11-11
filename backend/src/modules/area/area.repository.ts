@@ -228,6 +228,25 @@ export class AreaRepository {
     return prisma.hamlet.delete({ where: { id } });
   }
 
+  async deleteProvince(id: string) {
+    return prisma.province.delete({ where: { id } });
+  }
+
+  async countProvinceUsage(provinceId: string): Promise<{
+    members: number;
+    collaterals: number;
+    communes: number;
+    hamlets: number;
+  }> {
+    const [members, collaterals, communes, hamlets] = await Promise.all([
+      prisma.member.count({ where: { provinceId, isDeleted: { not: true } } }),
+      prisma.collateral.count({ where: { provinceId } }),
+      prisma.commune.count({ where: { provinceId } }),
+      prisma.hamlet.count({ where: { commune: { provinceId } } }),
+    ]);
+    return { members, collaterals, communes, hamlets };
+  }
+
   async countHamletUsage(hamletId: string): Promise<{ members: number; collaterals: number }> {
     const [members, collaterals] = await Promise.all([
       prisma.member.count({ where: { hamletId, isDeleted: { not: true } } }),

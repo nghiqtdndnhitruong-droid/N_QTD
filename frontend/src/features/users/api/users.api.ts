@@ -1,4 +1,4 @@
-import { apiGet, apiGetPaginated, apiPatch, apiPost, apiPut } from '@/lib/http';
+import { apiDelete, apiGet, apiGetPaginated, apiPatch, apiPost, apiPut } from '@/lib/http';
 import type { Paginated } from '@/shared/types';
 import type { AuthUser } from '@/stores/auth.store';
 
@@ -52,4 +52,8 @@ export async function updateUserStatusApi(id: string, status: 'ACTIVE' | 'LOCKED
 
 export async function resetUserPasswordApi(id: string, newPassword: string): Promise<{ message: string }> {
   return apiPatch<{ message: string }, { newPassword: string }>(`/users/${id}/reset-password`, { newPassword });
+}
+
+export async function deleteUserApi(id: string): Promise<{ message: string }> {
+  return apiDelete<{ message: string }>(`/users/${id}`);
 }

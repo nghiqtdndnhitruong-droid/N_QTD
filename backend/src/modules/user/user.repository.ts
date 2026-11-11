@@ -132,6 +132,15 @@ export class UserRepository {
       data: { passwordHash },
     });
   }
+
+  public async delete(id: string): Promise<void> {
+    await prisma.userProfile.deleteMany({
+      where: { userId: id },
+    });
+    await prisma.user.delete({
+      where: { id },
+    });
+  }
 }
 
 export const userRepository = new UserRepository();

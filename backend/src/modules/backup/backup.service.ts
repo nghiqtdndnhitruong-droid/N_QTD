@@ -1,3 +1,5 @@
+import fs from 'fs';
+import path from 'path';
 import dayjs from 'dayjs';
 import { prisma } from '../../config/database';
 import { AppError } from '../../shared/errors/app-error';
@@ -70,9 +72,9 @@ export class BackupService {
       prisma.wordTemplateVersion.count(),
       prisma.wordTemplateMapping.count(),
       prisma.wordExportLog.count(),
-      prisma.member.count(),
-      prisma.loan.count(),
-      prisma.relatedPerson.count(),
+      prisma.member.count({ where: { isDeleted: { not: true } } }),
+      prisma.loan.count({ where: { isDeleted: { not: true } } }),
+      prisma.relatedPerson.count({ where: { isDeleted: { not: true } } }),
       prisma.collateral.count(),
       prisma.loanValuation.count(),
       prisma.disbursement.count(),
@@ -423,7 +425,10 @@ export class BackupService {
       },
     });
 
-    // 5. Làm sạch audit logs và ghi lại audit log làm sạch này
+    // 5. Xóa sạch Thư viện từ khóa biểu mẫu (GlobalWordKeyword) theo yêu cầu làm sạch
+    await prisma.globalWordKeyword.deleteMany({});
+
+    // 6. Làm sạch audit logs và ghi lại audit log làm sạch này
     await prisma.auditLog.deleteMany({});
     await prisma.auditLog.create({
       data: {
@@ -431,28 +436,148 @@ export class BackupService {
         entityId: 'DATABASE',
         action: 'DATABASE_CLEAN',
         actor: actorName,
-        reason: 'Làm sạch CSDL hệ thống (chỉ giữ lại tài khoản Admin, Thư viện từ khóa và Mẫu Word)',
+        reason:
+          'Làm sạch CSDL hệ thống (xóa sạch dữ liệu nghiệp vụ và Thư viện từ khóa; chỉ giữ lại tài khoản Admin và Mẫu Word)',
         metadata: {
           cleanedAt: new Date().toISOString(),
-          preserved: [
-            'admin_user',
-            'global_word_keywords',
-            'word_templates',
-            'word_template_mappings',
-          ],
+          preserved: ['admin_user', 'word_templates', 'word_template_mappings'],
         },
       },
     });
 
     logger.info(
-      'Làm sạch CSDL hoàn tất! Đã giữ lại tài khoản Admin, Thư viện Keyword và Mẫu Word.'
+      'Làm sạch CSDL hoàn tất! Đã xóa sạch dữ liệu nghiệp vụ và toàn bộ từ khóa, giữ lại tài khoản Admin và Mẫu Word.'
     );
 
     return {
       success: true,
       message:
-        'Làm sạch cơ sở dữ liệu thành công! Đã xóa toàn bộ dữ liệu nghiệp vụ, chỉ giữ lại tài khoản Admin, thư viện từ khóa và các mẫu biểu Word.',
+        'Làm sạch cơ sở dữ liệu thành công! Đã xóa toàn bộ dữ liệu nghiệp vụ và từ khóa, chỉ giữ lại tài khoản Admin và các mẫu biểu Word.',
     };
+  }
+
+  /**
+   * Nạp lại Thư viện từ khóa biểu mẫu Word từ file SQL
+   * @param sqlContent Nội dung SQL (nếu bỏ trống sẽ tự động đọc từ file keywords.sql trong dự án)
+   */
+  public async restoreKeywordsFromSql(
+    sqlContent?: string,
+    actorName: string = 'ADMIN'
+  ): Promise<{ success: boolean; message: string; count: number }> {
+    let sqlText = sqlContent;
+    if (!sqlText || !sqlText.trim()) {
+      const candidates = [
+        path.resolve(process.cwd(), 'backend', 'prisma', 'keywords.sql'),
+        path.resolve(process.cwd(), 'prisma', 'keywords.sql'),
+        path.resolve(__dirname, '..', '..', '..', 'prisma', 'keywords.sql'),
+      ];
+      const foundPath = candidates.find((p) => fs.existsSync(p));
+      if (!foundPath) {
+        throw AppError.notFound('Không tìm thấy file keywords.sql mặc định trong dự án');
+      }
+      sqlText = fs.readFileSync(foundPath, 'utf8');
+    }
+
+    const records = this.parseSqlKeywords(sqlText!);
+    if (records.length === 0) {
+      throw AppError.badRequest('Không tìm thấy bản ghi từ khóa hợp lệ trong nội dung file SQL');
+    }
+
+    // Xóa sạch từ khóa cũ để nạp lại chính xác từ file SQL
+    await prisma.globalWordKeyword.deleteMany({});
+
+    let importedCount = 0;
+    for (const rec of records) {
+      await prisma.globalWordKeyword.create({
+        data: {
+          keyword: rec.keyword,
+          displayName: rec.displayName,
+          category: rec.category,
+          dataPath: rec.dataPath,
+          dataType: rec.dataType || 'TEXT',
+          formatPattern: rec.formatPattern || null,
+          defaultValue: rec.defaultValue || '...................',
+          isList: Boolean(rec.isList),
+          itemProperties: rec.itemProperties || null,
+          description: rec.description || null,
+          isSystem: rec.isSystem !== false,
+        },
+      });
+      importedCount++;
+    }
+
+    logger.info(`Đã nạp lại ${importedCount} từ khóa từ file SQL thành công bởi ${actorName}`);
+
+    return {
+      success: true,
+      message: `Đã nạp lại thành công ${importedCount} từ khóa biểu mẫu Word từ file SQL.`,
+      count: importedCount,
+    };
+  }
+
+  public parseSqlKeywords(sqlText: string): any[] {
+    const insertRegex = /INSERT\s+INTO\s+["`]?global_word_keywords["`]?\s*\(([^)]+)\)\s*VALUES\s*\(([\s\S]*?)\)\s*;/gi;
+    let match;
+    const records: any[] = [];
+
+    while ((match = insertRegex.exec(sqlText)) !== null) {
+      const rawCols = match[1].split(',').map((c) => c.replace(/["`]/g, '').trim());
+      const rawVals = match[2].trim();
+
+      const values: string[] = [];
+      let cur = '';
+      let inQuote = false;
+
+      for (let i = 0; i < rawVals.length; i++) {
+        const ch = rawVals[i];
+        if (ch === "'" && !inQuote) {
+          inQuote = true;
+        } else if (ch === "'" && inQuote) {
+          if (rawVals[i + 1] === "'") {
+            cur += "'";
+            i++;
+          } else {
+            inQuote = false;
+          }
+        } else if (ch === ',' && !inQuote) {
+          values.push(cur.trim());
+          cur = '';
+        } else {
+          cur += ch;
+        }
+      }
+      values.push(cur.trim());
+
+      const rec: any = {};
+      rawCols.forEach((col, idx) => {
+        let val = values[idx];
+        if (val === 'NULL' || val === undefined) {
+          rec[col] = null;
+        } else if (val === 'TRUE') {
+          rec[col] = true;
+        } else if (val === 'FALSE') {
+          rec[col] = false;
+        } else if (val.startsWith("'") && val.endsWith("'")) {
+          rec[col] = val.slice(1, -1);
+        } else if (!isNaN(Number(val))) {
+          rec[col] = Number(val);
+        } else {
+          rec[col] = val;
+        }
+      });
+
+      if (rec.itemProperties && typeof rec.itemProperties === 'string') {
+        try {
+          rec.itemProperties = JSON.parse(rec.itemProperties);
+        } catch (_e) {}
+      }
+
+      if (rec.keyword && rec.displayName) {
+        records.push(rec);
+      }
+    }
+
+    return records;
   }
 }
 

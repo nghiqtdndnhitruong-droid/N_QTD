@@ -43,86 +43,29 @@ function normalizeCommuneName(rawName: string): string {
   return `Xã ${trimmed}`;
 }
 
-export class AreaService {
-  private isSeeded = false;
+function normalizeProvinceName(rawName: string): string {
+  const trimmed = rawName.trim().replace(/\s+/g, ' ');
+  if (/^(tỉnh|thành phố|tp\.?)\b/i.test(trimmed)) {
+    return trimmed
+      .replace(/^tỉnh\b/i, 'Tỉnh')
+      .replace(/^thành phố\b/i, 'Thành phố')
+      .replace(/^tp\.?\b/i, 'TP.');
+  }
+  return `Tỉnh ${trimmed}`;
+}
 
+export class AreaService {
   constructor(private readonly repo: AreaRepository = areaRepository) {}
 
-  /**
-   * Tự động khởi tạo Địa bàn mặc định của Quỹ tín dụng nếu chưa có trong DB:
-   * - Tỉnh Vĩnh Long
-   *   + Xã Nhị Trường (Ấp mẫu: Ấp Nô Lựa)
-   *   + Xã Tập Sơn
-   *   + Xã Long Hiệp
-   */
-  async ensureDefaultAreasSeeded(): Promise<void> {
-    if (this.isSeeded) return;
-
-    let province = await this.repo.findProvinceByCode('VINH_LONG');
-    if (!province) {
-      province = await this.repo.createProvince({
-        code: 'VINH_LONG',
-        name: 'Tỉnh Vĩnh Long',
-        isActive: true,
-      });
-    }
-
-    const existingCommunes = await this.repo.findCommunesByProvince(province.id, undefined, true);
-    const defaultCommunes = [
-      { code: 'NHI_TRUONG', name: 'Xã Nhị Trường' },
-      { code: 'TAP_SON', name: 'Xã Tập Sơn' },
-      { code: 'LONG_HIEP', name: 'Xã Long Hiệp' },
-    ];
-
-    let nhiTruongCommune = existingCommunes.find((c) => c.code === 'NHI_TRUONG');
-
-    for (const item of defaultCommunes) {
-      const found = existingCommunes.find(
-        (c) => c.code === item.code || c.name.toLowerCase() === item.name.toLowerCase()
-      );
-      if (!found) {
-        const created = await this.repo.createCommune({
-          provinceId: province.id,
-          code: item.code,
-          name: item.name,
-          isActive: true,
-        });
-        if (item.code === 'NHI_TRUONG') {
-          nhiTruongCommune = created;
-        }
-      }
-    }
-
-    if (nhiTruongCommune) {
-      const existingNoLua = await this.repo.findHamletByNameInCommune(
-        nhiTruongCommune.id,
-        'Ấp Nô Lựa'
-      );
-      if (!existingNoLua) {
-        await this.repo.createHamlet({
-          communeId: nhiTruongCommune.id,
-          code: 'AP_NO_LUA',
-          name: 'Ấp Nô Lựa',
-          isActive: true,
-        });
-      }
-    }
-
-    this.isSeeded = true;
-  }
-
   async getTree(includeInactive = false) {
-    await this.ensureDefaultAreasSeeded();
     return this.repo.getAreaTree(includeInactive);
   }
 
   async getProvinces(search?: string, includeInactive = false) {
-    await this.ensureDefaultAreasSeeded();
     return this.repo.findProvinces(search, includeInactive);
   }
 
   async getCommunesByProvince(provinceId: string, search?: string, includeInactive = false) {
-    await this.ensureDefaultAreasSeeded();
     const province = await this.repo.findProvinceById(provinceId);
     if (!province) {
       throw AppError.notFound('Không tìm thấy Tỉnh/Thành phố', ErrorCode.AREA_NOT_FOUND);
@@ -131,7 +74,6 @@ export class AreaService {
   }
 
   async getHamletsByCommune(communeId: string, search?: string, includeInactive = false) {
-    await this.ensureDefaultAreasSeeded();
     const commune = await this.repo.findCommuneById(communeId);
     if (!commune) {
       throw AppError.notFound('Không tìm thấy Xã/Phường', ErrorCode.AREA_NOT_FOUND);
@@ -145,29 +87,111 @@ export class AreaService {
     search?: string;
     includeInactive?: boolean;
   }) {
-    await this.ensureDefaultAreasSeeded();
     return this.repo.findAllHamlets(params);
   }
 
   async createProvince(dto: CreateProvinceDto) {
-    await this.ensureDefaultAreasSeeded();
-    const code = dto.code?.trim().toUpperCase() || slugifyCode(dto.name);
+    const formattedName = normalizeProvinceName(dto.name);
+    const code = dto.code?.trim().toUpperCase() || slugifyCode(formattedName);
     const existing = await this.repo.findProvinceByCode(code);
     if (existing) {
       throw AppError.conflict(
         `Tỉnh/Thành phố với mã "${code}" đã tồn tại`,
-        ErrorCode.AREA_ALREADY_EXISTS
+        ErrorCode.AREA_ALREADY_EXISTS,
+        [{ field: 'code', message: `Mã tỉnh "${code}" đã tồn tại` }]
       );
     }
-    return this.repo.createProvince({
+    const created = await this.repo.createProvince({
       code,
-      name: dto.name.trim(),
+      name: formattedName,
       isActive: dto.isActive ?? true,
     });
+
+    await prisma.auditLog.create({
+      data: {
+        entityType: 'AREA',
+        entityId: created.id,
+        action: 'CREATE_PROVINCE',
+        reason: `Thêm ${created.name} (${created.code})`,
+        metadata: {
+          provinceId: created.id,
+          provinceName: created.name,
+          provinceCode: created.code,
+        },
+      },
+    });
+
+    return created;
+  }
+
+  async deleteProvince(id: string) {
+    const existing = await this.repo.findProvinceById(id);
+    if (!existing) {
+      throw AppError.notFound('Không tìm thấy Tỉnh/Thành phố', ErrorCode.AREA_NOT_FOUND);
+    }
+
+    const usage = await this.repo.countProvinceUsage(id);
+    if (usage.members > 0 || usage.collaterals > 0) {
+      throw AppError.conflict(
+        `Không thể xóa "${existing.name}" vì đang được sử dụng bởi ${usage.members} thành viên và ${usage.collaterals} tài sản thế chấp.`,
+        ErrorCode.AREA_IN_USE
+      );
+    }
+
+    // Lấy danh sách các xã của tỉnh này để dọn dẹp các nhóm địa bàn và ấp liên quan
+    const communes = await prisma.commune.findMany({
+      where: { provinceId: id },
+      select: { id: true },
+    });
+    const communeIds = communes.map((c) => c.id);
+
+    if (communeIds.length > 0) {
+      // Xóa toàn bộ ấp thuộc các xã này
+      await prisma.hamlet.deleteMany({
+        where: { communeId: { in: communeIds } },
+      });
+
+      // Gỡ communeIds khỏi các nhóm địa bàn (AreaGroup)
+      const affectedGroups = await prisma.areaGroup.findMany({
+        where: { communeIds: { hasSome: communeIds } },
+      });
+      for (const group of affectedGroups) {
+        await prisma.areaGroup.update({
+          where: { id: group.id },
+          data: {
+            communeIds: group.communeIds.filter((cid) => !communeIds.includes(cid)),
+          },
+        });
+      }
+
+      // Xóa toàn bộ xã trực thuộc tỉnh
+      await prisma.commune.deleteMany({
+        where: { provinceId: id },
+      });
+    }
+
+    // Xóa tỉnh
+    await this.repo.deleteProvince(id);
+
+    await prisma.auditLog.create({
+      data: {
+        entityType: 'AREA',
+        entityId: id,
+        action: 'DELETE_PROVINCE',
+        reason: `Xóa ${existing.name} cùng ${usage.communes} xã và ${usage.hamlets} ấp trực thuộc`,
+        metadata: {
+          provinceId: id,
+          provinceName: existing.name,
+          deletedCommunesCount: usage.communes,
+          deletedHamletsCount: usage.hamlets,
+        },
+      },
+    });
+
+    return { id, deletedName: existing.name };
   }
 
   async createCommune(dto: CreateCommuneDto) {
-    await this.ensureDefaultAreasSeeded();
     const province = await this.repo.findProvinceById(dto.provinceId);
     if (!province) {
       throw AppError.notFound('Không tìm thấy Tỉnh/Thành phố', ErrorCode.AREA_NOT_FOUND);
@@ -219,7 +243,6 @@ export class AreaService {
   }
 
   async createHamlet(dto: CreateHamletDto) {
-    await this.ensureDefaultAreasSeeded();
     const commune = await this.repo.findCommuneById(dto.communeId);
     if (!commune) {
       throw AppError.notFound('Không tìm thấy Xã/Phường được chọn', ErrorCode.AREA_NOT_FOUND);
@@ -368,8 +391,6 @@ export class AreaService {
    * và kết xuất Snapshot địa bàn đầy đủ.
    */
   async resolveLocationSnapshot(input: LocationSelectionInput): Promise<ResolvedLocationSnapshot> {
-    await this.ensureDefaultAreasSeeded();
-
     const { provinceId, communeId, hamletId, addressDetail, fallbackAddress } = input;
     const trimmedDetail = addressDetail?.trim() || null;
 

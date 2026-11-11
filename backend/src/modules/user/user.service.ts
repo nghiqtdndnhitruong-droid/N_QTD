@@ -123,6 +123,33 @@ export class UserService {
 
     return { message: `Đã đặt lại mật khẩu thành công cho tài khoản ${user.username}` };
   }
+
+  public async deleteUser(
+    id: string,
+    currentUserId: string,
+    currentRole: UserRole
+  ): Promise<{ message: string }> {
+    if (currentRole !== UserRole.ADMIN) {
+      throw AppError.forbidden('Chỉ Quản trị viên hệ thống (ADMIN) mới có quyền xóa tài khoản');
+    }
+
+    const user = await userRepository.findById(id);
+    if (!user) {
+      throw AppError.notFound('Không tìm thấy tài khoản người dùng');
+    }
+
+    if (user.role === UserRole.ADMIN || user.username.toUpperCase() === 'ADMIN') {
+      throw AppError.badRequest('Không thể xóa tài khoản Quản trị hệ thống (ADMIN)');
+    }
+
+    if (id === currentUserId) {
+      throw AppError.badRequest('Bạn không thể tự xóa tài khoản của chính mình');
+    }
+
+    await userRepository.delete(id);
+
+    return { message: `Đã xóa vĩnh viễn tài khoản cán bộ "${user.username}" khỏi cơ sở dữ liệu.` };
+  }
 }
 
 export const userService = new UserService();

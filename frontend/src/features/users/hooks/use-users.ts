@@ -5,6 +5,7 @@ import {
   updateUserApi,
   updateUserStatusApi,
   resetUserPasswordApi,
+  deleteUserApi,
   type CreateUserPayload,
   type UpdateUserPayload,
 } from '../api/users.api';
@@ -60,6 +61,16 @@ export function useResetUserPassword() {
   return useMutation({
     mutationFn: ({ id, newPassword }: { id: string; newPassword: string }) =>
       resetUserPasswordApi(id, newPassword),
+  });
+}
+
+export function useDeleteUser() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => deleteUserApi(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: USERS_QUERY_KEY });
+    },
   });
 }
 

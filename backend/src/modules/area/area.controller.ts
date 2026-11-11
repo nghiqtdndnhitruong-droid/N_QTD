@@ -124,6 +124,29 @@ export class AreaController {
     res.status(200).json(response);
   };
 
+  createProvince = async (req: Request, res: Response): Promise<void> => {
+    const province = await this.service.createProvince(req.body);
+    const response: ApiResponse<typeof province> = {
+      success: true,
+      message: `Thêm ${province.name} thành công`,
+      data: province,
+      timestamp: new Date().toISOString(),
+    };
+    res.status(201).json(response);
+  };
+
+  deleteProvince = async (req: Request, res: Response): Promise<void> => {
+    const id = String(req.params.id);
+    const result = await this.service.deleteProvince(id);
+    const response: ApiResponse<typeof result> = {
+      success: true,
+      message: `Đã xóa "${result.deletedName}" khỏi danh mục địa bàn`,
+      data: result,
+      timestamp: new Date().toISOString(),
+    };
+    res.status(200).json(response);
+  };
+
   deleteCommune = async (req: Request, res: Response): Promise<void> => {
     const id = String(req.params.id);
     const result = await this.service.deleteCommune(id);

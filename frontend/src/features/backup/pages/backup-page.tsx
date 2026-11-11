@@ -12,6 +12,8 @@ import {
   FileSpreadsheet,
   Layers,
   Trash2,
+  Key,
+  FileCode,
 } from 'lucide-react';
 import {
   Button,
@@ -28,6 +30,8 @@ import {
   cleanDatabaseApi,
   downloadDatabaseBackupApi,
   uploadDatabaseRestoreApi,
+  restoreKeywordsDefaultApi,
+  uploadKeywordsSqlApi,
 } from '@/features/reports/api/reports.api';
 
 export function BackupPage() {
@@ -37,7 +41,13 @@ export function BackupPage() {
   const [isRestoring, setIsRestoring] = useState(false);
   const [confirmCleanOpen, setConfirmCleanOpen] = useState(false);
   const [isCleaning, setIsCleaning] = useState(false);
+  const [isRestoringKeywords, setIsRestoringKeywords] = useState(false);
+  const [isUploadingSql, setIsUploadingSql] = useState(false);
+  const [sqlFile, setSqlFile] = useState<File | null>(null);
+  const [confirmRestoreDefaultKeywordsOpen, setConfirmRestoreDefaultKeywordsOpen] = useState(false);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const sqlFileInputRef = useRef<HTMLInputElement>(null);
 
   const dbStatsQuery = useDatabaseStats();
   const dbStats = dbStatsQuery.data;
@@ -68,6 +78,17 @@ export function BackupPage() {
     }
   };
 
+  const handleSqlFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.name.toLowerCase().endsWith('.sql')) {
+        notifyError('Tệp không hợp lệ', 'Vui lòng chọn tệp script có đuôi định dạng .sql');
+        return;
+      }
+      setSqlFile(file);
+    }
+  };
+
   const handleConfirmRestore = async () => {
     if (!restoreFile) return;
     try {
@@ -95,7 +116,7 @@ export function BackupPage() {
       setConfirmCleanOpen(false);
       notifySuccess(
         'Làm sạch CSDL thành công',
-        res.message || 'Hệ thống đã làm sạch cơ sở dữ liệu, chỉ giữ lại Admin, Keyword và Mẫu Word.',
+        res.message || 'Hệ thống đã làm sạch cơ sở dữ liệu (xóa toàn bộ hồ sơ và từ khóa Word).',
       );
       dbStatsQuery.refetch();
     } catch (err: any) {
@@ -105,11 +126,47 @@ export function BackupPage() {
     }
   };
 
+  const handleRestoreKeywordsDefault = async () => {
+    try {
+      setIsRestoringKeywords(true);
+      const res = await restoreKeywordsDefaultApi();
+      setConfirmRestoreDefaultKeywordsOpen(false);
+      notifySuccess(
+        'Nạp từ khóa thành công',
+        res.message || `Đã khôi phục thành công ${res.count} từ khóa Word chuẩn.`,
+      );
+      dbStatsQuery.refetch();
+    } catch (err: any) {
+      notifyError('Nạp từ khóa thất bại', err?.message || 'Có lỗi xảy ra khi nạp từ khóa.');
+    } finally {
+      setIsRestoringKeywords(false);
+    }
+  };
+
+  const handleUploadSqlKeywords = async () => {
+    if (!sqlFile) return;
+    try {
+      setIsUploadingSql(true);
+      const res = await uploadKeywordsSqlApi(sqlFile);
+      setSqlFile(null);
+      if (sqlFileInputRef.current) sqlFileInputRef.current.value = '';
+      notifySuccess(
+        'Tải lên file SQL thành công',
+        res.message || `Đã nạp thành công ${res.count} từ khóa từ file SQL.`,
+      );
+      dbStatsQuery.refetch();
+    } catch (err: any) {
+      notifyError('Nạp SQL thất bại', err?.message || 'Có lỗi xảy ra khi xử lý file SQL.');
+    } finally {
+      setIsUploadingSql(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <PageHeader
         title="Sao lưu & Phục hồi Cơ sở Dữ liệu"
-        description="Xuất toàn bộ dữ liệu hệ thống ra tệp tin JSON an toàn và nạp lại khi cần khôi phục. Chức năng bảo mật dành riêng cho Quản trị viên (ADMIN)."
+        description="Xuất toàn bộ dữ liệu hệ thống ra tệp tin JSON an toàn, nạp lại khi cần khôi phục, quản lý từ khóa Word chuẩn từ SQL. Dành riêng cho Quản trị viên (ADMIN)."
       />
 
       {/* Thống kê hệ thống */}
@@ -127,7 +184,7 @@ export function BackupPage() {
           {dbStatsQuery.isLoading ? (
             <div className="py-6 text-center text-sm text-slate-500">Đang đọc dữ liệu hệ thống...</div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-3">
               <div className="p-3 rounded-lg border border-slate-200 bg-slate-50/60">
                 <div className="text-[11px] text-slate-500 font-medium uppercase flex items-center gap-1">
                   <Users className="h-3 w-3 text-primary-600" />
@@ -145,28 +202,35 @@ export function BackupPage() {
               <div className="p-3 rounded-lg border border-slate-200 bg-slate-50/60">
                 <div className="text-[11px] text-slate-500 font-medium uppercase flex items-center gap-1">
                   <Building className="h-3 w-3 text-amber-600" />
-                  Tài sản thế chấp
+                  Tài sản
                 </div>
                 <div className="mt-1 text-lg font-bold text-slate-900">{dbStats?.collaterals || 0}</div>
               </div>
               <div className="p-3 rounded-lg border border-slate-200 bg-slate-50/60">
                 <div className="text-[11px] text-slate-500 font-medium uppercase flex items-center gap-1">
                   <Coins className="h-3 w-3 text-indigo-600" />
-                  Lượt thu nợ / lãi
+                  Lượt thu nợ
                 </div>
                 <div className="mt-1 text-lg font-bold text-slate-900">{dbStats?.repayments || 0}</div>
               </div>
               <div className="p-3 rounded-lg border border-slate-200 bg-slate-50/60">
                 <div className="text-[11px] text-slate-500 font-medium uppercase flex items-center gap-1">
                   <FileSpreadsheet className="h-3 w-3 text-purple-600" />
-                  Biểu mẫu Word
+                  Mẫu Word
                 </div>
                 <div className="mt-1 text-lg font-bold text-slate-900">{dbStats?.wordTemplates || 0}</div>
+              </div>
+              <div className="p-3 rounded-lg border border-blue-200 bg-blue-50/40">
+                <div className="text-[11px] text-blue-700 font-medium uppercase flex items-center gap-1">
+                  <Key className="h-3 w-3 text-blue-600" />
+                  Từ khóa Word
+                </div>
+                <div className="mt-1 text-lg font-bold text-blue-900">{(dbStats as any)?.globalWordKeywords || 0}</div>
               </div>
               <div className="p-3 rounded-lg border border-slate-200 bg-slate-50/60">
                 <div className="text-[11px] text-slate-500 font-medium uppercase flex items-center gap-1">
                   <Layers className="h-3 w-3 text-slate-600" />
-                  Ấp / Xã địa bàn
+                  Địa bàn
                 </div>
                 <div className="mt-1 text-lg font-bold text-slate-900">
                   {(dbStats?.hamlets || 0) + (dbStats?.communes || 0)}
@@ -177,7 +241,7 @@ export function BackupPage() {
         </CardContent>
       </Card>
 
-      {/* 3 Cột hành động: Sao lưu (Export), Tải lên (Restore), Làm sạch CSDL (Clean) */}
+      {/* Các khối hành động */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* THẺ SAO LƯU */}
         <Card className="border-primary-200">
@@ -198,99 +262,86 @@ export function BackupPage() {
             <div className="text-xs text-slate-600 leading-relaxed bg-slate-50 p-3 rounded-lg border border-slate-200">
               <p className="font-semibold text-slate-800 mb-1">Dữ liệu được sao lưu:</p>
               <ul className="list-disc pl-4 space-y-1">
-                <li>Danh mục thành viên, CCCD, địa chỉ.</li>
-                <li>Hồ sơ khoản vay, phương án vay, HĐ thế chấp.</li>
-                <li>Tài sản, định giá, người liên quan.</li>
-                <li>Lịch sử giải ngân, thu nợ gốc và thu lãi.</li>
-                <li>Lãi suất, bảng giá đất, địa bàn.</li>
-                <li>Mẫu biểu Word và tài khoản người dùng.</li>
+                <li>Tất cả hồ sơ thành viên và người liên quan</li>
+                <li>Hồ sơ khoản vay, hợp đồng và lịch sử thẩm định</li>
+                <li>Tài sản thế chấp và bảng định giá</li>
+                <li>Đơn giá đất, cấu hình lãi suất và địa bàn</li>
+                <li>Biểu mẫu Word, ánh xạ và từ khóa toàn cục</li>
               </ul>
             </div>
-            <div>
-              <Button
-                variant="primary"
-                className="w-full h-11 text-sm font-semibold gap-2"
-                isLoading={isExportingBackup}
-                onClick={handleExportBackup}
-              >
-                <Download className="h-4 w-4" />
-                Sao lưu dữ liệu ngay (.json)
-              </Button>
-            </div>
+
+            <Button
+              className="w-full h-11 text-sm font-semibold gap-2"
+              onClick={handleExportBackup}
+              disabled={isExportingBackup}
+            >
+              <Download className="h-4 w-4" />
+              {isExportingBackup ? 'Đang đóng gói dữ liệu...' : 'Tải về file sao lưu (.json)'}
+            </Button>
           </CardContent>
         </Card>
 
-        {/* THẺ TẢI LÊN DỮ LIỆU */}
-        <Card className="border-amber-200">
+        {/* THẺ PHỤC HỒI */}
+        <Card className="border-emerald-200">
           <CardHeader>
             <div className="flex items-center gap-2">
-              <div className="p-2 rounded-lg bg-amber-100 text-amber-800">
+              <div className="p-2 rounded-lg bg-emerald-100 text-emerald-700">
                 <Upload className="h-5 w-5" />
               </div>
               <div>
-                <CardTitle className="text-base font-semibold">2. Tải lên dữ liệu (Restore)</CardTitle>
+                <CardTitle className="text-base font-semibold">2. Phục hồi dữ liệu (Restore)</CardTitle>
                 <CardDescription>
-                  Nạp lại CSDL từ file sao lưu đã lưu.
+                  Nạp lại CSDL từ tệp sao lưu JSON đã xuất.
                 </CardDescription>
               </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="text-xs text-amber-900 leading-relaxed bg-amber-50 p-3 rounded-lg border border-amber-200">
-              <div className="flex items-start gap-2">
-                <AlertOctagon className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
-                <div>
-                  <strong className="font-semibold">LƯU Ý PHỤC HỒI:</strong>
-                  <p className="mt-0.5">
-                    Thao tác này sẽ đồng bộ toàn bộ dữ liệu hệ thống theo file sao lưu bạn chọn.
-                  </p>
-                </div>
-              </div>
+            <div className="text-xs text-slate-600 leading-relaxed bg-slate-50 p-3 rounded-lg border border-slate-200">
+              <p className="font-semibold text-slate-800 mb-1">Lưu ý khi phục hồi:</p>
+              <ul className="list-disc pl-4 space-y-1">
+                <li>Chỉ chấp nhận tệp có định dạng <span className="font-mono text-emerald-700">.json</span> hợp lệ.</li>
+                <li>Dữ liệu hiện tại sẽ được cập nhật/đồng bộ theo tệp sao lưu.</li>
+                <li>Khuyến nghị tải bản sao lưu mới nhất trước khi thực hiện.</li>
+              </ul>
             </div>
 
             <div className="space-y-2">
               <input
-                type="file"
                 ref={fileInputRef}
-                accept=".json"
+                type="file"
+                accept=".json,application/json"
+                className="hidden"
+                id="restore-upload-input"
                 onChange={handleFileChange}
-                className="block w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 cursor-pointer border border-slate-300 rounded-md p-1"
               />
-              {restoreFile && (
-                <div className="text-xs text-emerald-700 font-medium flex items-center justify-between bg-emerald-50 px-3 py-1.5 rounded border border-emerald-200">
-                  <span className="truncate mr-2">
-                    Đã chọn: <strong>{restoreFile.name}</strong> ({(restoreFile.size / 1024).toFixed(1)} KB)
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setRestoreFile(null);
-                      if (fileInputRef.current) fileInputRef.current.value = '';
-                    }}
-                    className="text-slate-400 hover:text-slate-600 text-xs shrink-0"
-                  >
-                    ✕ Hủy
-                  </button>
-                </div>
-              )}
-            </div>
+              <label
+                htmlFor="restore-upload-input"
+                className="flex items-center justify-center gap-2 w-full h-11 px-4 border-2 border-dashed border-emerald-300 rounded-lg text-xs font-medium text-emerald-800 hover:bg-emerald-50/50 cursor-pointer transition-colors"
+              >
+                <Upload className="h-4 w-4 text-emerald-600" />
+                {restoreFile ? (
+                  <span className="font-semibold truncate max-w-[220px]">{restoreFile.name}</span>
+                ) : (
+                  'Chọn tệp sao lưu (.json)'
+                )}
+              </label>
 
-            <div>
               <Button
-                variant="outline"
-                className="w-full h-11 text-sm font-semibold border-amber-300 text-amber-900 hover:bg-amber-50 gap-2"
-                disabled={!restoreFile}
+                variant="primary"
+                className="w-full h-11 text-sm font-semibold gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
+                disabled={!restoreFile || isRestoring}
                 onClick={() => setConfirmRestoreOpen(true)}
               >
-                <RefreshCw className="h-4 w-4" />
-                Tải lên & Phục hồi dữ liệu
+                <RefreshCw className={`h-4 w-4 ${isRestoring ? 'animate-spin' : ''}`} />
+                {isRestoring ? 'Đang phục hồi dữ liệu...' : 'Bắt đầu phục hồi CSDL'}
               </Button>
             </div>
           </CardContent>
         </Card>
 
         {/* THẺ LÀM SẠCH CSDL */}
-        <Card className="border-rose-200 bg-rose-50/20">
+        <Card className="border-rose-200">
           <CardHeader>
             <div className="flex items-center gap-2">
               <div className="p-2 rounded-lg bg-rose-100 text-rose-700">
@@ -299,7 +350,7 @@ export function BackupPage() {
               <div>
                 <CardTitle className="text-base font-semibold text-rose-900">3. Làm sạch CSDL (Reset)</CardTitle>
                 <CardDescription>
-                  Xóa tất cả, chỉ giữ Admin, Keyword & Mẫu Word.
+                  Xóa sạch nghiệp vụ & từ khóa, chỉ giữ Admin & Mẫu Word.
                 </CardDescription>
               </div>
             </div>
@@ -311,10 +362,13 @@ export function BackupPage() {
                 <div>
                   <strong className="font-semibold text-rose-800">CẢNH BÁO NGUY HIỂM:</strong>
                   <p className="mt-0.5">
-                    Thao tác này sẽ xóa sạch toàn bộ hồ sơ vay, thành viên, tài sản, định giá, toàn bộ đơn giá đất (bảng giá tài sản), lãi suất, địa bàn, lịch sử thu nợ và tài khoản cán bộ.
+                    Thao tác này sẽ xóa sạch toàn bộ hồ sơ vay, thành viên, tài sản, định giá, đơn giá đất, lãi suất, địa bàn, lịch sử thu nợ và <strong>toàn bộ từ khóa Word</strong>.
                   </p>
                   <p className="mt-1 font-semibold text-emerald-800">
-                    ✓ Chỉ giữ lại: Tài khoản Admin, Thư viện từ khóa và Mẫu Word.
+                    ✓ Chỉ giữ lại: Tài khoản Admin và Mẫu biểu Word.
+                  </p>
+                  <p className="mt-0.5 text-slate-600">
+                    (Bạn có thể nạp lại Thư viện từ khóa chuẩn bất kỳ lúc nào từ ô bên dưới).
                   </p>
                 </div>
               </div>
@@ -333,6 +387,95 @@ export function BackupPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* THẺ QUẢN LÝ TỪ KHÓA TỪ SQL */}
+      <Card className="border-blue-200">
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <div className="p-2 rounded-lg bg-blue-100 text-blue-700">
+              <FileCode className="h-5 w-5" />
+            </div>
+            <div>
+              <CardTitle className="text-base font-semibold text-blue-950">
+                4. Quản lý Thư viện Từ khóa Word (keywords.sql)
+              </CardTitle>
+              <CardDescription>
+                Nạp lại toàn bộ từ khóa biểu mẫu Word đang sử dụng từ file SQL của dự án hoặc tải lên file SQL tùy chỉnh.
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Cột 1: Nạp từ keywords.sql mặc định */}
+            <div className="p-4 rounded-xl border border-blue-100 bg-blue-50/50 flex flex-col justify-between space-y-3">
+              <div>
+                <h4 className="font-semibold text-sm text-blue-900 flex items-center gap-1.5">
+                  <Key className="h-4 w-4 text-blue-600" />
+                  Nạp từ file chuẩn dự án (keywords.sql)
+                </h4>
+                <p className="text-xs text-blue-800/80 mt-1.5 leading-relaxed">
+                  Hệ thống sẽ tự động đọc file <span className="font-mono font-medium">backend/prisma/keywords.sql</span> chứa 161 từ khóa chuẩn đang được sử dụng trong các biểu mẫu Word và đồng bộ vào CSDL.
+                </p>
+              </div>
+              <Button
+                variant="primary"
+                className="w-full h-10 text-xs font-semibold gap-2 bg-blue-600 hover:bg-blue-700 text-white mt-2"
+                onClick={() => setConfirmRestoreDefaultKeywordsOpen(true)}
+                disabled={isRestoringKeywords}
+              >
+                <RefreshCw className={`h-3.5 w-3.5 ${isRestoringKeywords ? 'animate-spin' : ''}`} />
+                {isRestoringKeywords ? 'Đang nạp từ khóa...' : 'Nạp lại từ khóa chuẩn (keywords.sql)'}
+              </Button>
+            </div>
+
+            {/* Cột 2: Tải lên file SQL tùy chỉnh */}
+            <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/70 flex flex-col justify-between space-y-3">
+              <div>
+                <h4 className="font-semibold text-sm text-slate-800 flex items-center gap-1.5">
+                  <Upload className="h-4 w-4 text-slate-600" />
+                  Tải lên file SQL từ khóa từ máy tính
+                </h4>
+                <p className="text-xs text-slate-600 mt-1.5 leading-relaxed">
+                  Tải lên file script <span className="font-mono font-medium text-slate-800">.sql</span> chứa các câu lệnh <span className="font-mono text-[11px]">INSERT INTO global_word_keywords</span> để cập nhật hoặc bổ sung danh mục từ khóa mới.
+                </p>
+              </div>
+
+              <div className="space-y-2 mt-2">
+                <input
+                  ref={sqlFileInputRef}
+                  type="file"
+                  accept=".sql,text/plain"
+                  className="hidden"
+                  id="sql-keywords-upload-input"
+                  onChange={handleSqlFileChange}
+                />
+                <label
+                  htmlFor="sql-keywords-upload-input"
+                  className="flex items-center justify-center gap-2 w-full h-10 px-3 border border-dashed border-slate-300 rounded-lg text-xs font-medium text-slate-700 hover:bg-slate-100/80 cursor-pointer transition-colors"
+                >
+                  <FileCode className="h-4 w-4 text-slate-500" />
+                  {sqlFile ? (
+                    <span className="font-semibold truncate max-w-[200px] text-primary-700">{sqlFile.name}</span>
+                  ) : (
+                    'Chọn tệp SQL từ máy (.sql)'
+                  )}
+                </label>
+
+                <Button
+                  variant="outline"
+                  className="w-full h-10 text-xs font-semibold gap-2"
+                  disabled={!sqlFile || isUploadingSql}
+                  onClick={handleUploadSqlKeywords}
+                >
+                  <Upload className="h-3.5 w-3.5" />
+                  {isUploadingSql ? 'Đang xử lý nạp SQL...' : 'Nạp dữ liệu từ file SQL đã chọn'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Dialog xác nhận phục hồi dữ liệu */}
       <ConfirmDialog
@@ -373,18 +516,42 @@ export function BackupPage() {
               CẢNH BÁO TỐI CAO: Hành động này KHÔNG THỂ HOÀN TÁC!
             </p>
             <p>
-              Hệ thống sẽ <strong>xóa toàn bộ</strong>: Danh sách thành viên, Hồ sơ khoản vay, Tài sản thế chấp, Bảng định giá, <strong>Toàn bộ Đơn giá đất / Bảng giá tài sản</strong>, Cấu hình lãi suất, Danh mục địa bàn, Lịch sử giải ngân, Các đợt thu nợ gốc/thu lãi và các tài khoản Cán bộ tín dụng.
+              Hệ thống sẽ <strong>xóa toàn bộ</strong>: Danh sách thành viên, Hồ sơ khoản vay, Tài sản thế chấp, Bảng định giá, <strong>Toàn bộ Đơn giá đất / Bảng giá tài sản</strong>, Cấu hình lãi suất, Danh mục địa bàn, Lịch sử giải ngân, Các đợt thu nợ gốc/thu lãi, các tài khoản Cán bộ tín dụng và <strong>toàn bộ Thư viện từ khóa Word</strong>.
             </p>
             <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-2.5 rounded text-[11px] leading-relaxed">
               <strong>DỮ LIỆU ĐƯỢC BẢO TOÀN (KHÔNG BỊ XÓA):</strong>
               <ul className="list-disc pl-4 mt-1 space-y-0.5">
                 <li>Tài khoản quản trị <strong>ADMIN</strong> và hồ sơ cá nhân của Admin</li>
-                <li>Toàn bộ <strong>Thư viện từ khóa biểu mẫu Word</strong> (GlobalWordKeyword)</li>
                 <li>Toàn bộ các <strong>Mẫu biểu Word</strong> đã tải lên cùng cấu hình ánh xạ</li>
               </ul>
             </div>
+            <p className="text-blue-700 text-[11px]">
+              ℹ Lưu ý: Sau khi làm sạch, bạn có thể nạp lại Thư viện từ khóa chuẩn bất kỳ lúc nào từ mục &ldquo;Quản lý Thư viện Từ khóa Word (keywords.sql)&rdquo;.
+            </p>
             <p className="font-semibold text-slate-900 pt-1">
               Bạn có chắc chắn muốn làm sạch toàn bộ cơ sở dữ liệu ngay bây giờ?
+            </p>
+          </div>
+        }
+      />
+
+      {/* Dialog xác nhận nạp lại từ khóa chuẩn từ keywords.sql */}
+      <ConfirmDialog
+        open={confirmRestoreDefaultKeywordsOpen}
+        onOpenChange={setConfirmRestoreDefaultKeywordsOpen}
+        title="Nạp lại Thư viện từ khóa Word chuẩn?"
+        tone="primary"
+        confirmText="Xác nhận nạp lại"
+        cancelText="Hủy bỏ"
+        isLoading={isRestoringKeywords}
+        onConfirm={handleRestoreKeywordsDefault}
+        description={
+          <div className="space-y-2 text-xs text-slate-600">
+            <p>
+              Hệ thống sẽ đồng bộ lại 161 từ khóa biểu mẫu Word chuẩn từ file <span className="font-mono text-primary-700">backend/prisma/keywords.sql</span>.
+            </p>
+            <p>
+              Các từ khóa cũ sẽ được làm mới để đảm bảo tính đồng bộ hoàn hảo với các mẫu biểu Word đang có.
             </p>
           </div>
         }
@@ -392,4 +559,3 @@ export function BackupPage() {
     </div>
   );
 }
-

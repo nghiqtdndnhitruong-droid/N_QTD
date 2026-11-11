@@ -13,8 +13,6 @@ describe('AreaService - deleteCommune', () => {
     vi.restoreAllMocks();
     repo = new AreaRepository();
     service = new AreaService(repo);
-    // Bỏ qua seeding khi test
-    (service as any).isSeeded = true;
   });
 
   it('1. Báo lỗi 404 AREA_NOT_FOUND nếu xã không tồn tại', async () => {
@@ -174,6 +172,114 @@ describe('AreaService - deleteCommune', () => {
           entityType: 'AREA',
           action: 'CREATE_COMMUNE',
           entityId: 'commune-new',
+        }),
+      });
+    });
+  });
+
+  describe('createProvince & deleteProvince', () => {
+    it('1. Tạo tỉnh mới thành công và ghi audit log', async () => {
+      vi.spyOn(repo, 'findProvinceByCode').mockResolvedValue(null);
+      const createProvinceSpy = vi.spyOn(repo, 'createProvince').mockImplementation(async (data) => ({
+        id: 'prov-new',
+        name: data.name,
+        code: data.code,
+        isActive: data.isActive ?? true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }));
+      const auditLogSpy = vi.spyOn(prisma.auditLog, 'create').mockResolvedValue({} as any);
+
+      const result = await service.createProvince({ name: 'Bến Tre' });
+
+      expect(result.name).toBe('Tỉnh Bến Tre');
+      expect(result.code).toBe('TINH_BEN_TRE');
+      expect(createProvinceSpy).toHaveBeenCalled();
+      expect(auditLogSpy).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          entityType: 'AREA',
+          action: 'CREATE_PROVINCE',
+          entityId: 'prov-new',
+        }),
+      });
+    });
+
+    it('2. Báo lỗi 409 khi tạo tỉnh bị trùng mã', async () => {
+      vi.spyOn(repo, 'findProvinceByCode').mockResolvedValue({
+        id: 'prov-1',
+        name: 'Tỉnh Vĩnh Long',
+        code: 'VINH_LONG',
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      await expect(service.createProvince({ name: 'Vĩnh Long', code: 'VINH_LONG' })).rejects.toThrow(
+        AppError
+      );
+      await expect(
+        service.createProvince({ name: 'Vĩnh Long', code: 'VINH_LONG' })
+      ).rejects.toMatchObject({
+        errorCode: ErrorCode.AREA_ALREADY_EXISTS,
+      });
+    });
+
+    it('3. Báo lỗi 409 khi xóa tỉnh đang được sử dụng bởi thành viên hoặc tài sản', async () => {
+      vi.spyOn(repo, 'findProvinceById').mockResolvedValue({
+        id: 'prov-1',
+        name: 'Tỉnh Vĩnh Long',
+        code: 'VINH_LONG',
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      vi.spyOn(repo, 'countProvinceUsage').mockResolvedValue({
+        members: 3,
+        collaterals: 0,
+        communes: 2,
+        hamlets: 5,
+      });
+
+      await expect(service.deleteProvince('prov-1')).rejects.toThrow(AppError);
+      await expect(service.deleteProvince('prov-1')).rejects.toMatchObject({
+        errorCode: ErrorCode.AREA_IN_USE,
+      });
+    });
+
+    it('4. Xóa tỉnh thành công khi không có dữ liệu tham chiếu', async () => {
+      vi.spyOn(repo, 'findProvinceById').mockResolvedValue({
+        id: 'prov-test',
+        name: 'Tỉnh Tiền Giang',
+        code: 'TIEN_GIANG',
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      vi.spyOn(repo, 'countProvinceUsage').mockResolvedValue({
+        members: 0,
+        collaterals: 0,
+        communes: 1,
+        hamlets: 2,
+      });
+
+      vi.spyOn(prisma.commune, 'findMany').mockResolvedValue([{ id: 'c-1' }] as any);
+      const deleteHamletsSpy = vi.spyOn(prisma.hamlet, 'deleteMany').mockResolvedValue({ count: 2 });
+      const findAreaGroupsSpy = vi.spyOn(prisma.areaGroup, 'findMany').mockResolvedValue([]);
+      const deleteCommunesSpy = vi.spyOn(prisma.commune, 'deleteMany').mockResolvedValue({ count: 1 });
+      const deleteProvinceSpy = vi.spyOn(repo, 'deleteProvince').mockResolvedValue({} as any);
+      const auditLogSpy = vi.spyOn(prisma.auditLog, 'create').mockResolvedValue({} as any);
+
+      const result = await service.deleteProvince('prov-test');
+
+      expect(result).toEqual({ id: 'prov-test', deletedName: 'Tỉnh Tiền Giang' });
+      expect(deleteHamletsSpy).toHaveBeenCalledWith({ where: { communeId: { in: ['c-1'] } } });
+      expect(deleteCommunesSpy).toHaveBeenCalledWith({ where: { provinceId: 'prov-test' } });
+      expect(deleteProvinceSpy).toHaveBeenCalledWith('prov-test');
+      expect(auditLogSpy).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          entityType: 'AREA',
+          action: 'DELETE_PROVINCE',
+          entityId: 'prov-test',
         }),
       });
     });

@@ -84,6 +84,45 @@ export class BackupController {
       next(error);
     }
   }
+
+  /**
+   * POST /api/v1/system/keywords/restore-default
+   * Khôi phục toàn bộ từ khóa Word chuẩn từ file keywords.sql mặc định trong dự án
+   */
+  public async restoreKeywordsDefault(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const actorName = req.user?.fullName || req.user?.username || 'ADMIN';
+      const result = await backupService.restoreKeywordsFromSql(undefined, actorName);
+      res.status(200).json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * POST /api/v1/system/keywords/upload-sql
+   * Nạp lại từ khóa Word từ file SQL người dùng tải lên
+   */
+  public async uploadKeywordsSql(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      let sqlContent = '';
+      if (req.file) {
+        sqlContent = req.file.buffer.toString('utf-8');
+      } else if (req.body?.sqlContent) {
+        sqlContent = req.body.sqlContent;
+      }
+
+      if (!sqlContent || !sqlContent.trim()) {
+        throw AppError.badRequest('Vui lòng chọn hoặc cung cấp file .sql chứa các câu lệnh INSERT từ khóa');
+      }
+
+      const actorName = req.user?.fullName || req.user?.username || 'ADMIN';
+      const result = await backupService.restoreKeywordsFromSql(sqlContent, actorName);
+      res.status(200).json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export const backupController = new BackupController();

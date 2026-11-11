@@ -144,9 +144,30 @@ describe('BackupService', () => {
     expect(deleteAuditLogs).toHaveBeenCalled();
     expect(createAuditLog).toHaveBeenCalled();
 
-    // Verify preservation
-    expect(deleteKeywords).not.toHaveBeenCalled();
+    // Verify: Keyword bị xóa sạch theo yêu cầu mới, chỉ giữ lại Template và Admin
+    expect(deleteKeywords).toHaveBeenCalled();
     expect(deleteTemplates).not.toHaveBeenCalled();
+  });
+
+  it('4. restoreKeywordsFromSql nạp lại danh sách từ khóa từ câu lệnh SQL', async () => {
+    const mockCreate = vi.fn().mockResolvedValue({});
+    const mockDeleteMany = vi.fn().mockResolvedValue({ count: 10 });
+    (prisma.globalWordKeyword.deleteMany as any) = mockDeleteMany;
+    (prisma.globalWordKeyword.create as any) = mockCreate;
+
+    const sampleSql = `
+      INSERT INTO global_word_keywords (id, keyword, "displayName", category, "dataPath", "dataType", "isSystem")
+      VALUES ('kw_1', 'TEST.KEYWORD_1', 'Từ khóa test 1', 'TEST', 'TEST.KEYWORD_1', 'TEXT', true);
+      INSERT INTO global_word_keywords (id, keyword, "displayName", category, "dataPath", "dataType", "isSystem")
+      VALUES ('kw_2', 'TEST.KEYWORD_2', 'Từ khóa test 2', 'TEST', 'TEST.KEYWORD_2', 'TEXT', true);
+    `;
+
+    const res = await backupService.restoreKeywordsFromSql(sampleSql, 'TESTER');
+
+    expect(res.success).toBe(true);
+    expect(res.count).toBe(2);
+    expect(mockDeleteMany).toHaveBeenCalled();
+    expect(mockCreate).toHaveBeenCalledTimes(2);
   });
 });
 

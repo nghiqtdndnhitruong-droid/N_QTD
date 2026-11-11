@@ -8,7 +8,7 @@ export const DrawerTrigger = DialogPrimitive.Trigger;
 export const DrawerClose = DialogPrimitive.Close;
 
 export interface DrawerContentProps extends DialogPrimitive.DialogContentProps {
-  size?: 'md' | 'lg' | 'xl';
+  size?: 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl';
   side?: 'right' | 'left';
 }
 
@@ -16,6 +16,9 @@ const WIDTH_CLASSES: Record<NonNullable<DrawerContentProps['size']>, string> = {
   md: 'sm:max-w-md',
   lg: 'sm:max-w-xl',
   xl: 'sm:max-w-2xl',
+  '2xl': 'sm:max-w-3xl lg:max-w-4xl',
+  '3xl': 'sm:max-w-4xl lg:max-w-5xl xl:max-w-6xl',
+  '4xl': 'sm:max-w-5xl lg:max-w-6xl xl:max-w-7xl',
 };
 
 export function DrawerContent({

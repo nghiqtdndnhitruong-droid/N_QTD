@@ -7,6 +7,8 @@ import {
   uploadWordTemplateVersionApi,
   updateWordTemplateApi,
   reorderWordTemplatesApi,
+  uploadMultipleWordTemplatesApi,
+  bulkDeleteWordTemplatesApi,
   saveWordTemplateMappingsApi,
   deleteWordTemplateApi,
   downloadOriginalTemplateApi,
@@ -125,6 +127,32 @@ export function useDeleteWordTemplate() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => deleteWordTemplateApi(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: wordTemplateKeys.lists() });
+    },
+  });
+}
+
+export function useUploadMultipleWordTemplates() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      files,
+      defaults,
+    }: {
+      files: File[];
+      defaults?: { loanTypeScope?: string; category?: string };
+    }) => uploadMultipleWordTemplatesApi(files, defaults),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: wordTemplateKeys.lists() });
+    },
+  });
+}
+
+export function useBulkDeleteWordTemplates() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (ids: string[]) => bulkDeleteWordTemplatesApi(ids),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: wordTemplateKeys.lists() });
     },

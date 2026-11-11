@@ -38,6 +38,12 @@ export interface AreaTreeProvince extends Province {
   })[];
 }
 
+export interface CreateProvincePayload {
+  name: string;
+  code?: string;
+  isActive?: boolean;
+}
+
 export interface CreateCommunePayload {
   provinceId: string;
   name: string;

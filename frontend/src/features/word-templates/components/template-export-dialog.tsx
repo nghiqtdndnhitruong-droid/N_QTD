@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Archive, Download, FileText, Loader2 } from 'lucide-react';
+import { Archive, Download, FileText, Loader2, Shield, UserCheck, Layers, CheckSquare } from 'lucide-react';
 import {
   Badge,
   Button,
@@ -13,6 +13,7 @@ import {
 } from '@/components/ui';
 import { notifyApiError, notifySuccess } from '@/components/feedback';
 import { useWordTemplates, useExportLoanDocuments } from '../hooks/use-word-templates';
+import type { WordTemplate } from '../types/word-template.types';
 
 export interface TemplateExportDialogProps {
   open: boolean;
@@ -38,12 +39,22 @@ export function TemplateExportDialog({
 
   const exportMutation = useExportLoanDocuments();
 
-  // Lọc biểu mẫu phù hợp với loại hồ sơ vay
-  const applicableTemplates = useMemo(() => {
-    return templates.filter(
-      (t) => t.loanTypeScope === 'ALL' || t.loanTypeScope === loanType,
-    );
-  }, [templates, loanType]);
+  // Tách riêng biểu mẫu chuyên biệt cho loại khoản vay (Thế chấp / Tín chấp) và biểu mẫu Chung
+  // Ưu tiên biểu mẫu chuyên biệt lên trên, biểu mẫu dùng chung xuống dưới
+  const specificTemplates = useMemo(
+    () => templates.filter((t) => t.loanTypeScope === loanType),
+    [templates, loanType],
+  );
+
+  const commonTemplates = useMemo(
+    () => templates.filter((t) => t.loanTypeScope === 'ALL'),
+    [templates],
+  );
+
+  const applicableTemplates = useMemo(
+    () => [...specificTemplates, ...commonTemplates],
+    [specificTemplates, commonTemplates],
+  );
 
   const handleToggleSelect = (id: string) => {
     setSelectedTemplateIds((prev) =>
@@ -56,6 +67,18 @@ export function TemplateExportDialog({
       setSelectedTemplateIds([]);
     } else {
       setSelectedTemplateIds(applicableTemplates.map((t) => t.id));
+    }
+  };
+
+  const handleSelectGroup = (groupTemplates: WordTemplate[]) => {
+    const groupIds = groupTemplates.map((t) => t.id);
+    const allSelected = groupIds.every((id) => selectedTemplateIds.includes(id));
+    if (allSelected) {
+      // Bỏ chọn tất cả trong nhóm
+      setSelectedTemplateIds((prev) => prev.filter((id) => !groupIds.includes(id)));
+    } else {
+      // Chọn tất cả trong nhóm
+      setSelectedTemplateIds((prev) => Array.from(new Set([...prev, ...groupIds])));
     }
   };
 
@@ -84,24 +107,32 @@ export function TemplateExportDialog({
     }
   };
 
+  const isSpecificLoanTheChap = loanType === 'THE_CHAP';
+  const specificTitle = isSpecificLoanTheChap ? 'Biểu mẫu Thế chấp' : 'Biểu mẫu Tín chấp';
+  const SpecificIcon = isSpecificLoanTheChap ? Shield : UserCheck;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent size="lg">
+      <DialogContent size="xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5 text-primary-600" />
             <span>Xuất biểu mẫu Word cho hồ sơ: {contractNumber || `#${loanId.slice(-6)}`}</span>
           </DialogTitle>
           <DialogDescription>
-            Chọn các biểu mẫu cần xuất. Hệ thống sẽ tự động lấy dữ liệu mới nhất của hồ sơ khoản vay
-            và điền vào đúng vị trí các từ khóa.
+            Chọn các biểu mẫu cần xuất. Hệ thống đã ưu tiên hiển thị nhóm biểu mẫu {specificTitle.toLowerCase()} ở trên và biểu mẫu chung ở dưới để cán bộ dễ dàng lựa chọn.
           </DialogDescription>
         </DialogHeader>
 
         <DialogBody className="space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+          <div className="flex items-center justify-between border-b border-slate-200 pb-2">
             <span className="text-xs font-semibold text-slate-700">
-              Danh sách biểu mẫu khả dụng ({applicableTemplates.length})
+              Tổng số biểu mẫu khả dụng: <strong className="text-primary-700">{applicableTemplates.length}</strong>
+              {selectedTemplateIds.length > 0 && (
+                <span className="text-emerald-700 ml-2 font-medium">
+                  (Đã chọn {selectedTemplateIds.length})
+                </span>
+              )}
             </span>
             <button
               type="button"
@@ -115,53 +146,154 @@ export function TemplateExportDialog({
           </div>
 
           {isLoading ? (
-            <div className="flex h-36 items-center justify-center text-xs text-slate-400">
+            <div className="flex h-44 items-center justify-center text-xs text-slate-400">
               <Loader2 className="mr-2 h-4 w-4 animate-spin text-primary-600" />
               Đang tải danh sách biểu mẫu...
             </div>
           ) : applicableTemplates.length === 0 ? (
             <div className="rounded-lg border border-dashed border-slate-200 p-6 text-center text-xs text-slate-500">
-              Chưa có biểu mẫu nào đang hoạt động cho loại vay {loanType === 'THE_CHAP' ? 'Thế chấp' : 'Tín chấp'}.
+              Chưa có biểu mẫu nào đang hoạt động cho loại vay {isSpecificLoanTheChap ? 'Thế chấp' : 'Tín chấp'}.
               Vui lòng vào menu <strong>Quản lý biểu mẫu Word</strong> để tải lên mẫu mới.
             </div>
           ) : (
-            <div className="max-h-64 overflow-y-auto divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white">
-              {applicableTemplates.map((template) => {
-                const isSelected = selectedTemplateIds.includes(template.id);
-                return (
-                  <label
-                    key={template.id}
-                    className={`flex cursor-pointer items-center justify-between gap-3 p-3 text-xs transition-colors ${
-                      isSelected ? 'bg-primary-50/60' : 'hover:bg-slate-50'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={() => handleToggleSelect(template.id)}
-                        className="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-600"
-                      />
-                      <div className="min-w-0">
-                        <div className="font-semibold text-slate-800 truncate">
-                          {template.title}
-                        </div>
-                        <div className="flex items-center gap-2 text-[11px] text-slate-500">
-                          <span className="font-mono">{template.code}</span>
-                          <span>·</span>
-                          <span>{template.category}</span>
-                          <span>·</span>
-                          <span>v{template.currentVersion}</span>
-                        </div>
+            <div className="max-h-[360px] overflow-y-auto space-y-4 pr-1">
+              {/* NHÓM 1 (ƯU TIÊN Ở TRÊN): BIỂU MẪU THẾ CHẤP / TÍN CHẤP THEO HỒ SƠ */}
+              {specificTemplates.length > 0 && (
+                <div className="rounded-xl border border-amber-200 bg-amber-50/20 p-3 shadow-2xs">
+                  <div className="flex items-center justify-between mb-2 pb-1.5 border-b border-amber-200/60">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1 rounded bg-amber-100 text-amber-800">
+                        <SpecificIcon className="h-4 w-4" />
                       </div>
+                      <span className="font-bold text-xs text-amber-950 uppercase tracking-wide">
+                        1. {specificTitle} (Ưu tiên theo hồ sơ)
+                      </span>
+                      <Badge tone="warning" className="text-[10px] px-1.5 py-0 font-bold">
+                        {specificTemplates.length}
+                      </Badge>
                     </div>
 
-                    <Badge tone="neutral" className="text-[10px]">
-                      {template._count?.mappings ?? 0} từ khóa
-                    </Badge>
-                  </label>
-                );
-              })}
+                    <button
+                      type="button"
+                      onClick={() => handleSelectGroup(specificTemplates)}
+                      className="text-[11px] font-medium text-amber-900 hover:underline flex items-center gap-1"
+                    >
+                      <CheckSquare className="h-3 w-3" />
+                      {specificTemplates.every((t) => selectedTemplateIds.includes(t.id))
+                        ? 'Bỏ chọn nhóm này'
+                        : 'Chọn cả nhóm này'}
+                    </button>
+                  </div>
+
+                  <div className="divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white overflow-hidden shadow-2xs">
+                    {specificTemplates.map((template) => {
+                      const isSelected = selectedTemplateIds.includes(template.id);
+                      return (
+                        <label
+                          key={template.id}
+                          className={`flex cursor-pointer items-center justify-between gap-3 p-2.5 text-xs transition-colors ${
+                            isSelected ? 'bg-amber-50/70' : 'hover:bg-slate-50'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => handleToggleSelect(template.id)}
+                              className="h-4 w-4 rounded border-slate-300 text-amber-600 focus:ring-amber-600 cursor-pointer"
+                            />
+                            <div className="min-w-0">
+                              <div className="font-semibold text-slate-800 truncate">
+                                {template.title}
+                              </div>
+                              <div className="flex items-center gap-2 text-[11px] text-slate-500">
+                                <span className="font-mono">{template.code}</span>
+                                <span>·</span>
+                                <span>{template.category}</span>
+                                <span>·</span>
+                                <span>v{template.currentVersion}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <Badge tone="neutral" className="text-[10px] shrink-0">
+                            {template._count?.mappings ?? 0} từ khóa
+                          </Badge>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* NHÓM 2 (DỜI XUỐNG DƯỚI): BIỂU MẪU DÙNG CHUNG */}
+              {commonTemplates.length > 0 && (
+                <div className="rounded-xl border border-indigo-200 bg-indigo-50/20 p-3 shadow-2xs">
+                  <div className="flex items-center justify-between mb-2 pb-1.5 border-b border-indigo-200/60">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1 rounded bg-indigo-100 text-indigo-800">
+                        <Layers className="h-4 w-4" />
+                      </div>
+                      <span className="font-bold text-xs text-indigo-950 uppercase tracking-wide">
+                        2. Biểu mẫu dùng chung (Áp dụng cho mọi hình thức vay)
+                      </span>
+                      <Badge tone="info" className="text-[10px] px-1.5 py-0 font-bold">
+                        {commonTemplates.length}
+                      </Badge>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => handleSelectGroup(commonTemplates)}
+                      className="text-[11px] font-medium text-indigo-900 hover:underline flex items-center gap-1"
+                    >
+                      <CheckSquare className="h-3 w-3" />
+                      {commonTemplates.every((t) => selectedTemplateIds.includes(t.id))
+                        ? 'Bỏ chọn nhóm này'
+                        : 'Chọn cả nhóm này'}
+                    </button>
+                  </div>
+
+                  <div className="divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white overflow-hidden shadow-2xs">
+                    {commonTemplates.map((template) => {
+                      const isSelected = selectedTemplateIds.includes(template.id);
+                      return (
+                        <label
+                          key={template.id}
+                          className={`flex cursor-pointer items-center justify-between gap-3 p-2.5 text-xs transition-colors ${
+                            isSelected ? 'bg-indigo-50/70' : 'hover:bg-slate-50'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => handleToggleSelect(template.id)}
+                              className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-600 cursor-pointer"
+                            />
+                            <div className="min-w-0">
+                              <div className="font-semibold text-slate-800 truncate">
+                                {template.title}
+                              </div>
+                              <div className="flex items-center gap-2 text-[11px] text-slate-500">
+                                <span className="font-mono">{template.code}</span>
+                                <span>·</span>
+                                <span>{template.category}</span>
+                                <span>·</span>
+                                <span>v{template.currentVersion}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <Badge tone="neutral" className="text-[10px] shrink-0">
+                            {template._count?.mappings ?? 0} từ khóa
+                          </Badge>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

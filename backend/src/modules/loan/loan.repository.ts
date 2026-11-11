@@ -504,22 +504,34 @@ export class LoanRepository {
     });
   }
 
-  async softDelete(id: string, reason?: string): Promise<number> {
+  async softDelete(id: string, _reason?: string): Promise<number> {
     const deletedCollaterals = await prisma.collateral.deleteMany({
       where: { loanId: id },
     });
-
-    await prisma.loan.update({
+    await prisma.loanValuation.deleteMany({
+      where: { loanId: id },
+    });
+    await prisma.relatedPerson.deleteMany({
+      where: { loanId: id },
+    });
+    await prisma.disbursement.deleteMany({
+      where: { loanId: id },
+    });
+    await prisma.repayment.deleteMany({
+      where: { loanId: id },
+    });
+    await prisma.wordExportLog.deleteMany({
+      where: { loanId: id },
+    });
+    await prisma.loan.delete({
       where: { id },
-      data: {
-        contractNumber: null, // Giải phóng số khế ước để có thể cấp lại cho khoản vay mới
-        isDeleted: true,
-        deletedAt: new Date(),
-        deletedReason: reason || 'Hủy/Xóa hồ sơ vay chưa phát sinh giao dịch giải ngân',
-      },
     });
 
     return deletedCollaterals.count;
+  }
+
+  async hardDelete(id: string): Promise<number> {
+    return this.softDelete(id);
   }
 }
 
