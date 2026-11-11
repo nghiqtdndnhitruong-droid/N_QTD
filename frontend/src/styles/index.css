@@ -1,6 +1,9 @@
 @import '@fontsource-variable/inter';
 @import 'tailwindcss';
 
+/* Cho phép dùng tiền tố `dark:` của Tailwind dựa trên class `.dark` ở thẻ <html> */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --font-sans: 'Inter Variable', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
     Roboto, sans-serif;
@@ -38,6 +41,11 @@
   --color-info-100: #e0f2fe;
   --color-info-600: #0369a1;
   --color-info-700: #075985;
+
+  /* Màu ngữ nghĩa cho bề mặt giao diện (tự đổi theo Sáng/Tối) */
+  --color-canvas: #f6f8fb; /* Nền tổng thể ứng dụng */
+  --color-surface: #ffffff; /* Nền thẻ, bảng, hộp thoại */
+  --color-surface-hover: #f6f9fd; /* Nền dòng bảng khi rê chuột */
 }
 
 @layer base {
@@ -46,14 +54,244 @@
     font-size: 14px;
     line-height: 1.5;
     color: #0f172a;
-    background-color: #f6f8fb;
+    background-color: var(--color-canvas);
     scrollbar-gutter: stable;
+    color-scheme: light;
   }
 
   /* Hiển thị số tiền và mã số thẳng cột trong bảng */
   .tabular-nums {
     font-variant-numeric: tabular-nums;
   }
+}
+
+/* ==========================================================================
+   DARK MODE – Giao diện Tối "Navy Night"
+   --------------------------------------------------------------------------
+   Nguyên tắc: thay vì sửa từng component, hệ thống ánh xạ lại bảng màu
+   Tailwind khi thẻ <html> có class `.dark`:
+   1. Thang màu `slate` được đảo ngược (nền sáng → nền tối, chữ tối → chữ sáng).
+   2. Các sắc độ nhạt (50 → 300) của màu thương hiệu & trạng thái chuyển thành
+      lớp phủ trong suốt để badge, alert, nền nhấn hiển thị hài hoà trên nền tối.
+   3. Các màu chữ đậm (600 → 900) được làm sáng lên để đạt độ tương phản WCAG.
+   4. Vùng có class `.theme-fixed` (thanh bên, trang đăng nhập) giữ nguyên
+      bảng màu gốc vì vốn đã được thiết kế trên nền tối.
+   ========================================================================== */
+
+html.dark {
+  color-scheme: dark;
+  color: #e6ebf3;
+
+  /* Bề mặt */
+  --color-canvas: #0a111e;
+  --color-surface: #0f1829;
+  --color-surface-hover: #15213a;
+
+  /* Thang Slate đảo ngược, ngả xanh Navy cho đồng bộ thương hiệu */
+  --color-slate-50: #121c30;
+  --color-slate-100: #17233b;
+  --color-slate-200: #223049;
+  --color-slate-300: #31405c;
+  --color-slate-400: #5f6f8a;
+  --color-slate-500: #8796ae;
+  --color-slate-600: #a5b2c6;
+  --color-slate-700: #c0cad9;
+  --color-slate-800: #d8dfea;
+  --color-slate-900: #ebeff5;
+  --color-slate-950: #f7f9fc;
+
+  --color-gray-50: #121c30;
+  --color-gray-100: #17233b;
+  --color-gray-200: #223049;
+  --color-gray-300: #31405c;
+
+  /* Màu thương hiệu – sắc độ nhạt thành lớp phủ trong suốt */
+  --color-primary-50: rgb(82 134 203 / 0.12);
+  --color-primary-100: rgb(82 134 203 / 0.2);
+  --color-primary-200: rgb(82 134 203 / 0.32);
+  --color-primary-300: rgb(82 134 203 / 0.48);
+
+  /* Trạng thái */
+  --color-success-50: rgb(16 185 129 / 0.1);
+  --color-success-100: rgb(16 185 129 / 0.18);
+  --color-warning-50: rgb(245 158 11 / 0.1);
+  --color-warning-100: rgb(245 158 11 / 0.18);
+  --color-danger-50: rgb(239 68 68 / 0.1);
+  --color-danger-100: rgb(239 68 68 / 0.18);
+  --color-info-50: rgb(14 165 233 / 0.1);
+  --color-info-100: rgb(14 165 233 / 0.18);
+
+  /* Bảng màu mặc định của Tailwind đang được dùng trong hệ thống */
+  --color-emerald-50: rgb(16 185 129 / 0.1);
+  --color-emerald-100: rgb(16 185 129 / 0.18);
+  --color-emerald-200: rgb(16 185 129 / 0.3);
+  --color-emerald-300: rgb(16 185 129 / 0.45);
+  --color-teal-50: rgb(20 184 166 / 0.1);
+  --color-teal-100: rgb(20 184 166 / 0.18);
+  --color-teal-200: rgb(20 184 166 / 0.3);
+  --color-amber-50: rgb(245 158 11 / 0.1);
+  --color-amber-100: rgb(245 158 11 / 0.18);
+  --color-amber-200: rgb(245 158 11 / 0.3);
+  --color-amber-300: rgb(245 158 11 / 0.45);
+  --color-red-50: rgb(239 68 68 / 0.1);
+  --color-red-100: rgb(239 68 68 / 0.18);
+  --color-red-200: rgb(239 68 68 / 0.3);
+  --color-red-300: rgb(239 68 68 / 0.45);
+  --color-rose-50: rgb(244 63 94 / 0.1);
+  --color-rose-100: rgb(244 63 94 / 0.18);
+  --color-rose-200: rgb(244 63 94 / 0.3);
+  --color-rose-300: rgb(244 63 94 / 0.45);
+  --color-sky-50: rgb(14 165 233 / 0.1);
+  --color-sky-100: rgb(14 165 233 / 0.18);
+  --color-sky-200: rgb(14 165 233 / 0.3);
+  --color-sky-300: rgb(14 165 233 / 0.45);
+  --color-blue-50: rgb(59 130 246 / 0.1);
+  --color-blue-100: rgb(59 130 246 / 0.18);
+  --color-blue-200: rgb(59 130 246 / 0.3);
+  --color-blue-300: rgb(59 130 246 / 0.45);
+  --color-indigo-50: rgb(99 102 241 / 0.12);
+  --color-indigo-100: rgb(99 102 241 / 0.2);
+  --color-indigo-200: rgb(99 102 241 / 0.32);
+  --color-indigo-300: rgb(99 102 241 / 0.48);
+  --color-purple-50: rgb(168 85 247 / 0.1);
+  --color-purple-100: rgb(168 85 247 / 0.18);
+  --color-purple-200: rgb(168 85 247 / 0.3);
+}
+
+/* --- Bề mặt trắng → bề mặt tối --- */
+html.dark .bg-white {
+  background-color: var(--color-surface);
+}
+html.dark .bg-white\/80,
+html.dark .bg-white\/90,
+html.dark .bg-white\/95 {
+  background-color: rgb(15 24 41 / 0.9);
+}
+html.dark .bg-white\/50,
+html.dark .bg-white\/60,
+html.dark .bg-white\/70 {
+  background-color: rgb(15 24 41 / 0.6);
+}
+html.dark .hover\:bg-white:hover {
+  background-color: var(--color-surface-hover);
+}
+html.dark .border-white {
+  border-color: var(--color-slate-200);
+}
+
+/* --- Các khối vốn luôn tối (tooltip, khối mã, lớp phủ hộp thoại) --- */
+html.dark .bg-slate-900 {
+  background-color: #050a14;
+}
+html.dark .bg-slate-800 {
+  background-color: #0c1526;
+}
+html.dark .bg-slate-900\/50,
+html.dark .bg-slate-900\/45 {
+  background-color: rgb(2 6 14 / 0.7);
+}
+html.dark .bg-slate-900 .text-slate-400,
+html.dark .bg-slate-800.text-slate-400 {
+  color: #94a3b8;
+}
+html.dark .fill-slate-900 {
+  fill: #050a14;
+}
+
+/* --- Màu chữ đậm → làm sáng cho dễ đọc trên nền tối --- */
+html.dark :is(.text-primary-600, .hover\:text-primary-600:hover) { color: #7fa9e0; }
+html.dark :is(.text-primary-700, .hover\:text-primary-700:hover) { color: #9ec0ea; }
+html.dark :is(.text-primary-800, .hover\:text-primary-800:hover) { color: #bcd3f1; }
+html.dark :is(.text-primary-900, .hover\:text-primary-900:hover) { color: #dae7f8; }
+
+html.dark :is(.text-success-600, .text-emerald-600, .text-teal-600, .text-green-600) { color: #34d399; }
+html.dark :is(.text-success-700, .text-emerald-700, .text-teal-700, .text-green-700) { color: #6ee7b7; }
+html.dark :is(.text-emerald-800, .text-teal-800, .text-green-800) { color: #a7f3d0; }
+html.dark :is(.text-emerald-900, .text-teal-900) { color: #d1fae5; }
+
+html.dark :is(.text-warning-600, .text-amber-600, .text-orange-600) { color: #fbbf24; }
+html.dark :is(.text-warning-700, .text-amber-700, .text-orange-700) { color: #fcd34d; }
+html.dark :is(.text-amber-800, .text-orange-800) { color: #fde68a; }
+html.dark :is(.text-amber-900) { color: #fef3c7; }
+
+html.dark :is(.text-danger-600, .text-red-600, .text-rose-600, .hover\:text-danger-600:hover, .hover\:text-red-600:hover) { color: #f87171; }
+html.dark :is(.text-danger-700, .text-red-700, .text-rose-700, .hover\:text-danger-700:hover) { color: #fca5a5; }
+html.dark :is(.text-red-800, .text-rose-800) { color: #fecaca; }
+html.dark :is(.text-red-900, .text-rose-900) { color: #fee2e2; }
+
+html.dark :is(.text-info-600, .text-sky-600, .text-blue-600, .hover\:text-blue-600:hover) { color: #60b9f5; }
+html.dark :is(.text-info-700, .text-sky-700, .text-blue-700) { color: #93cdf8; }
+html.dark :is(.text-sky-800, .text-blue-800) { color: #bae0fb; }
+html.dark :is(.text-sky-900, .text-blue-900) { color: #e0f0fe; }
+
+html.dark :is(.text-indigo-600, .text-purple-600, .text-violet-600) { color: #a5b4fc; }
+html.dark :is(.text-indigo-700, .text-purple-700, .text-violet-700) { color: #c7d2fe; }
+html.dark :is(.text-indigo-800, .text-purple-800) { color: #dde3ff; }
+html.dark :is(.text-indigo-900, .text-purple-900) { color: #eef1ff; }
+
+/* --- Thanh cuộn tối --- */
+html.dark ::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+html.dark ::-webkit-scrollbar-track {
+  background: var(--color-canvas);
+}
+html.dark ::-webkit-scrollbar-thumb {
+  background: #263552;
+  border-radius: 8px;
+  border: 2px solid var(--color-canvas);
+}
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background: #33466b;
+}
+
+/* --- Ô nhập liệu: chữ gợi ý & ô tự điền của trình duyệt --- */
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: #5f6f8a;
+}
+html.dark input:-webkit-autofill {
+  -webkit-text-fill-color: #ebeff5;
+  -webkit-box-shadow: 0 0 0 1000px #17233b inset;
+  caret-color: #ebeff5;
+}
+
+/* ==========================================================================
+   Vùng giữ nguyên bảng màu gốc (đã thiết kế sẵn trên nền tối)
+   ========================================================================== */
+html.dark .theme-fixed {
+  color: inherit;
+  --color-slate-50: #f8fafc;
+  --color-slate-100: #f1f5f9;
+  --color-slate-200: #e2e8f0;
+  --color-slate-300: #cbd5e1;
+  --color-slate-400: #94a3b8;
+  --color-slate-500: #64748b;
+  --color-slate-600: #475569;
+  --color-slate-700: #334155;
+  --color-slate-800: #1e293b;
+  --color-slate-900: #0f172a;
+  --color-slate-950: #020617;
+  --color-primary-50: #eef3fa;
+  --color-primary-100: #d9e5f4;
+  --color-primary-200: #b6cdeb;
+  --color-primary-300: #86addd;
+}
+html.dark .theme-fixed .bg-white {
+  background-color: #ffffff;
+}
+
+/* Hiệu ứng chuyển màu mượt khi đổi giao diện */
+html.theme-transition,
+html.theme-transition *,
+html.theme-transition *::before,
+html.theme-transition *::after {
+  transition:
+    background-color 200ms ease,
+    border-color 200ms ease,
+    color 200ms ease,
+    fill 200ms ease !important;
 }
 
 /* Tôn trọng tuỳ chọn giảm chuyển động của hệ điều hành */
@@ -67,4 +305,3 @@
     scroll-behavior: auto !important;
   }
 }
-

@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   Download,
   Upload,
@@ -49,6 +50,7 @@ export function BackupPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const sqlFileInputRef = useRef<HTMLInputElement>(null);
 
+  const queryClient = useQueryClient();
   const dbStatsQuery = useDatabaseStats();
   const dbStats = dbStatsQuery.data;
 
@@ -101,7 +103,10 @@ export function BackupPage() {
         'Phục hồi dữ liệu thành công',
         res.message || 'Hệ thống đã nạp lại toàn bộ dữ liệu.',
       );
-      dbStatsQuery.refetch();
+      // Xóa bộ nhớ cache client và nạp lại toàn bộ dữ liệu ngay lập tức, không cần F5
+      queryClient.clear();
+      await queryClient.invalidateQueries();
+      await dbStatsQuery.refetch();
     } catch (err: any) {
       notifyError('Phục hồi thất bại', err?.message || 'Có lỗi xảy ra khi đọc tệp sao lưu.');
     } finally {
@@ -116,9 +121,12 @@ export function BackupPage() {
       setConfirmCleanOpen(false);
       notifySuccess(
         'Làm sạch CSDL thành công',
-        res.message || 'Hệ thống đã làm sạch cơ sở dữ liệu (xóa toàn bộ hồ sơ và từ khóa Word).',
+        res.message || 'Hệ thống đã làm sạch cơ sở dữ liệu (đã xóa hồ sơ nghiệp vụ và đơn giá; bảo toàn Admin, từ khóa, mẫu Word và địa bàn).',
       );
-      dbStatsQuery.refetch();
+      // Xóa bộ nhớ cache client và nạp lại dữ liệu ngay lập tức
+      queryClient.clear();
+      await queryClient.invalidateQueries();
+      await dbStatsQuery.refetch();
     } catch (err: any) {
       notifyError('Làm sạch CSDL thất bại', err?.message || 'Có lỗi xảy ra khi làm sạch cơ sở dữ liệu.');
     } finally {
@@ -135,7 +143,10 @@ export function BackupPage() {
         'Nạp từ khóa thành công',
         res.message || `Đã khôi phục thành công ${res.count} từ khóa Word chuẩn.`,
       );
-      dbStatsQuery.refetch();
+      // Xóa bộ nhớ cache và nạp lại ngay lập tức
+      queryClient.clear();
+      await queryClient.invalidateQueries();
+      await dbStatsQuery.refetch();
     } catch (err: any) {
       notifyError('Nạp từ khóa thất bại', err?.message || 'Có lỗi xảy ra khi nạp từ khóa.');
     } finally {
@@ -154,7 +165,10 @@ export function BackupPage() {
         'Tải lên file SQL thành công',
         res.message || `Đã nạp thành công ${res.count} từ khóa từ file SQL.`,
       );
-      dbStatsQuery.refetch();
+      // Xóa bộ nhớ cache và nạp lại ngay lập tức
+      queryClient.clear();
+      await queryClient.invalidateQueries();
+      await dbStatsQuery.refetch();
     } catch (err: any) {
       notifyError('Nạp SQL thất bại', err?.message || 'Có lỗi xảy ra khi xử lý file SQL.');
     } finally {
@@ -516,13 +530,15 @@ export function BackupPage() {
               CẢNH BÁO TỐI CAO: Hành động này KHÔNG THỂ HOÀN TÁC!
             </p>
             <p>
-              Hệ thống sẽ <strong>xóa toàn bộ</strong>: Danh sách thành viên, Hồ sơ khoản vay, Tài sản thế chấp, Bảng định giá, <strong>Toàn bộ Đơn giá đất / Bảng giá tài sản</strong>, Cấu hình lãi suất, Danh mục địa bàn, Lịch sử giải ngân, Các đợt thu nợ gốc/thu lãi, các tài khoản Cán bộ tín dụng và <strong>toàn bộ Thư viện từ khóa Word</strong>.
+              Hệ thống sẽ <strong>xóa sạch</strong>: Danh sách thành viên, Hồ sơ khoản vay, Tài sản thế chấp, Bảng định giá, <strong>Toàn bộ Đơn giá đất / Bảng giá tài sản</strong>, Cấu hình lãi suất, Lịch sử giải ngân, Các đợt thu nợ gốc/thu lãi và các tài khoản Cán bộ tín dụng.
             </p>
             <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-2.5 rounded text-[11px] leading-relaxed">
               <strong>DỮ LIỆU ĐƯỢC BẢO TOÀN (KHÔNG BỊ XÓA):</strong>
               <ul className="list-disc pl-4 mt-1 space-y-0.5">
                 <li>Tài khoản quản trị <strong>ADMIN</strong> và hồ sơ cá nhân của Admin</li>
-                <li>Toàn bộ các <strong>Mẫu biểu Word</strong> đã tải lên cùng cấu hình ánh xạ</li>
+                <li>Toàn bộ <strong>Thư viện từ khóa Word</strong> chuẩn và mở rộng</li>
+                <li>Toàn bộ <strong>Mẫu biểu Word</strong> đã tải lên cùng cấu hình ánh xạ</li>
+                <li>Danh mục <strong>Địa bàn Ấp / Xã / Tỉnh</strong></li>
               </ul>
             </div>
             <p className="text-blue-700 text-[11px]">

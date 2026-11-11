@@ -57,11 +57,75 @@ function normalizeProvinceName(rawName: string): string {
 export class AreaService {
   constructor(private readonly repo: AreaRepository = areaRepository) {}
 
+  /**
+   * Tự động khởi tạo Địa bàn mặc định của Quỹ tín dụng nếu cơ sở dữ liệu địa bàn đang rỗng:
+   * - Tỉnh Vĩnh Long
+   *   + Xã Nhị Trường (Ấp mẫu: Ấp Nô Lựa)
+   *   + Xã Tập Sơn
+   *   + Xã Long Hiệp
+   */
+  async ensureDefaultAreas(): Promise<void> {
+    const provinceCount = await prisma.province.count();
+    if (provinceCount > 0) return;
+
+    let province = await this.repo.findProvinceByCode('VINH_LONG');
+    if (!province) {
+      province = await this.repo.createProvince({
+        code: 'VINH_LONG',
+        name: 'Tỉnh Vĩnh Long',
+        isActive: true,
+      });
+    }
+
+    const existingCommunes = await this.repo.findCommunesByProvince(province.id, undefined, true);
+    const defaultCommunes = [
+      { code: 'NHI_TRUONG', name: 'Xã Nhị Trường' },
+      { code: 'TAP_SON', name: 'Xã Tập Sơn' },
+      { code: 'LONG_HIEP', name: 'Xã Long Hiệp' },
+    ];
+
+    let nhiTruongCommune = existingCommunes.find((c) => c.code === 'NHI_TRUONG');
+
+    for (const item of defaultCommunes) {
+      const found = existingCommunes.find(
+        (c) => c.code === item.code || c.name.toLowerCase() === item.name.toLowerCase()
+      );
+      if (!found) {
+        const created = await this.repo.createCommune({
+          provinceId: province.id,
+          code: item.code,
+          name: item.name,
+          isActive: true,
+        });
+        if (item.code === 'NHI_TRUONG') {
+          nhiTruongCommune = created;
+        }
+      }
+    }
+
+    if (nhiTruongCommune) {
+      const existingNoLua = await this.repo.findHamletByNameInCommune(
+        nhiTruongCommune.id,
+        'Ấp Nô Lựa'
+      );
+      if (!existingNoLua) {
+        await this.repo.createHamlet({
+          communeId: nhiTruongCommune.id,
+          code: 'AP_NO_LUA',
+          name: 'Ấp Nô Lựa',
+          isActive: true,
+        });
+      }
+    }
+  }
+
   async getTree(includeInactive = false) {
+    await this.ensureDefaultAreas();
     return this.repo.getAreaTree(includeInactive);
   }
 
   async getProvinces(search?: string, includeInactive = false) {
+    await this.ensureDefaultAreas();
     return this.repo.findProvinces(search, includeInactive);
   }
 

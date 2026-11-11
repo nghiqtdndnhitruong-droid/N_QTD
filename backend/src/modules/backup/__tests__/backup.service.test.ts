@@ -124,9 +124,12 @@ describe('BackupService', () => {
     const deleteAuditLogs = vi.spyOn(prisma.auditLog, 'deleteMany').mockResolvedValue({ count: 20 } as any);
     const createAuditLog = vi.spyOn(prisma.auditLog, 'create').mockResolvedValue({} as any);
 
-    // Spy on globalWordKeyword and wordTemplate to ensure they are NOT deleted
+    // Spy on globalWordKeyword, wordTemplate, và master areas để đảm bảo KHÔNG bị xóa
     const deleteKeywords = vi.spyOn(prisma.globalWordKeyword, 'deleteMany');
     const deleteTemplates = vi.spyOn(prisma.wordTemplate, 'deleteMany');
+    const deleteProvinces = vi.spyOn(prisma.province, 'deleteMany');
+    const deleteCommunes = vi.spyOn(prisma.commune, 'deleteMany');
+    const deleteHamlets = vi.spyOn(prisma.hamlet, 'deleteMany');
 
     const result = await backupService.cleanDatabase('admin-id-1', 'ADMIN');
 
@@ -144,9 +147,12 @@ describe('BackupService', () => {
     expect(deleteAuditLogs).toHaveBeenCalled();
     expect(createAuditLog).toHaveBeenCalled();
 
-    // Verify: Keyword bị xóa sạch theo yêu cầu mới, chỉ giữ lại Template và Admin
-    expect(deleteKeywords).toHaveBeenCalled();
+    // Verify: Bảo toàn an toàn Tài khoản Admin, Mẫu Word, Thư viện từ khóa và Địa bàn
+    expect(deleteKeywords).not.toHaveBeenCalled();
     expect(deleteTemplates).not.toHaveBeenCalled();
+    expect(deleteProvinces).not.toHaveBeenCalled();
+    expect(deleteCommunes).not.toHaveBeenCalled();
+    expect(deleteHamlets).not.toHaveBeenCalled();
   });
 
   it('4. restoreKeywordsFromSql nạp lại danh sách từ khóa từ câu lệnh SQL', async () => {

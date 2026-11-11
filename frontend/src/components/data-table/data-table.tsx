@@ -225,13 +225,13 @@ export function DataTable<TData>({
                     <td
                       key={cell.id}
                       className={cn(
-                        'px-4 py-3 align-middle text-slate-800 bg-white group-hover:bg-[#f6f9fd]',
+                        'px-4 py-3 align-middle text-slate-800 bg-white group-hover:bg-slate-50/90 group-hover:text-slate-900',
                         meta?.align === 'right' && 'text-right tabular-nums',
                         meta?.align === 'center' && 'text-center',
                         meta?.sticky === 'left' &&
-                          'sticky left-0 z-10 shadow-[1px_0_0_0_#f1f5f9]',
+                          'sticky left-0 z-10 shadow-[1px_0_0_0_var(--color-slate-200)]',
                         meta?.sticky === 'right' &&
-                          'sticky right-0 z-10 shadow-[-1px_0_0_0_#f1f5f9]',
+                          'sticky right-0 z-10 shadow-[-1px_0_0_0_var(--color-slate-200)]',
                         meta?.className,
                       )}
                     >

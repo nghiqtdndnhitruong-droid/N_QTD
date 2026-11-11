@@ -5,8 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Hệ thống quản lý nghiệp vụ tín dụng - Quỹ tín dụng nhân dân" />
     <title>Quỹ Tín Dụng Nhân Dân – Hệ thống Quản lý Tín dụng</title>
+    <script>
+      // Áp dụng giao diện Sáng/Tối trước khi render để tránh nháy màu
+      (function () {
+        try {
+          var mode = localStorage.getItem('qtd.theme') || 'light';
+          var dark =
+            mode === 'dark' ||
+            (mode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          if (dark) document.documentElement.classList.add('dark');
+          document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
+        } catch (e) {}
+      })();
+    </script>
   </head>
-  <body class="bg-slate-50 text-slate-900 antialiased selection:bg-[#1D4E89]/15 selection:text-[#0B1F3A]">
+  <body class="bg-canvas text-slate-900 antialiased selection:bg-[#1D4E89]/15 selection:text-[#0B1F3A]">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { KeyRound, ShieldCheck, Save, RotateCcw } from 'lucide-react';
+import { KeyRound, ShieldCheck, Save, RotateCcw, Sun, Moon, Monitor } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { useThemeStore, type ThemeMode } from '@/stores/theme.store';
 import {
   Badge,
   Button,
@@ -98,6 +100,8 @@ type ChangePasswordValues = z.infer<typeof changePasswordSchema>;
 export function ProfilePage() {
   const user = useAuthStore((s) => s.user);
   const updateUserProfile = useAuthStore((s) => s.updateUserProfile);
+  const themeMode = useThemeStore((s) => s.mode);
+  const setThemeMode = useThemeStore((s) => s.setMode);
 
   const [initialProfile, setInitialProfile] = useState<ProfileFormValues>({
     fullName: user?.profile?.fullName || user?.fullName || '',
@@ -418,8 +422,64 @@ export function ProfilePage() {
           </form>
         </Card>
 
-        {/* CỘT PHẢI (1/3): Đổi mật khẩu & Quyền hạn */}
+        {/* CỘT PHẢI (1/3): Giao diện, Đổi mật khẩu & Quyền hạn */}
         <div className="space-y-6">
+          {/* Card Giao diện hiển thị */}
+          <Card className="shadow-sm">
+            <CardHeader>
+              <div>
+                <CardTitle className="text-base font-bold text-slate-900">Giao diện hiển thị</CardTitle>
+                <CardDescription>Tùy chọn chế độ màu Sáng hoặc Tối cho mắt của bạn</CardDescription>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-2.5">
+              {[
+                { value: 'light', label: 'Giao diện Sáng', desc: 'Nền sáng truyền thống', icon: Sun },
+                { value: 'dark', label: 'Giao diện Tối', desc: 'Nền Navy dịu mắt khi làm việc đêm', icon: Moon },
+                { value: 'system', label: 'Theo hệ thống', desc: 'Tự động đồng bộ với máy tính', icon: Monitor },
+              ].map((item) => {
+                const Icon = item.icon;
+                const active = themeMode === item.value;
+                return (
+                  <button
+                    key={item.value}
+                    type="button"
+                    onClick={() => setThemeMode(item.value as ThemeMode)}
+                    className={cn(
+                      'flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-all',
+                      active
+                        ? 'border-primary-600 bg-primary-50/50 ring-2 ring-primary-500/20'
+                        : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/60',
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        'flex h-9 w-9 shrink-0 items-center justify-center rounded-md',
+                        active ? 'bg-primary-600 text-white' : 'bg-slate-100 text-slate-600',
+                      )}
+                    >
+                      <Icon className="h-4 w-4" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-semibold text-slate-900">{item.label}</span>
+                      <span className="block text-xs text-slate-500">{item.desc}</span>
+                    </span>
+                    <span
+                      className={cn(
+                        'flex h-4 w-4 shrink-0 items-center justify-center rounded-full border',
+                        active
+                          ? 'border-primary-600 bg-primary-600 text-white'
+                          : 'border-slate-300 bg-white',
+                      )}
+                    >
+                      {active && <span className="h-1.5 w-1.5 rounded-full bg-white" />}
+                    </span>
+                  </button>
+                );
+              })}
+            </CardContent>
+          </Card>
+
           <Card className="shadow-sm">
             <form onSubmit={handlePwdSubmit(onPasswordSubmit)} noValidate>
               <CardHeader>

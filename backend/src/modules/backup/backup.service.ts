@@ -402,13 +402,10 @@ export class BackupService {
     await prisma.loan.deleteMany({});
     await prisma.member.deleteMany({});
 
-    // 2. Dọn dẹp cấu hình lãi suất, bảng giá đất & danh mục địa bàn
+    // 2. Dọn dẹp cấu hình lãi suất & bảng giá tài sản / đơn giá (theo yêu cầu: làm sạch csdl là làm sạch luôn đơn giá)
     await prisma.interestRateConfig.deleteMany({});
     await prisma.assetPricingRule.deleteMany({});
-    await prisma.hamlet.deleteMany({});
-    await prisma.commune.deleteMany({});
-    await prisma.province.deleteMany({});
-    await prisma.areaGroup.deleteMany({});
+    // LƯU Ý: Bảo toàn danh mục Địa bàn (hamlet, commune, province, areaGroup) - không xóa danh mục nền tảng này
 
     // 3. Dọn dẹp log xuất file Word
     await prisma.wordExportLog.deleteMany({});
@@ -425,8 +422,8 @@ export class BackupService {
       },
     });
 
-    // 5. Xóa sạch Thư viện từ khóa biểu mẫu (GlobalWordKeyword) theo yêu cầu làm sạch
-    await prisma.globalWordKeyword.deleteMany({});
+    // 5. BẢO TOÀN Thư viện từ khóa biểu mẫu (GlobalWordKeyword), Mẫu Word và Tài khoản Admin
+    // Yêu cầu người dùng: "xóa tất cả chỉ chừa tài khoản admin và thư viện keyword và các mẫu word thôi"
 
     // 6. Làm sạch audit logs và ghi lại audit log làm sạch này
     await prisma.auditLog.deleteMany({});
@@ -437,22 +434,31 @@ export class BackupService {
         action: 'DATABASE_CLEAN',
         actor: actorName,
         reason:
-          'Làm sạch CSDL hệ thống (xóa sạch dữ liệu nghiệp vụ và Thư viện từ khóa; chỉ giữ lại tài khoản Admin và Mẫu Word)',
+          'Làm sạch CSDL hệ thống (xóa sạch dữ liệu giao dịch nghiệp vụ và đơn giá; bảo toàn tài khoản Admin, Thư viện từ khóa, Mẫu Word và Địa bàn)',
         metadata: {
           cleanedAt: new Date().toISOString(),
-          preserved: ['admin_user', 'word_templates', 'word_template_mappings'],
+          preserved: [
+            'admin_user',
+            'word_templates',
+            'word_template_mappings',
+            'global_word_keywords',
+            'provinces',
+            'communes',
+            'hamlets',
+            'area_groups',
+          ],
         },
       },
     });
 
     logger.info(
-      'Làm sạch CSDL hoàn tất! Đã xóa sạch dữ liệu nghiệp vụ và toàn bộ từ khóa, giữ lại tài khoản Admin và Mẫu Word.'
+      'Làm sạch CSDL hoàn tất! Đã xóa sạch dữ liệu nghiệp vụ và đơn giá, giữ lại tài khoản Admin, Thư viện từ khóa, Mẫu Word và Danh mục địa bàn.'
     );
 
     return {
       success: true,
       message:
-        'Làm sạch cơ sở dữ liệu thành công! Đã xóa toàn bộ dữ liệu nghiệp vụ và từ khóa, chỉ giữ lại tài khoản Admin và các mẫu biểu Word.',
+        'Làm sạch cơ sở dữ liệu thành công! Đã xóa sạch dữ liệu nghiệp vụ và đơn giá; tài khoản Admin, Thư viện từ khóa Word, Mẫu Word và Địa bàn được bảo toàn an toàn.',
     };
   }
 

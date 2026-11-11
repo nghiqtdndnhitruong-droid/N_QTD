@@ -1,6 +1,8 @@
 import { app } from './app';
 import { env, logger, connectDatabase, disconnectDatabase } from './config';
 import { authService } from './modules/auth/auth.service';
+import { areaService } from './modules/area/area.service';
+import { globalWordKeywordService } from './modules/word-template/global-word-keyword.service';
 
 async function bootstrap() {
   try {
@@ -9,6 +11,10 @@ async function bootstrap() {
 
     // 1.1 Khởi tạo tài khoản Admin an toàn (nếu chưa có)
     await authService.seedDefaultAdmin();
+
+    // 1.2 Tự động khởi tạo Địa bàn mặc định & Thư viện từ khóa chuẩn (nếu DB rỗng)
+    await areaService.ensureDefaultAreas();
+    await globalWordKeywordService.seedDefaultCatalog(false);
 
     // 2. Khởi động Web Server
     const server = app.listen(env.port, () => {

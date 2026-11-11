@@ -23,6 +23,12 @@ export class GlobalWordKeywordService {
    * Lấy danh sách từ khóa toàn cục kèm số lượng mẫu Word đang sử dụng
    */
   public async getCatalog(category?: string, search?: string) {
+    // Tự động hồi phục nạp từ khóa chuẩn nếu cơ sở dữ liệu từ khóa đang rỗng
+    const totalCount = await prisma.globalWordKeyword.count();
+    if (totalCount === 0) {
+      await this.seedDefaultCatalog(false);
+    }
+
     const where: any = {};
     if (category) {
       where.category = category;

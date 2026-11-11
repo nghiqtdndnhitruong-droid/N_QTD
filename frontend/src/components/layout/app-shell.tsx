@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router';
 import {
   ChevronLeft,
@@ -5,16 +6,20 @@ import {
   Landmark,
   LogOut,
   Menu,
+  Moon,
   Plus,
+  Sun,
   User as UserIcon,
 } from 'lucide-react';
 import { BREADCRUMB_NAME_MAP, NAVIGATION_SECTIONS, type NavItem } from '@/app/navigation';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth.store';
 import { useUiStore } from '@/stores/ui.store';
+import { useThemeStore } from '@/stores/theme.store';
 import { queryClient } from '@/lib/query';
 import { usePermission } from '@/features/auth/hooks/use-permission';
 import { logoutApi } from '@/features/auth/api/auth.api';
+import { ThemeToggle } from './theme-toggle';
 import {
   Button,
   Drawer,
@@ -151,6 +156,7 @@ export function AppShell() {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const clearSession = useAuthStore((s) => s.clearSession);
+  const resolvedTheme = useThemeStore((s) => s.resolvedTheme);
   const sidebarCollapsed = useUiStore((s) => s.sidebarCollapsed);
   const toggleSidebar = useUiStore((s) => s.toggleSidebar);
   const mobileNavOpen = useUiStore((s) => s.mobileNavOpen);
@@ -164,13 +170,25 @@ export function AppShell() {
     navigate('/login', { replace: true });
   };
 
+  // Phím tắt chuyển nhanh Dark Mode: Ctrl + Shift + L (hoặc Cmd + Shift + L)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'L' || e.key === 'l')) {
+        e.preventDefault();
+        useThemeStore.getState().toggleTheme();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   return (
-    <div className="flex min-h-screen bg-[#F6F8FB] text-slate-900">
+    <div className="flex min-h-screen bg-canvas text-slate-900">
       {/* Sidebar cố định trên Desktop */}
       <aside
         aria-label="Thanh điều hướng chính"
         className={cn(
-          'hidden flex-col bg-primary-900 text-white transition-[width] duration-200 lg:flex lg:shrink-0',
+          'theme-fixed hidden flex-col bg-primary-900 text-white transition-[width] duration-200 lg:flex lg:shrink-0',
           sidebarCollapsed ? 'lg:w-16' : 'lg:w-60',
         )}
       >
@@ -213,7 +231,7 @@ export function AppShell() {
 
       {/* Drawer điều hướng trên Mobile / Tablet */}
       <Drawer open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
-        <DrawerContent side="left" size="md" className="bg-primary-900 text-white sm:max-w-xs">
+        <DrawerContent side="left" size="md" className="theme-fixed bg-primary-900 text-white sm:max-w-xs">
           <DrawerHeader
             title={<span className="text-white">QUỸ TÍN DỤNG NHÂN DÂN</span>}
             description={<span className="text-slate-300">Điều hướng nghiệp vụ</span>}
@@ -245,6 +263,8 @@ export function AppShell() {
           </div>
 
           <div className="flex items-center gap-2.5">
+            <ThemeToggle />
+
             {can('loan:create') && (
               <Button
                 size="sm"
@@ -285,6 +305,14 @@ export function AppShell() {
                   <DropdownMenuItem onSelect={() => navigate('/profile')}>
                     <UserIcon className="h-4 w-4" />
                     <span>Tài khoản & Đổi mật khẩu</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => useThemeStore.getState().toggleTheme()}>
+                    {resolvedTheme === 'dark' ? (
+                      <Sun className="h-4 w-4 text-amber-500" />
+                    ) : (
+                      <Moon className="h-4 w-4 text-primary-500" />
+                    )}
+                    <span>{resolvedTheme === 'dark' ? 'Chế độ Sáng' : 'Chế độ Tối'}</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem danger onSelect={handleLogout}>
