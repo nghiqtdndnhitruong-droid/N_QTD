@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm, useWatch, type UseFormSetError } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Save } from 'lucide-react';
@@ -92,6 +92,9 @@ export function MemberForm({
   const watchedIdType = useWatch({ control, name: 'idType' });
   const watchedMemberCode = useWatch({ control, name: 'memberCode' });
   const watchedIdExpiry = useWatch({ control, name: 'idExpiry' });
+  const [isNoExpiry, setIsNoExpiry] = useState<boolean>(() => {
+    return initialData ? !initialData.idExpiry : false;
+  });
   const expiryStatus = checkIdExpiryStatus(watchedIdExpiry);
   const isBlankCode = !watchedMemberCode || watchedMemberCode.trim().length === 0;
 
@@ -101,8 +104,12 @@ export function MemberForm({
     if (parsed) {
       setValue('gender', parsed.gender, { shouldValidate: true, shouldDirty: true });
       setValue('yearOfBirth', parsed.yearOfBirth, { shouldValidate: true, shouldDirty: true });
+      // Công dân từ 60 tuổi trở lên được cấp CCCD không thời hạn theo quy định
+      if (!initialData && !watchedIdExpiry && new Date().getFullYear() - parsed.yearOfBirth >= 60) {
+        setIsNoExpiry(true);
+      }
     }
-  }, [watchedIdNumber, setValue]);
+  }, [watchedIdNumber, setValue, initialData, watchedIdExpiry]);
 
   // Tự động điền nơi cấp theo loại giấy tờ (Mục 3.5)
   useEffect(() => {
@@ -225,7 +232,27 @@ export function MemberForm({
           <FormDateField
             control={control}
             name="idExpiry"
-            label="Ngày hết hạn (nếu có)"
+            label="Ngày hết hạn"
+            disabled={isNoExpiry}
+            placeholder={isNoExpiry ? 'Không thời hạn' : 'dd/mm/yyyy'}
+            hint={isNoExpiry ? 'Giấy tờ có giá trị vô thời hạn' : 'Để trống hoặc tích chọn Không thời hạn'}
+            extraRight={
+              <label className="inline-flex items-center gap-1.5 text-xs text-slate-600 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={isNoExpiry}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setIsNoExpiry(checked);
+                    if (checked) {
+                      setValue('idExpiry', '', { shouldDirty: true, shouldValidate: true });
+                    }
+                  }}
+                  className="h-3.5 w-3.5 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+                />
+                <span>Không thời hạn</span>
+              </label>
+            }
           />
           {expiryStatus?.isExpired && (
             <div className="sm:col-span-2 lg:col-span-3">

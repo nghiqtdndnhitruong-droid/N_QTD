@@ -39,6 +39,7 @@ export interface DateInputProps {
   disabled?: boolean;
   readOnly?: boolean;
   wrapperClassName?: string;
+  extraRight?: ReactNode;
 }
 
 /**
@@ -63,6 +64,7 @@ export const DateInput = memo(
       disabled,
       readOnly,
       wrapperClassName,
+      extraRight,
     },
     ref,
   ) {
@@ -83,6 +85,7 @@ export const DateInput = memo(
         required={required}
         hint={hint}
         error={error}
+        extraRight={extraRight}
         className={wrapperClassName}
       >
         {({ inputId, describedBy, hasError }) => (

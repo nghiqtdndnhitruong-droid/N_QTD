@@ -36,7 +36,7 @@ import {
   LOAN_TERM_TYPE_LABELS,
   LOAN_TYPE_LABELS,
 } from '@/shared/constants';
-import { formatInterestRate, formatVND, toApiDate } from '@/shared/format';
+import { formatInterestRate, formatVND } from '@/shared/format';
 import {
   getCanonicalIdIssuePlace,
   isLoanEligibleForRelatedPerson,
@@ -201,7 +201,7 @@ export function LoanCreatePage() {
       termType: LoanTermType.NGAN_HAN,
       loanAmount: 100_000_000,
       contractNumber: '',
-      contractDate: toApiDate(new Date()),
+      contractDate: '',
     },
   });
 
@@ -253,6 +253,9 @@ export function LoanCreatePage() {
 
   const watchedHeirIdNumber = useWatch({ control: heirForm.control, name: 'idNumber' });
   const watchedHeirIdType = useWatch({ control: heirForm.control, name: 'idType' });
+  const [isHeirNoExpiry, setIsHeirNoExpiry] = useState<boolean>(() => {
+    return draftLoan?.heir ? !draftLoan.heir.idExpiry : false;
+  });
 
   // Tự động xác định giới tính & năm sinh từ số CCCD Người thừa kế (Mục 3.1)
   useEffect(() => {
@@ -376,6 +379,7 @@ export function LoanCreatePage() {
       contractDate: draftLoan.contractDate ? draftLoan.contractDate.slice(0, 10) : '',
     });
     if (draftLoan.heir) {
+      setIsHeirNoExpiry(!draftLoan.heir.idExpiry);
       heirForm.reset({
         ...draftLoan.heir,
         idIssueDate: draftLoan.heir.idIssueDate.slice(0, 10),
@@ -1101,7 +1105,26 @@ export function LoanCreatePage() {
                 control={heirForm.control}
                 name="idExpiry"
                 label="Ngày hết hạn"
-                hint="Tùy chọn (để trống nếu không thời hạn)"
+                disabled={isHeirNoExpiry}
+                placeholder={isHeirNoExpiry ? 'Không thời hạn' : 'dd/mm/yyyy'}
+                hint={isHeirNoExpiry ? 'Giấy tờ có giá trị vô thời hạn' : 'Tùy chọn (để trống nếu không thời hạn)'}
+                extraRight={
+                  <label className="inline-flex items-center gap-1.5 text-xs text-slate-600 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={isHeirNoExpiry}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setIsHeirNoExpiry(checked);
+                        if (checked) {
+                          heirForm.setValue('idExpiry', '', { shouldDirty: true, shouldValidate: true });
+                        }
+                      }}
+                      className="h-3.5 w-3.5 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+                    />
+                    <span>Không thời hạn</span>
+                  </label>
+                }
               />
               <FormTextField
                 control={heirForm.control}

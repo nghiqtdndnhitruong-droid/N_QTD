@@ -418,10 +418,17 @@ export class WordTemplateService {
         );
 
       // Render docx
-      const outputBuffer = wordTemplateGeneratorService.generateDocx(
-        templateBuffer,
-        resolvedContext,
-      );
+      let outputBuffer: Buffer;
+      try {
+        outputBuffer = wordTemplateGeneratorService.generateDocx(
+          templateBuffer,
+          resolvedContext,
+        );
+      } catch (renderErr: any) {
+        throw AppError.badRequest(
+          `Lỗi khi xuất biểu mẫu "${template.title}": ${renderErr.message}`,
+        );
+      }
 
       // Tạo tên file xuất dễ nhận biết
       const sanitizedTitle = template.title

@@ -118,6 +118,7 @@ export function RelatedPersonsSection({
 
   const watchedIdNumber = useWatch({ control, name: 'idNumber' });
   const watchedIdType = useWatch({ control, name: 'idType' });
+  const [isNoExpiry, setIsNoExpiry] = useState(false);
 
   // Tự động giải mã giới tính & năm sinh từ số CCCD 12 số (Mục 3.1)
   useEffect(() => {
@@ -165,6 +166,7 @@ export function RelatedPersonsSection({
 
   const openCreate = () => {
     setEditingItem(null);
+    setIsNoExpiry(false);
     reset({
       fullName: '',
       relationship: '',
@@ -190,6 +192,7 @@ export function RelatedPersonsSection({
 
   const openEdit = (item: RelatedPerson) => {
     setEditingItem(item);
+    setIsNoExpiry(!item.idExpiry);
     const existingBorrowerRel = item.borrowerRelationship ?? item.relationship ?? '';
     const existingRelatedRel = item.relatedPersonRelationship ?? '';
 
@@ -509,7 +512,27 @@ export function RelatedPersonsSection({
                   <FormDateField
                     control={control}
                     name="idExpiry"
-                    label="Ngày hết hạn (nếu có)"
+                    label="Ngày hết hạn"
+                    disabled={isNoExpiry}
+                    placeholder={isNoExpiry ? 'Không thời hạn' : 'dd/mm/yyyy'}
+                    hint={isNoExpiry ? 'Giấy tờ có giá trị vô thời hạn' : 'Tùy chọn (để trống nếu không thời hạn)'}
+                    extraRight={
+                      <label className="inline-flex items-center gap-1.5 text-xs text-slate-600 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={isNoExpiry}
+                          onChange={(e) => {
+                            const checked = e.target.checked;
+                            setIsNoExpiry(checked);
+                            if (checked) {
+                              setValue('idExpiry', '', { shouldDirty: true, shouldValidate: true });
+                            }
+                          }}
+                          className="h-3.5 w-3.5 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+                        />
+                        <span>Không thời hạn</span>
+                      </label>
+                    }
                   />
                 </div>
               </div>

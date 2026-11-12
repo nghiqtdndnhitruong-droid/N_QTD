@@ -256,7 +256,7 @@ export function CollateralsSection({
       usagePurpose: 'Đất trồng cây lâu năm',
       usageDuration: 'Lâu dài',
       usageForm: 'Sử dụng riêng',
-      useRestrictions: 'Không',
+      useRestrictions: '',
       issuePlace: 'Sở Tài nguyên và Môi trường',
       issueDate: '',
       provinceId: areaTree[0]?.id ?? '',
@@ -527,7 +527,7 @@ export function CollateralsSection({
                         {item.usageForm || '—'}
                       </div>
                       <div className="text-[11px] text-slate-500">
-                        HC: {item.useRestrictions || 'Không'}
+                        HC: {item.useRestrictions || '—'}
                       </div>
                     </td>
                     <td className="px-3.5 py-3">
@@ -766,7 +766,7 @@ export function CollateralsSection({
                   control={control}
                   name="useRestrictions"
                   label="Hạn chế sử dụng"
-                  placeholder="VD: Không / Không có"
+                  placeholder="Để trống hoặc nhập hạn chế sử dụng (nếu có)"
                 />
                 <FormTextField
                   control={control}

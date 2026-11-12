@@ -66,8 +66,16 @@ export class WordTemplateGeneratorService {
         }),
       });
     } catch (err: any) {
+      const details = err.properties?.errors
+        ? err.properties.errors
+            .map(
+              (e: any) =>
+                `${e.message}: ${e.properties?.explanation || e.properties?.id || ''} (tag: ${e.properties?.xtag || e.properties?.openingtag || ''})`
+            )
+            .join('; ')
+        : err.message;
       throw AppError.internal(
-        `Lỗi khi khởi tạo Docxtemplater: ${err.message}`,
+        `Lỗi khi khởi tạo Docxtemplater: ${details}`,
       );
     }
 

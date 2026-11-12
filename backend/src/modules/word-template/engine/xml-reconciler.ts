@@ -120,7 +120,6 @@ export class WordXmlReconciler {
     // Có tag bị phân cắt: Tiến hành gom text của các tag về run đầu tiên
     let newPXml = pXml;
 
-    // Tìm các cụm <w:r> có chứa tag bị xé lẻ và dồn text vào run đầu tiên
     let currentPos = 0;
     const matchBoundaries: { start: number; end: number; matchIdx: number }[] = [];
     for (let mIdx = 0; mIdx < matches.length; mIdx++) {
@@ -133,56 +132,36 @@ export class WordXmlReconciler {
       }
     }
 
-    // Thực hiện gom từng tag
-    tagRegex.lastIndex = 0;
-    const replacements: { runIndex: number; newText: string }[] = matches.map((m) => ({
-      runIndex: 0,
-      newText: m.text,
-    }));
+    // Đánh dấu các ký tự thuộc về tag để tránh việc cắt lệch chỉ mục khi một đoạn chứa nhiều tag
+    const isCoveredByTag = new Uint8Array(combinedText.length);
+    const tagEmitMap = new Map<number, string>();
 
+    tagRegex.lastIndex = 0;
     while ((tagMatch = tagRegex.exec(combinedText)) !== null) {
       const tagStart = tagMatch.index;
       const tagEnd = tagStart + tagMatch[0].length;
-      const tagContent = tagMatch[0];
+      const normalizedTag = normalizeTemplateBraces(tagMatch[0]);
 
-      // Tìm run bắt đầu và các run tiếp theo chứa tag
-      let firstRunIdx = -1;
-      for (const b of matchBoundaries) {
-        if (tagStart >= b.start && tagStart < b.end) {
-          firstRunIdx = b.matchIdx;
-          break;
+      tagEmitMap.set(tagStart, normalizedTag);
+      for (let k = tagStart; k < tagEnd; k++) {
+        isCoveredByTag[k] = 1;
+      }
+    }
+
+    // Tái tạo nội dung cho từng run dựa trên vị trí chính xác
+    const replacements: { runIndex: number; newText: string }[] = [];
+    for (const b of matchBoundaries) {
+      let newText = '';
+      for (let k = b.start; k < b.end; k++) {
+        if (tagEmitMap.has(k)) {
+          newText += tagEmitMap.get(k)!;
+        } else if (isCoveredByTag[k]) {
+          continue;
+        } else {
+          newText += combinedText[k];
         }
       }
-
-      if (firstRunIdx === -1) continue;
-
-      // Xóa các phần bị cắt ở các run sau và đặt toàn bộ tag đã chuẩn hóa vào run đầu
-      for (const b of matchBoundaries) {
-        if (b.matchIdx < firstRunIdx) continue;
-        const overlapStart = Math.max(tagStart, b.start);
-        const overlapEnd = Math.min(tagEnd, b.end);
-
-        if (overlapStart < overlapEnd) {
-          const runOffsetStart = overlapStart - b.start;
-          const runOffsetEnd = overlapEnd - b.start;
-
-          const repl = replacements[b.matchIdx];
-          if (repl) {
-            if (b.matchIdx === firstRunIdx) {
-              // Thay thế phần đầu bằng toàn bộ tag đã chuẩn hóa
-              const normalizedTag = normalizeTemplateBraces(tagContent);
-              const before = repl.newText.slice(0, runOffsetStart);
-              const after = repl.newText.slice(runOffsetEnd);
-              repl.newText = before + normalizedTag + after;
-            } else {
-              // Xóa phần thừa ở run sau
-              const before = repl.newText.slice(0, runOffsetStart);
-              const after = repl.newText.slice(runOffsetEnd);
-              repl.newText = before + after;
-            }
-          }
-        }
-      }
+      replacements.push({ runIndex: b.matchIdx, newText });
     }
 
     // Thay thế lại vào pXml

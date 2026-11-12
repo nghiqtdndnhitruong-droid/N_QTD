@@ -54,6 +54,8 @@ import { RepaymentsSection } from '../components/repayments-section';
 import { TemplateExportDialog } from '@/features/word-templates/components/template-export-dialog';
 import { CollateralOwnerType } from '../types/loan.types';
 import { LoanContractModal } from '../components/loan-contract-modal';
+import { LoanPlanModal } from '../components/loan-plan-modal';
+import { LoanHeirModal } from '../components/loan-heir-modal';
 import {
   useDeleteLoan,
   useLoanDetail,
@@ -71,6 +73,8 @@ export function LoanDetailPage() {
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [contractModalOpen, setContractModalOpen] = useState(false);
+  const [planModalOpen, setPlanModalOpen] = useState(false);
+  const [heirModalOpen, setHeirModalOpen] = useState(false);
 
   const { data: loan, isLoading, error, refetch } = useLoanDetail(id);
   const { data: valuations = [] } = useLoanValuations(id);
@@ -478,8 +482,23 @@ export function LoanDetailPage() {
                 )}
 
                 <div className="border-t border-slate-100 pt-3">
-                  <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
-                    Người thừa kế / Đồng trách nhiệm
+                  <div className="mb-2 flex items-center justify-between">
+                    <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                      Người thừa kế / Đồng trách nhiệm
+                    </div>
+                    {loan.heir && (
+                      <Can perm="loan:update">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          leftIcon={<FilePenLine className="h-3.5 w-3.5" />}
+                          onClick={() => setHeirModalOpen(true)}
+                        >
+                          Cập nhật người thừa kế
+                        </Button>
+                      </Can>
+                    )}
                   </div>
                   {loan.heir ? (
                     <DescriptionList columns={2}>
@@ -513,13 +532,26 @@ export function LoanDetailPage() {
 
           {/* Phương án sử dụng vốn vay */}
           <Card>
-            <CardHeader>
-              <CardTitle>Phương án sử dụng vốn vay</CardTitle>
-              {loan.loanPlan?.profit !== undefined && (
-                <Badge tone={loan.loanPlan.profit >= 0 ? 'success' : 'danger'}>
-                  Lợi nhuận dự kiến: {formatVND(loan.loanPlan.profit)}
-                </Badge>
-              )}
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div className="flex items-center gap-3">
+                <CardTitle>Phương án sử dụng vốn vay</CardTitle>
+                {loan.loanPlan?.profit !== undefined && (
+                  <Badge tone={loan.loanPlan.profit >= 0 ? 'success' : 'danger'}>
+                    Lợi nhuận dự kiến: {formatVND(loan.loanPlan.profit)}
+                  </Badge>
+                )}
+              </div>
+              <Can perm="loan:update">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  leftIcon={<FilePenLine className="h-3.5 w-3.5" />}
+                  onClick={() => setPlanModalOpen(true)}
+                >
+                  Cập nhật phương án
+                </Button>
+              </Can>
             </CardHeader>
             <CardContent>
               {!loan.loanPlan ? (
@@ -723,6 +755,20 @@ export function LoanDetailPage() {
       <LoanContractModal
         open={contractModalOpen}
         onOpenChange={setContractModalOpen}
+        loan={loan}
+        onSuccess={() => void refetch()}
+      />
+
+      <LoanPlanModal
+        open={planModalOpen}
+        onOpenChange={setPlanModalOpen}
+        loan={loan}
+        onSuccess={() => void refetch()}
+      />
+
+      <LoanHeirModal
+        open={heirModalOpen}
+        onOpenChange={setHeirModalOpen}
         loan={loan}
         onSuccess={() => void refetch()}
       />

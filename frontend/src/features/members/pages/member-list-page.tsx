@@ -126,18 +126,31 @@ export function MemberListPage() {
                 {ID_DOCUMENT_TYPE_LABELS[row.original.idType]} · Cấp:{' '}
                 {formatDateVN(row.original.idIssueDate)}
               </div>
-              {expiryStatus?.isExpired && (
-                <div className="mt-1">
-                  <span className="inline-flex items-center gap-1 rounded bg-rose-50 px-1.5 py-0.5 text-[10px] font-semibold text-rose-700 border border-rose-200">
-                    ⚠️ Hết hạn: {formatDateVN(row.original.idExpiry)}
-                  </span>
-                </div>
-              )}
-              {expiryStatus?.isExpiringSoon && (
-                <div className="mt-1">
-                  <span className="inline-flex items-center gap-1 rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 border border-amber-200">
-                    ⚠️ Sắp hết hạn (&lt; 6th): {formatDateVN(row.original.idExpiry)}
-                  </span>
+              {row.original.idExpiry ? (
+                <>
+                  {expiryStatus?.isExpired && (
+                    <div className="mt-1">
+                      <span className="inline-flex items-center gap-1 rounded bg-rose-50 px-1.5 py-0.5 text-[10px] font-semibold text-rose-700 border border-rose-200">
+                        ⚠️ Hết hạn: {formatDateVN(row.original.idExpiry)}
+                      </span>
+                    </div>
+                  )}
+                  {expiryStatus?.isExpiringSoon && (
+                    <div className="mt-1">
+                      <span className="inline-flex items-center gap-1 rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 border border-amber-200">
+                        ⚠️ Sắp hết hạn (&lt; 6th): {formatDateVN(row.original.idExpiry)}
+                      </span>
+                    </div>
+                  )}
+                  {!expiryStatus?.isExpired && !expiryStatus?.isExpiringSoon && (
+                    <div className="mt-0.5 text-[10px] text-slate-500">
+                      Hạn: {formatDateVN(row.original.idExpiry)}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="mt-0.5 text-[10px] text-slate-500">
+                  Hạn: <span className="font-medium text-slate-600">Không thời hạn</span>
                 </div>
               )}
             </div>
