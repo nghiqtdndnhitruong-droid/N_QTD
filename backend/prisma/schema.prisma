@@ -286,6 +286,7 @@ model Loan {
   loanAmount       Float            // Số tiền vay
   interestRate     Float            // Lãi suất năm (%) - khóa tại thời điểm tạo
   loanStartDate    DateTime?        @default(now()) // Ngày khởi tạo khoản vay
+  applicationDate  DateTime?        @default(now()) // Ngày làm hồ sơ / Ngày lập hồ sơ vay
 
   // Khế ước
   contractNumber   String?          // Số khế ước (duy nhất theo partial index & service)

@@ -54,6 +54,7 @@ export interface CreateLoanDto {
   loanType: LoanType;
   termType: LoanTermType;
   loanAmount: number;
+  applicationDate?: string | Date | null; // Ngày làm hồ sơ / Ngày lập hồ sơ vay
   loanStartDate?: string | Date; // Ngày khởi tạo khoản vay (tự lấy ngày hiện tại)
   contractNumber?: string | null;
   contractDate?: string | Date | null;

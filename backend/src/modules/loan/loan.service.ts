@@ -723,12 +723,8 @@ export class LoanService {
     );
 
     try {
-      const updated = await this.repo.update(id, dto, effectiveLoanAmount, timeline);
-      (updated as any).warnings = this.checkLoanWarnings({
-        ...updated,
-        member: existing.member,
-      });
-      return updated;
+      await this.repo.update(id, dto, effectiveLoanAmount, timeline);
+      return (await this.getById(id, currentUser))!;
     } catch (err) {
       if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
         const target = (err.meta as any)?.target;
@@ -819,10 +815,12 @@ export class LoanService {
           ErrorCode.LOAN_CANNOT_SETTLE
         );
       }
-      return this.repo.updateStatus(id, newStatus, new Date());
+      await this.repo.updateStatus(id, newStatus, new Date());
+      return (await this.getById(id, currentUser))!;
     }
 
-    return this.repo.updateStatus(id, newStatus);
+    await this.repo.updateStatus(id, newStatus);
+    return (await this.getById(id, currentUser))!;
   }
 
   async delete(id: string, reason?: string, currentUser?: AuthUserResponse): Promise<DeleteLoanResult> {

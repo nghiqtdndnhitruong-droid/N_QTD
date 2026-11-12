@@ -236,6 +236,7 @@ export class LoanRepository {
         termMonths,
         loanAmount: data.loanAmount,
         interestRate,
+        applicationDate: data.applicationDate ? new Date(data.applicationDate) : new Date(),
         loanStartDate: data.loanStartDate ? new Date(data.loanStartDate) : new Date(),
         contractNumber: normalizedContractNumber,
         contractDate: data.contractDate ? new Date(data.contractDate) : null,
@@ -342,6 +343,9 @@ export class LoanRepository {
         data.termType === LoanTermType.NGAN_HAN
           ? LOAN_CONSTANTS.SHORT_TERM_MONTHS
           : LOAN_CONSTANTS.MEDIUM_TERM_MONTHS;
+    }
+    if (data.applicationDate !== undefined) {
+      updateData.applicationDate = data.applicationDate ? new Date(data.applicationDate) : null;
     }
     if (data.loanStartDate !== undefined) {
       updateData.loanStartDate = data.loanStartDate ? new Date(data.loanStartDate) : new Date();

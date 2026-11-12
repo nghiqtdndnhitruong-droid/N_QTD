@@ -205,6 +205,7 @@ export interface Loan {
   termMonths: number;
   loanAmount: number;
   interestRate: number;
+  applicationDate?: string | null;
   loanStartDate: string | null;
   contractNumber: string | null;
   contractDate: string | null;
@@ -312,6 +313,7 @@ export interface CreateLoanPayload {
   loanType: LoanType;
   termType: LoanTermType;
   loanAmount: number;
+  applicationDate?: string | null;
   loanStartDate?: string;
   contractNumber?: string;
   contractDate?: string;

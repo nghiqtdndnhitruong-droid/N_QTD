@@ -129,6 +129,12 @@ export class WordTemplateDataDictionaryService {
           { path: 'loan.contractDateDay', label: 'Ngày cấp khế ước (chỉ số ngày)', dataType: 'TEXT', sampleValue: '20' },
           { path: 'loan.contractDateMonth', label: 'Tháng cấp khế ước (chỉ số tháng)', dataType: 'TEXT', sampleValue: '05' },
           { path: 'loan.contractDateYear', label: 'Năm cấp khế ước (chỉ số năm)', dataType: 'TEXT', sampleValue: '2026' },
+          { path: 'loan.applicationDate', label: 'Ngày làm hồ sơ vay (dd/mm/yyyy)', dataType: 'DATE', sampleValue: '20/05/2026' },
+          { path: 'NGAY', label: 'Ngày làm hồ sơ (chỉ số ngày)', dataType: 'TEXT', sampleValue: '20' },
+          { path: 'THANG', label: 'Tháng làm hồ sơ (chỉ số tháng)', dataType: 'TEXT', sampleValue: '05' },
+          { path: 'NAM', label: 'Năm làm hồ sơ (chỉ số năm)', dataType: 'TEXT', sampleValue: '2026' },
+          { path: 'NGAY_LAM_HO_SO', label: 'Ngày làm hồ sơ (dd/mm/yyyy)', dataType: 'DATE', sampleValue: '20/05/2026' },
+          { path: 'NGAY_LAP_HO_SO', label: 'Ngày lập hồ sơ (dd/mm/yyyy)', dataType: 'DATE', sampleValue: '20/05/2026' },
           { path: 'loan.loanType', label: 'Hình thức vay (Thế chấp / Tín chấp)', dataType: 'TEXT', sampleValue: 'Cho vay thế chấp' },
           { path: 'loan.termType', label: 'Loại thời hạn (Ngắn hạn / Trung hạn)', dataType: 'TEXT', sampleValue: 'Ngắn hạn' },
           { path: 'loan.termMonths', label: 'Thời hạn vay (tháng)', dataType: 'NUMBER', sampleValue: 12 },
@@ -1304,7 +1310,7 @@ export class WordTemplateDataDictionaryService {
       so_dien_thoai: (firstOwner as any).phoneNumber || '',
     };
 
-    const secondOwner = uniqueOwnersList[1] || extendedOwnersList[1] || null;
+    const secondOwner = uniqueOwnersList[1] || null;
     const hasSecondOwner = Boolean(secondOwner && secondOwner.fullName && secondOwner.fullName.trim() !== '');
     const secondOwnerUpper = (secondOwner?.fullName || '').toUpperCase();
     const secondOwnerObj = secondOwner
@@ -2305,6 +2311,14 @@ export class WordTemplateDataDictionaryService {
     const mergedHouseholdMemberDetails = mergeAssetValues(householdMembersList, (m) => m.THONG_TIN_CHI_TIET);
 
     const contractDate = loan.contractDate ? dayjs(loan.contractDate) : now;
+    const appDate = loan.applicationDate && dayjs(loan.applicationDate).isValid()
+      ? dayjs(loan.applicationDate)
+      : (loan.createdAt && dayjs(loan.createdAt).isValid() ? dayjs(loan.createdAt) : now);
+    const appDay = appDate.format('DD');
+    const appMonth = appDate.format('MM');
+    const appYear = appDate.format('YYYY');
+    const appDateFormatted = appDate.format('DD/MM/YYYY');
+    const appFullDate = `ngày ${appDay} tháng ${appMonth} năm ${appYear}`;
     const loanAmount = Number(loan.loanAmount) || 0;
 
     // Trích xuất Năm, Tháng, Ngày của Số khế ước nhận nợ (định dạng YY.MM.XXX hoặc từ ngày lập khế ước)
@@ -2601,6 +2615,15 @@ export class WordTemplateDataDictionaryService {
         contractDateDay: contractDate.format('DD'),
         contractDateMonth: contractDate.format('MM'),
         contractDateYear: contractDate.format('YYYY'),
+        applicationDate: appDateFormatted,
+        applicationDateDay: appDay,
+        applicationDateMonth: appMonth,
+        applicationDateYear: appYear,
+        NGAY_LAM_HO_SO: appDateFormatted,
+        NGAY_LAP_HO_SO: appDateFormatted,
+        NGAY: appDay,
+        THANG: appMonth,
+        NAM: appYear,
         loanType: loan.loanType === 'THE_CHAP' ? 'Cho vay thế chấp' : 'Cho vay tín chấp',
         termType: loan.termType === 'TRUNG_HAN' ? 'Trung hạn' : 'Ngắn hạn',
         termMonths: loan.termMonths || 12,
@@ -3056,9 +3079,16 @@ export class WordTemplateDataDictionaryService {
       'NGUOI_VAY.MA_THANH_VIEN': nested.member.memberCode,
       LOAI_GIAY_TO: nested.member.idType,
       LOAI_GIAY_TO_NGUOI_VAY: nested.member.idType,
-      NGAY: nested.fund.currentDay,
-      THANG: nested.fund.currentMonth,
-      NAM: nested.fund.currentYear,
+      NGAY: appDay,
+      THANG: appMonth,
+      NAM: appYear,
+      NGAY_LAM_HO_SO: appDateFormatted,
+      NGAY_LAP_HO_SO: appDateFormatted,
+      NGAY_LAM_HO_SO_NGAY: appDay,
+      NGAY_LAM_HO_SO_THANG: appMonth,
+      NGAY_LAM_HO_SO_NAM: appYear,
+      NGAY_LAM_HO_SO_DAY_DU: appFullDate,
+      NGAY_LAP_HO_SO_DAY_DU: appFullDate,
 
       HO_TEN: nested.member.fullName,
       MA_THANH_VIEN: nested.member.memberCode,
@@ -3152,6 +3182,13 @@ export class WordTemplateDataDictionaryService {
       NGAY_HIEN_TAI: nested.fund.currentDay,
       THANG_HIEN_TAI: nested.fund.currentMonth,
       NAM_HIEN_TAI: nested.fund.currentYear,
+      NGAY_LAM_HO_SO: appDateFormatted,
+      NGAY_LAP_HO_SO: appDateFormatted,
+      'KHOAN_VAY.NGAY_LAM_HO_SO': appDateFormatted,
+      'KHOAN_VAY.NGAY_LAP_HO_SO': appDateFormatted,
+      'KHOAN_VAY.NGAY': appDay,
+      'KHOAN_VAY.THANG': appMonth,
+      'KHOAN_VAY.NAM': appYear,
       // Cờ điều kiện
       CO_MA_THANH_VIEN: Boolean(nested.member.memberCode),
       hasMemberCode: Boolean(nested.member.memberCode),
@@ -3812,9 +3849,14 @@ export class WordTemplateDataDictionaryService {
     // Tạo alias cho đối tượng hoa (NGUOI_VAY, KHOAN_VAY, QUY_TIN_DUNG...)
     const fullNested: Record<string, any> = {
       ...nested,
-      NGAY: nested.fund.currentDay,
-      THANG: nested.fund.currentMonth,
-      NAM: nested.fund.currentYear,
+      NGAY: appDay,
+      THANG: appMonth,
+      NAM: appYear,
+      NGAY_LAM_HO_SO: appDateFormatted,
+      NGAY_LAP_HO_SO: appDateFormatted,
+      NGAY_HIEN_TAI: nested.fund.currentDay,
+      THANG_HIEN_TAI: nested.fund.currentMonth,
+      NAM_HIEN_TAI: nested.fund.currentYear,
       NGUOI_VAY: {
         HO_TEN: nested.member.fullName,
         LOAI_GIAY_TO: nested.member.idType,
@@ -3833,6 +3875,18 @@ export class WordTemplateDataDictionaryService {
         MA_THANH_VIEN: nested.member.memberCode,
       },
       KHOAN_VAY: {
+        NGAY: appDay,
+        THANG: appMonth,
+        NAM: appYear,
+        NGAY_LAM_HO_SO: appDateFormatted,
+        NGAY_LAP_HO_SO: appDateFormatted,
+        NGAY_LAM_HO_SO_NGAY: appDay,
+        NGAY_LAM_HO_SO_THANG: appMonth,
+        NGAY_LAM_HO_SO_NAM: appYear,
+        applicationDate: appDateFormatted,
+        applicationDateDay: appDay,
+        applicationDateMonth: appMonth,
+        applicationDateYear: appYear,
         SO_HOP_DONG: nested.loan.contractNumber,
         NGAY_HOP_DONG: nested.loan.contractDate,
         NGAY_HOP_DONG_NGAY: nested.loan.contractDateDay,

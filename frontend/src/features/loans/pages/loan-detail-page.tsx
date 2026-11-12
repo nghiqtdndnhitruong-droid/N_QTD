@@ -5,7 +5,9 @@ import {
   CheckCircle2,
   FilePenLine,
   FileText,
+  Plus,
   Trash2,
+  UserPlus,
 } from 'lucide-react';
 import { LoanStatus, LoanType } from '@/shared/types';
 import {
@@ -75,6 +77,16 @@ export function LoanDetailPage() {
   const [contractModalOpen, setContractModalOpen] = useState(false);
   const [planModalOpen, setPlanModalOpen] = useState(false);
   const [heirModalOpen, setHeirModalOpen] = useState(false);
+  const [relatedPersonCreateSignal, setRelatedPersonCreateSignal] = useState(0);
+
+  const handleAddRelatedPerson = () => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set('tab', 'related-persons');
+      return next;
+    });
+    setRelatedPersonCreateSignal((prev) => prev + 1);
+  };
 
   const { data: loan, isLoading, error, refetch } = useLoanDetail(id);
   const { data: valuations = [] } = useLoanValuations(id);
@@ -197,6 +209,19 @@ export function LoanDetailPage() {
               Xuất biểu mẫu Word
             </Button>
 
+            {isRelatedPersonEligible && loan.status !== LoanStatus.DA_TAT_TOAN && (
+              <Can perm="loan:update">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  leftIcon={<UserPlus className="h-4 w-4" />}
+                  onClick={handleAddRelatedPerson}
+                >
+                  Thêm người liên quan
+                </Button>
+              </Can>
+            )}
+
             <Can perm="loan:delete">
               <Button
                 variant="outline"
@@ -262,6 +287,18 @@ export function LoanDetailPage() {
         <Alert
           tone="warning"
           title="Hồ sơ chưa bổ sung thông tin người liên quan"
+          actions={
+            loan.status !== LoanStatus.DA_TAT_TOAN ? (
+              <Button
+                size="sm"
+                variant="secondary"
+                leftIcon={<Plus className="h-3.5 w-3.5" />}
+                onClick={handleAddRelatedPerson}
+              >
+                Thêm người liên quan
+              </Button>
+            ) : undefined
+          }
         >
           Khoản vay thế chấp từ 140.000.000 ₫ trở lên thuộc diện áp dụng khai báo Người liên quan.
           Bạn có thể bổ sung thông tin bất kỳ lúc nào tại tab <strong>&ldquo;Người liên quan&rdquo;</strong>.
@@ -333,6 +370,19 @@ export function LoanDetailPage() {
               </CardHeader>
               <CardContent>
                 <DescriptionList columns={2}>
+                  <DescriptionItem
+                    label="Ngày làm hồ sơ"
+                    value={
+                      loan.applicationDate ? (
+                        <span>{formatDateVN(loan.applicationDate)}</span>
+                      ) : loan.createdAt ? (
+                        <span>{formatDateVN(loan.createdAt)}</span>
+                      ) : (
+                        <span className="text-slate-400 italic">—</span>
+                      )
+                    }
+                    mono
+                  />
                   <DescriptionItem
                     label="Số khế ước nhận nợ"
                     value={
@@ -704,8 +754,9 @@ export function LoanDetailPage() {
               loanId={loan.id}
               loanType={loan.loanType}
               loanAmount={loan.loanAmount}
-              readOnly={!isEditable}
+              readOnly={loan.status === LoanStatus.DA_TAT_TOAN}
               borrowerAddress={loan.member?.address}
+              openCreateSignal={relatedPersonCreateSignal}
             />
           </TabsContent>
         )}

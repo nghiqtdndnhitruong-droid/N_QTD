@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { FilePenLine, Info } from 'lucide-react';
+import { DateInput } from '@/components/form';
 import {
   Button,
   Dialog,
@@ -30,6 +31,7 @@ export function LoanContractModal({
 }: LoanContractModalProps) {
   const [contractNumber, setContractNumber] = useState('');
   const [contractDate, setContractDate] = useState('');
+  const [applicationDate, setApplicationDate] = useState('');
   const [committeeAuthDate, setCommitteeAuthDate] = useState('');
 
   const updateMutation = useUpdateLoan(loan.id);
@@ -38,6 +40,13 @@ export function LoanContractModal({
     if (open) {
       setContractNumber(loan.contractNumber || '');
       setContractDate(loan.contractDate ? loan.contractDate.slice(0, 10) : '');
+      setApplicationDate(
+        loan.applicationDate
+          ? loan.applicationDate.slice(0, 10)
+          : loan.createdAt
+            ? loan.createdAt.slice(0, 10)
+            : '',
+      );
       setCommitteeAuthDate(
         loan.mortgageContract?.committeeAuthDate
           ? loan.mortgageContract.committeeAuthDate.slice(0, 10)
@@ -50,6 +59,7 @@ export function LoanContractModal({
     e.preventDefault();
     try {
       const payload: any = {
+        applicationDate: applicationDate ? applicationDate : null,
         contractNumber: contractNumber.trim() ? contractNumber.trim() : null,
         contractDate: contractDate ? contractDate : null,
       };
@@ -63,7 +73,7 @@ export function LoanContractModal({
       await updateMutation.mutateAsync(payload);
       notifySuccess(
         'Đã cập nhật thông tin thành công!',
-        'Số khế ước, ngày lập khế ước và ngày chứng thực ủy ban đã được đồng bộ.',
+        'Ngày làm hồ sơ, số khế ước, ngày lập khế ước và ngày chứng thực ủy ban đã được đồng bộ.',
       );
       onOpenChange(false);
       onSuccess?.();
@@ -96,6 +106,15 @@ export function LoanContractModal({
               </span>
             </div>
 
+            <DateInput
+              id="modal-application-date"
+              label="Ngày làm hồ sơ vay"
+              value={applicationDate}
+              onValueChange={setApplicationDate}
+              placeholder="dd/mm/yyyy"
+              hint="Ngày làm hồ sơ vay vốn (được sử dụng cho các biến ngày/tháng/năm trên các biểu mẫu Word: {{NGAY}}, {{THANG}}, {{NAM}})."
+            />
+
             <div className="space-y-1.5">
               <label htmlFor="modal-contract-number" className="block text-xs font-semibold text-slate-700">
                 Số khế ước nhận nợ
@@ -113,38 +132,25 @@ export function LoanContractModal({
               </p>
             </div>
 
-            <div className="space-y-1.5">
-              <label htmlFor="modal-contract-date" className="block text-xs font-semibold text-slate-700">
-                Ngày lập khế ước
-              </label>
-              <input
-                id="modal-contract-date"
-                type="date"
-                value={contractDate}
-                onChange={(e) => setContractDate(e.target.value)}
-                className="h-9 w-full rounded-md border border-slate-300 px-3 text-xs focus:border-primary-600 focus:outline-none"
-              />
-              <p className="text-[11px] text-slate-500">
-                Ngày phát hành/ký khế ước nhận nợ giữa thành viên vay và Quỹ tín dụng.
-              </p>
-            </div>
+            <DateInput
+              id="modal-contract-date"
+              label="Ngày lập khế ước"
+              value={contractDate}
+              onValueChange={setContractDate}
+              placeholder="dd/mm/yyyy"
+              hint="Ngày phát hành/ký khế ước nhận nợ giữa thành viên vay và Quỹ tín dụng."
+            />
 
             {loan.loanType === LoanType.THE_CHAP && (
-              <div className="space-y-1.5 border-t border-slate-100 pt-3">
-                <label htmlFor="modal-committee-date" className="block text-xs font-semibold text-slate-700">
-                  Ngày chứng thực Ủy ban nhân dân
-                </label>
-                <input
-                  id="modal-committee-date"
-                  type="date"
-                  value={committeeAuthDate}
-                  onChange={(e) => setCommitteeAuthDate(e.target.value)}
-                  className="h-9 w-full rounded-md border border-slate-300 px-3 text-xs focus:border-primary-600 focus:outline-none"
-                />
-                <p className="text-[11px] text-slate-500">
-                  Ngày UBND cấp xã/phường chứng thực hợp đồng thế chấp tài sản.
-                </p>
-              </div>
+              <DateInput
+                id="modal-committee-date"
+                label="Ngày chứng thực Ủy ban nhân dân"
+                value={committeeAuthDate}
+                onValueChange={setCommitteeAuthDate}
+                placeholder="dd/mm/yyyy"
+                hint="Ngày UBND cấp xã/phường chứng thực hợp đồng thế chấp tài sản."
+                wrapperClassName="border-t border-slate-100 pt-3"
+              />
             )}
           </DialogBody>
 

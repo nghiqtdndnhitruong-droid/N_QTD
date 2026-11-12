@@ -105,7 +105,13 @@ export const DateInput = memo(
               aria-invalid={hasError || undefined}
               aria-describedby={describedBy}
               onChange={(e) => {
-                const masked = maskDateInput(e.target.value);
+                const nextVal = e.target.value;
+                const isDeleting = nextVal.length < text.length;
+                let adjustedVal = nextVal;
+                if (isDeleting && text.endsWith('/') && nextVal === text.slice(0, -1)) {
+                  adjustedVal = nextVal.slice(0, -1);
+                }
+                const masked = maskDateInput(adjustedVal, isDeleting);
                 setText(masked);
                 if (masked === '') {
                   onValueChange('');

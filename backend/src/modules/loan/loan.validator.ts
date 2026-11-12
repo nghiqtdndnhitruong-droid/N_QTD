@@ -91,6 +91,7 @@ export const createLoanSchema = z.object({
   loanAmount: z
     .number({ required_error: 'Số tiền vay là bắt buộc' })
     .positive('Số tiền vay phải lớn hơn 0'),
+  applicationDate: dateStringSchema.nullable().optional(),
   loanStartDate: dateStringSchema.optional(),
   contractNumber: z.string().trim().nullable().optional(),
   contractDate: dateStringSchema.nullable().optional(),

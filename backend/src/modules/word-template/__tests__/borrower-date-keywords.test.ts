@@ -108,5 +108,21 @@ describe('Word Template Keywords: NGUOI_VAY.LOAI_GIAY_TO, NGAY, THANG, NAM', () 
     expect(outXml).toContain('Loại giấy tờ: Căn cước công dân');
     expect(outXml).toContain(`Hôm nay ngày ${now.format('DD')} tháng ${now.format('MM')} năm ${now.format('YYYY')}`);
   });
+
+  it('4. NGAY, THANG, NAM lấy từ applicationDate (ngày làm hồ sơ) khi có chỉ định', () => {
+    const loanWithAppDate = {
+      ...mockLoan,
+      applicationDate: new Date('2025-04-18'),
+    };
+    const { resolvedContext } = wordTemplateDataDictionaryService.resolveLoanData(loanWithAppDate, []);
+    expect(resolvedContext['NGAY']).toBe('18');
+    expect(resolvedContext['THANG']).toBe('04');
+    expect(resolvedContext['NAM']).toBe('2025');
+    expect(resolvedContext['NGAY_LAM_HO_SO']).toBe('18/04/2025');
+    expect(resolvedContext['KHOAN_VAY']?.NGAY).toBe('18');
+    expect(resolvedContext['KHOAN_VAY']?.THANG).toBe('04');
+    expect(resolvedContext['KHOAN_VAY']?.NAM).toBe('2025');
+    expect(resolvedContext['loan']?.applicationDate).toBe('18/04/2025');
+  });
 });
 

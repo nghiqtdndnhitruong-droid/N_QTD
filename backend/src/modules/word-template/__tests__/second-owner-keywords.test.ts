@@ -192,5 +192,43 @@ describe('Second Owner Keywords (CHU_SO_HUU_2 / CHU_SO_HUU_THU_HAI)', () => {
     expect(items[0].CHU_SO_HUU_THU_HAI).toBe('Nguyễn Thị Đồng Sở Hữu');
     expect(items[0].CO_CHU_SO_HUU_2).toBe(true);
   });
+
+  it('Trường hợp 5: Khoản vay có 2 tài sản nhưng CẢ 2 TÀI SẢN ĐỀU DO NGƯỜI VAY ĐỨNG TÊN (dù hồ sơ có người thừa kế) -> CO_CHU_SO_HUU_2 phải là false', () => {
+    const loan = {
+      member,
+      heir, // Có người thừa kế trong hồ sơ
+      collaterals: [
+        {
+          ownerType: 'NGUOI_VAY_CA_NHAN',
+          assetCode: 'TS-01',
+          certificateNumber: 'CS11111',
+          sheetNumber: '1',
+          plotNumber: '10',
+          area: 500,
+          address: 'Ấp Nô Lựa, Xã Nhị Trường',
+        },
+        {
+          ownerType: 'NGUOI_VAY_CA_NHAN',
+          assetCode: 'TS-02',
+          certificateNumber: 'CS22222',
+          sheetNumber: '2',
+          plotNumber: '20',
+          area: 600,
+          address: 'Ấp Nô Lựa, Xã Nhị Trường',
+        },
+      ],
+    };
+
+    const { resolvedContext } = wordTemplateDataDictionaryService.resolveLoanData(loan, []);
+
+    // Cả 2 tài sản đều của Người Vay đứng tên -> không có chủ sở hữu thứ 2 đứng tên tài sản
+    expect(resolvedContext['CHU_SO_HUU_1.HO_TEN']).toBe('Lê Văn Người Vay');
+    expect(resolvedContext['CHU_SO_HUU_2.HO_TEN']).toBe('');
+    expect(resolvedContext['CHU_SO_HUU_2']).toBe('');
+    expect(resolvedContext['CHU_SO_HUU_THU_HAI']).toBe('');
+    expect(resolvedContext.CO_CHU_SO_HUU_2).toBe(false);
+    expect(resolvedContext.CO_CHU_SO_HUU_THU_HAI).toBe(false);
+    expect(resolvedContext['CHU_SO_HUU.CO_CHU_SO_HUU_2']).toBe(false);
+  });
 });
 

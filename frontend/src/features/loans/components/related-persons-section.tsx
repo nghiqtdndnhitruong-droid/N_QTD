@@ -64,6 +64,7 @@ export interface RelatedPersonsSectionProps {
   loanAmount: number;
   readOnly?: boolean;
   borrowerAddress?: string;
+  openCreateSignal?: number;
 }
 
 export function RelatedPersonsSection({
@@ -72,6 +73,7 @@ export function RelatedPersonsSection({
   loanAmount,
   readOnly = false,
   borrowerAddress = '',
+  openCreateSignal,
 }: RelatedPersonsSectionProps) {
   const isEligible = isLoanEligibleForRelatedPerson(loanType, loanAmount);
 
@@ -189,6 +191,12 @@ export function RelatedPersonsSection({
     });
     setDrawerOpen(true);
   };
+
+  useEffect(() => {
+    if (openCreateSignal && openCreateSignal > 0 && !readOnly) {
+      openCreate();
+    }
+  }, [openCreateSignal]);
 
   const openEdit = (item: RelatedPerson) => {
     setEditingItem(item);

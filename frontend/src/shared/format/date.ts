@@ -44,11 +44,36 @@ export function parseDateVN(input: string): string | null {
   return toApiDate(date);
 }
 
-/** Tự chèn dấu "/" khi người dùng gõ: "15022026" -> "15/02/2026" */
-export function maskDateInput(input: string): string {
+/**
+ * Tự chèn dấu "/" khi người dùng gõ:
+ * - Gõ 2 số ngày (VD: "15") -> tự thêm "/" thành "15/"
+ * - Gõ tiếp 2 số tháng (VD: "15/02") -> tự thêm "/" thành "15/02/"
+ * - Gõ năm (VD: "15022026") -> "15/02/2026"
+ */
+export function maskDateInput(input: string, isDeleting = false): string {
+  if (!input) return '';
   const digits = input.replace(/\D/g, '').slice(0, 8);
-  if (digits.length <= 2) return digits;
-  if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+  if (digits.length === 0) return '';
+  if (digits.length === 1) {
+    if (input.endsWith('/') && !isDeleting) {
+      return `0${digits}/`;
+    }
+    return digits;
+  }
+  if (digits.length === 2) {
+    return isDeleting ? digits : `${digits}/`;
+  }
+  if (digits.length === 3) {
+    if (input.endsWith('/') && !isDeleting) {
+      return `${digits.slice(0, 2)}/0${digits.slice(2)}/`;
+    }
+    return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+  }
+  if (digits.length === 4) {
+    return isDeleting
+      ? `${digits.slice(0, 2)}/${digits.slice(2)}`
+      : `${digits.slice(0, 2)}/${digits.slice(2)}/`;
+  }
   return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
 }
 

@@ -202,6 +202,7 @@ export function LoanCreatePage() {
       loanAmount: 100_000_000,
       contractNumber: '',
       contractDate: '',
+      applicationDate: new Date().toISOString().slice(0, 10),
     },
   });
 
@@ -377,6 +378,11 @@ export function LoanCreatePage() {
       loanAmount: draftLoan.loanAmount,
       contractNumber: draftLoan.contractNumber ?? '',
       contractDate: draftLoan.contractDate ? draftLoan.contractDate.slice(0, 10) : '',
+      applicationDate: draftLoan.applicationDate
+        ? draftLoan.applicationDate.slice(0, 10)
+        : draftLoan.createdAt
+          ? draftLoan.createdAt.slice(0, 10)
+          : new Date().toISOString().slice(0, 10),
     });
     if (draftLoan.heir) {
       setIsHeirNoExpiry(!draftLoan.heir.idExpiry);
@@ -680,6 +686,7 @@ export function LoanCreatePage() {
           loanAmount: values.loanAmount,
           contractNumber: values.contractNumber || undefined,
           contractDate: values.contractDate || undefined,
+          applicationDate: values.applicationDate || undefined,
         });
         notifySuccess(
           'Đã khởi tạo hồ sơ vay nháp (Đang tạo)',
@@ -693,6 +700,7 @@ export function LoanCreatePage() {
           loanAmount: values.loanAmount,
           contractNumber: values.contractNumber || undefined,
           contractDate: values.contractDate || undefined,
+          applicationDate: values.applicationDate || undefined,
         });
         notifySuccess('Đã lưu thông tin khoản vay');
       }
@@ -960,6 +968,11 @@ export function LoanCreatePage() {
                   name="loanAmount"
                   label="Số tiền vay đề nghị"
                   required
+                />
+                <FormDateField
+                  control={termsForm.control}
+                  name="applicationDate"
+                  label="Ngày làm hồ sơ vay"
                 />
                 <FormTextField
                   control={termsForm.control}

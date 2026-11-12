@@ -56,8 +56,10 @@ describe('date', () => {
   });
 
   it('tự chèn dấu "/" khi gõ', () => {
-    expect(maskDateInput('15')).toBe('15');
-    expect(maskDateInput('1502')).toBe('15/02');
+    expect(maskDateInput('15')).toBe('15/');
+    expect(maskDateInput('15', true)).toBe('15');
+    expect(maskDateInput('1502')).toBe('15/02/');
+    expect(maskDateInput('1502', true)).toBe('15/02');
     expect(maskDateInput('15022026')).toBe('15/02/2026');
     expect(maskDateInput('15/02/20269')).toBe('15/02/2026');
   });

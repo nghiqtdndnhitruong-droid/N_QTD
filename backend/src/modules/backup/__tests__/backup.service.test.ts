@@ -115,6 +115,7 @@ describe('BackupService', () => {
     const deleteDisbursements = vi.spyOn(prisma.disbursement, 'deleteMany').mockResolvedValue({ count: 2 } as any);
     const deleteValuations = vi.spyOn(prisma.loanValuation, 'deleteMany').mockResolvedValue({ count: 3 } as any);
     const deleteCollaterals = vi.spyOn(prisma.collateral, 'deleteMany').mockResolvedValue({ count: 4 } as any);
+    const deleteRelatedPersons = vi.spyOn(prisma.relatedPerson, 'deleteMany').mockResolvedValue({ count: 2 } as any);
     const deleteLoans = vi.spyOn(prisma.loan, 'deleteMany').mockResolvedValue({ count: 2 } as any);
     const deleteMembers = vi.spyOn(prisma.member, 'deleteMany').mockResolvedValue({ count: 10 } as any);
     const deletePricingRules = vi.spyOn(prisma.assetPricingRule, 'deleteMany').mockResolvedValue({ count: 5 } as any);
@@ -138,6 +139,7 @@ describe('BackupService', () => {
     expect(deleteDisbursements).toHaveBeenCalled();
     expect(deleteValuations).toHaveBeenCalled();
     expect(deleteCollaterals).toHaveBeenCalled();
+    expect(deleteRelatedPersons).toHaveBeenCalled();
     expect(deleteLoans).toHaveBeenCalled();
     expect(deleteMembers).toHaveBeenCalled();
     expect(deletePricingRules).toHaveBeenCalled();

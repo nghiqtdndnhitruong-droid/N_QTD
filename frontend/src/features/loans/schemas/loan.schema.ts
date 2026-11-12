@@ -30,6 +30,7 @@ export const loanTermsStepSchema = z
     loanAmount: positiveVndSchema('Số tiền vay đề nghị'),
     contractNumber: z.string().trim().optional(),
     contractDate: optionalApiDateStringSchema('Ngày lập khế ước'),
+    applicationDate: optionalApiDateStringSchema('Ngày làm hồ sơ'),
   })
   .refine(
     (data) => {
