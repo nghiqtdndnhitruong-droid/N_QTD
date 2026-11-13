@@ -14,6 +14,7 @@ import {
 import { notifyApiError, notifySuccess } from '@/components/feedback';
 import { LoanType } from '@/shared/types';
 import { useUpdateLoan } from '../hooks/use-loans';
+import { formatContractNumber } from '../utils/contract-number';
 import type { Loan } from '../types/loan.types';
 
 export interface LoanContractModalProps {
@@ -123,12 +124,12 @@ export function LoanContractModal({
                 id="modal-contract-number"
                 type="text"
                 value={contractNumber}
-                onChange={(e) => setContractNumber(e.target.value)}
-                placeholder="VD: KU-2026-001 hoặc 26.11.001..."
+                onChange={(e) => setContractNumber(formatContractNumber(e.target.value, contractNumber))}
+                placeholder="VD: 26.11.020"
                 className="h-9 w-full rounded-md border border-slate-300 px-3 text-xs font-mono focus:border-primary-600 focus:outline-none"
               />
               <p className="text-[11px] text-slate-500">
-                Số khế ước duy nhất của khoản vay. Để trống nếu hồ sơ chưa được cấp số.
+                Định dạng xx.yy.zzz (Năm.Tháng.Số khế ước, VD: 26.11.020). Để trống nếu hồ sơ chưa được cấp số.
               </p>
             </div>
 
