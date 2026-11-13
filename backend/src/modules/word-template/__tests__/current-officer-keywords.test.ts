@@ -183,4 +183,35 @@ describe('CAN_BO Keywords - Cán bộ đang đăng nhập / lập hồ sơ', () 
     expect(officerGroup?.fields.some((f) => f.path === 'CAN_BO.GIOI_TINH')).toBe(true);
     expect(officerGroup?.fields.some((f) => f.path === 'CAN_BO.NAM_SINH')).toBe(true);
   });
+
+  it('5. Ưu tiên cán bộ tạo hồ sơ vay khi xuất dữ liệu', () => {
+    const loanWithCreator = {
+      ...mockLoan,
+      createdBy: {
+        id: 'creator-01',
+        fullName: 'Lê Hoàng Long',
+        role: 'CREDIT_OFFICER',
+        profile: {
+          fullName: 'Lê Hoàng Long',
+          idType: 'CAN_CUOC_CONG_DAN',
+          idNumber: '084095009999',
+          idIssueDate: '2022-01-10',
+          idIssuePlace: 'Bộ Công An',
+          yearOfBirth: 1995,
+          gender: 'NAM',
+        },
+      },
+    };
+
+    const { resolvedContext } = wordTemplateDataDictionaryService.resolveLoanData(
+      loanWithCreator,
+      [],
+      [],
+      loanWithCreator.createdBy,
+    );
+
+    expect(resolvedContext['CAN_BO.HO_TEN']).toBe('Lê Hoàng Long');
+    expect(resolvedContext['CAN_BO.SO_GIAY_TO']).toBe('084095009999');
+    expect(resolvedContext['CAN_BO.NOI_CAP']).toBe('Bộ Công An');
+  });
 });

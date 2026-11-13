@@ -9,6 +9,7 @@ import { wordTemplateGeneratorService } from './word-template-generator.service'
 import { globalWordKeywordService, GlobalWordKeywordInput } from './global-word-keyword.service';
 import { authService } from '../auth/auth.service';
 import { prisma } from '../../config/database';
+import { logger } from '../../config/logger';
 import type {
   CreateWordTemplateDto,
   UpdateWordTemplateDto,
@@ -295,8 +296,114 @@ export class WordTemplateService {
     };
   }
 
+  public findLocalTemplateSource(title: string): string | null {
+    const possibleRoots = [
+      path.resolve(process.cwd(), 'template'),
+      path.resolve(process.cwd(), '../template'),
+    ];
+    const subdirs = ['done/thế chấp', 'done/tín chấp', 'done', ''];
+
+    for (const root of possibleRoots) {
+      if (!fs.existsSync(root)) continue;
+      for (const sub of subdirs) {
+        const fullDir = path.join(root, sub);
+        if (!fs.existsSync(fullDir)) continue;
+
+        try {
+          const files = fs.readdirSync(fullDir);
+          for (const f of files) {
+            if (!f.endsWith('.docx') || f.startsWith('~$')) continue;
+            const nameWithoutExt = f.replace(/\.docx$/i, '').trim();
+            if (
+              nameWithoutExt.toLowerCase() === title.trim().toLowerCase() ||
+              nameWithoutExt.replace(/_/g, ' ').toLowerCase() === title.trim().replace(/_/g, ' ').toLowerCase()
+            ) {
+              return path.join(fullDir, f);
+            }
+          }
+        } catch {
+          // Ignore directory read error
+        }
+      }
+    }
+    return null;
+  }
+
+  public async syncTemplateIfLocalModified(templateId: string) {
+    const template = await this.getTemplateById(templateId);
+    const localSourcePath = this.findLocalTemplateSource(template.title);
+    if (!localSourcePath || !fs.existsSync(localSourcePath)) return template;
+
+    try {
+      const localStat = fs.statSync(localSourcePath);
+      const targetExists = fs.existsSync(template.currentFilePath);
+      const targetMtime = targetExists ? fs.statSync(template.currentFilePath).mtimeMs : 0;
+
+      // Nếu file trong thư mục template mới hơn file trong uploads/templates ít nhất 1 giây
+      if (!targetExists || localStat.mtimeMs > targetMtime + 1000) {
+        const buffer = fs.readFileSync(localSourcePath);
+        fs.writeFileSync(template.currentFilePath, buffer);
+        logger.info(`🔄 Tự động đồng bộ biểu mẫu "${template.title}" từ file mới cập nhật: ${localSourcePath}`);
+
+        const parsedKeywords = wordTemplateParserService.parseDocxBuffer(buffer);
+        const existingMappings = template.mappings || [];
+        const currentKeywordSet = new Set(existingMappings.map((m) => m.keyword));
+        const mergedMappings: WordTemplateMappingDto[] = existingMappings.map((m) => ({
+          ...m,
+          dataType: m.dataType as any,
+        }));
+
+        const globalKeywords = await prisma.globalWordKeyword.findMany();
+        const globalKeywordMap = new Map(globalKeywords.map((g) => [g.keyword, g]));
+
+        let hasNew = false;
+        for (const pk of parsedKeywords) {
+          if (!currentKeywordSet.has(pk.keyword)) {
+            hasNew = true;
+            currentKeywordSet.add(pk.keyword);
+            const globalMatch = globalKeywordMap.get(pk.keyword);
+            const autoMatch = this.guessDataPathForKeyword(pk.keyword, pk.isLoop);
+            mergedMappings.push({
+              keyword: pk.keyword,
+              displayName: globalMatch?.displayName || this.formatKeywordDisplayName(pk.keyword),
+              isLoop: pk.isLoop || Boolean(globalMatch?.isList),
+              loopContext: pk.loopContext || (globalMatch?.isList ? pk.keyword : null),
+              dataPath: globalMatch?.dataPath || autoMatch?.path || null,
+              dataType: (globalMatch?.dataType as any) || autoMatch?.dataType || 'TEXT',
+              isRequired: false,
+              defaultValue: globalMatch?.defaultValue || '...................',
+            });
+          }
+        }
+
+        if (hasNew) {
+          await wordTemplateRepository.replaceMappings(template.id, mergedMappings);
+        }
+        return this.getTemplateById(template.id);
+      }
+    } catch (err) {
+      logger.warn(`Không thể đồng bộ biểu mẫu "${template.title}":`, err);
+    }
+    return template;
+  }
+
+  public async syncAllTemplatesFromLocal() {
+    try {
+      const templates = await prisma.wordTemplate.findMany({ select: { id: true, title: true } });
+      let syncedCount = 0;
+      for (const t of templates) {
+        await this.syncTemplateIfLocalModified(t.id);
+        syncedCount++;
+      }
+      return syncedCount;
+    } catch (err) {
+      logger.warn('Lỗi khi tự động đồng bộ biểu mẫu từ thư mục template:', err);
+      return 0;
+    }
+  }
+
   public async getTemplateFileBuffer(id: string): Promise<{ buffer: Buffer; fileName: string }> {
-    const template = await this.getTemplateById(id);
+    const template = await this.syncTemplateIfLocalModified(id);
     if (!fs.existsSync(template.currentFilePath)) {
       throw AppError.notFound(`Không tìm thấy file mẫu trên máy chủ: ${template.currentFilePath}`);
     }
@@ -315,6 +422,7 @@ export class WordTemplateService {
     loanId: string,
     currentUser?: any,
   ): Promise<TemplatePreviewResult> {
+    await this.syncTemplateIfLocalModified(templateId);
     const [template, loan, areaGroups] = await Promise.all([
       this.getTemplateById(templateId),
       loanRepository.findById(loanId),
@@ -324,7 +432,12 @@ export class WordTemplateService {
       throw AppError.notFound(`Không tìm thấy hồ sơ khoản vay ID: ${loanId}`);
     }
 
-    let officerUser = currentUser;
+    // Ưu tiên cán bộ tạo hồ sơ vay (loan.createdBy), nếu không có mới lấy cán bộ đang đăng nhập
+    const loanCreator = (loan as any).createdBy;
+    let officerUser = loanCreator ? authService.formatAuthUser(loanCreator) : null;
+    if (!officerUser || !officerUser.profile) {
+      officerUser = currentUser;
+    }
     if (!officerUser || !officerUser.profile) {
       const activeUser = await prisma.user.findFirst({
         where: { status: 'ACTIVE' },
@@ -367,7 +480,12 @@ export class WordTemplateService {
       throw AppError.notFound(`Không tìm thấy hồ sơ khoản vay ID: ${loanId}`);
     }
 
-    let officerUser = currentUser;
+    // Ưu tiên cán bộ tạo hồ sơ vay (loan.createdBy), nếu không có mới lấy cán bộ đang đăng nhập
+    const loanCreator = (loan as any).createdBy;
+    let officerUser = loanCreator ? authService.formatAuthUser(loanCreator) : null;
+    if (!officerUser || !officerUser.profile) {
+      officerUser = currentUser;
+    }
     if (!officerUser || !officerUser.profile) {
       const activeUser = await prisma.user.findFirst({
         where: { status: 'ACTIVE' },
@@ -382,7 +500,7 @@ export class WordTemplateService {
     const generatedFiles: { fileName: string; buffer: Buffer }[] = [];
 
     for (const templateId of templateIds) {
-      const template = await this.getTemplateById(templateId);
+      const template = await this.syncTemplateIfLocalModified(templateId);
 
       // Kiểm tra trạng thái hoạt động
       if (!template.isActive) {
@@ -708,9 +826,12 @@ export class WordTemplateService {
       return { path: 'collaterals_summary.totalArea', dataType: 'NUMBER' };
 
     // Ngày tháng
-    if (k === 'NGAY' || k === 'NGAY_HIEN_TAI' || k === 'DAY') return { path: 'fund.currentDay', dataType: 'TEXT' };
-    if (k === 'THANG' || k === 'THANG_HIEN_TAI' || k === 'MONTH') return { path: 'fund.currentMonth', dataType: 'TEXT' };
-    if (k === 'NAM' || k === 'NAM_HIEN_TAI' || k === 'YEAR') return { path: 'fund.currentYear', dataType: 'TEXT' };
+    if (k === 'NGAY' || k === 'DAY') return { path: 'loan.applicationDateDay', dataType: 'TEXT' };
+    if (k === 'THANG' || k === 'MONTH') return { path: 'loan.applicationDateMonth', dataType: 'TEXT' };
+    if (k === 'NAM' || k === 'YEAR') return { path: 'loan.applicationDateYear', dataType: 'TEXT' };
+    if (k === 'NGAY_HIEN_TAI') return { path: 'fund.currentDay', dataType: 'TEXT' };
+    if (k === 'THANG_HIEN_TAI') return { path: 'fund.currentMonth', dataType: 'TEXT' };
+    if (k === 'NAM_HIEN_TAI') return { path: 'fund.currentYear', dataType: 'TEXT' };
 
     return null;
   }

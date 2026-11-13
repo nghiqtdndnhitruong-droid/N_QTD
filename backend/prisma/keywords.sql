@@ -288,13 +288,22 @@ INSERT INTO global_word_keywords (id, keyword, displayName, category, dataPath, 
   '6aea7acc2f933f233a369d31', 'PHUONG_AN.VON_VAY', 'Vốn vay đề nghị bằng số (VND)', 'PHUONG_AN', 'PHUONG_AN.VON_VAY', 'CURRENCY', NULL, '...................', FALSE, NULL, NULL, TRUE, '2026-11-04T00:22:36.698Z', '2026-11-06T02:13:42.823Z'
 );
 INSERT INTO global_word_keywords (id, keyword, displayName, category, dataPath, dataType, formatPattern, defaultValue, isList, itemProperties, description, isSystem, createdAt, updatedAt) VALUES (
-  '6ae98f0ccf1dfb458cc26b69', 'NAM', 'Năm hiện tại (4 chữ số, thời điểm xuất)', 'QUY_TIN_DUNG', 'fund.currentYear', 'TEXT', NULL, '...................', FALSE, NULL, NULL, FALSE, '2026-11-03T07:36:44.732Z', '2026-11-06T02:13:43.793Z'
+  '6ae98f0ccf1dfb458cc26b69', 'NAM', 'Năm làm hồ sơ (4 chữ số)', 'KHOAN_VAY', 'loan.applicationDateYear', 'TEXT', NULL, '...................', FALSE, NULL, NULL, FALSE, '2026-11-03T07:36:44.732Z', '2026-11-13T01:45:00.000Z'
 );
 INSERT INTO global_word_keywords (id, keyword, displayName, category, dataPath, dataType, formatPattern, defaultValue, isList, itemProperties, description, isSystem, createdAt, updatedAt) VALUES (
-  '6ae98ee3cf1dfb458cc26b67', 'NGAY', 'Ngày hiện tại (2 chữ số, thời điểm xuất)', 'QUY_TIN_DUNG', 'fund.currentDay', 'TEXT', NULL, '...................', FALSE, NULL, NULL, FALSE, '2026-11-03T07:36:03.421Z', '2026-11-06T02:13:43.780Z'
+  '6ae98ee3cf1dfb458cc26b67', 'NGAY', 'Ngày làm hồ sơ (2 chữ số)', 'KHOAN_VAY', 'loan.applicationDateDay', 'TEXT', NULL, '...................', FALSE, NULL, NULL, FALSE, '2026-11-03T07:36:03.421Z', '2026-11-13T01:45:00.000Z'
 );
 INSERT INTO global_word_keywords (id, keyword, displayName, category, dataPath, dataType, formatPattern, defaultValue, isList, itemProperties, description, isSystem, createdAt, updatedAt) VALUES (
-  '6ae98efdcf1dfb458cc26b68', 'THANG', 'Tháng hiện tại (2 chữ số, thời điểm xuất)', 'QUY_TIN_DUNG', 'fund.currentMonth', 'TEXT', NULL, '...................', FALSE, NULL, NULL, FALSE, '2026-11-03T07:36:29.927Z', '2026-11-06T02:13:43.787Z'
+  '6ae98efdcf1dfb458cc26b68', 'THANG', 'Tháng làm hồ sơ (2 chữ số)', 'KHOAN_VAY', 'loan.applicationDateMonth', 'TEXT', NULL, '...................', FALSE, NULL, NULL, FALSE, '2026-11-03T07:36:29.927Z', '2026-11-13T01:45:00.000Z'
+);
+INSERT INTO global_word_keywords (id, keyword, displayName, category, dataPath, dataType, formatPattern, defaultValue, isList, itemProperties, description, isSystem, createdAt, updatedAt) VALUES (
+  '6af100000000000000000001', 'NGAY_HIEN_TAI', 'Ngày hiện tại (2 chữ số, thời điểm xuất)', 'QUY_TIN_DUNG', 'fund.currentDay', 'TEXT', NULL, '...................', FALSE, NULL, NULL, FALSE, '2026-11-13T01:45:00.000Z', '2026-11-13T01:45:00.000Z'
+);
+INSERT INTO global_word_keywords (id, keyword, displayName, category, dataPath, dataType, formatPattern, defaultValue, isList, itemProperties, description, isSystem, createdAt, updatedAt) VALUES (
+  '6af100000000000000000002', 'THANG_HIEN_TAI', 'Tháng hiện tại (2 chữ số, thời điểm xuất)', 'QUY_TIN_DUNG', 'fund.currentMonth', 'TEXT', NULL, '...................', FALSE, NULL, NULL, FALSE, '2026-11-13T01:45:00.000Z', '2026-11-13T01:45:00.000Z'
+);
+INSERT INTO global_word_keywords (id, keyword, displayName, category, dataPath, dataType, formatPattern, defaultValue, isList, itemProperties, description, isSystem, createdAt, updatedAt) VALUES (
+  '6af100000000000000000003', 'NAM_HIEN_TAI', 'Năm hiện tại (4 chữ số, thời điểm xuất)', 'QUY_TIN_DUNG', 'fund.currentYear', 'TEXT', NULL, '...................', FALSE, NULL, NULL, FALSE, '2026-11-13T01:45:00.000Z', '2026-11-13T01:45:00.000Z'
 );
 INSERT INTO global_word_keywords (id, keyword, displayName, category, dataPath, dataType, formatPattern, defaultValue, isList, itemProperties, description, isSystem, createdAt, updatedAt) VALUES (
   '6aea7acc2f933f233a369d4e', 'CHU_SO_HUU.DIA_CHI', 'Địa chỉ chủ sở hữu tài sản', 'TAI_SAN', 'CHU_SO_HUU.DIA_CHI', 'TEXT', NULL, '...................', FALSE, NULL, NULL, TRUE, '2026-11-04T00:22:36.943Z', '2026-11-06T02:13:43.218Z'

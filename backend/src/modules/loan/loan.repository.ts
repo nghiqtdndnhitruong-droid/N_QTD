@@ -11,6 +11,11 @@ export class LoanRepository {
       where: { id },
       include: {
         member: true,
+        createdBy: {
+          include: {
+            profile: true,
+          },
+        },
         collaterals: true,
         valuations: {
           orderBy: { createdAt: 'asc' },

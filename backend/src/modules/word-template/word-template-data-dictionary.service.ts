@@ -876,8 +876,9 @@ export class WordTemplateDataDictionaryService {
     const now = dayjs();
     const areaGroups: any[] = areaGroupsInput || loan.areaGroups || [];
 
-    // Trích xuất thông tin cán bộ đang đăng nhập / cán bộ lập hồ sơ
-    const currentUser = currentUserInput || loan.currentUser || loan.officer || null;
+    // Trích xuất thông tin cán bộ tạo hồ sơ vay (ưu tiên loan.createdBy nếu có) hoặc cán bộ truyền vào
+    const loanCreator = loan.createdBy ? (loan.createdBy.profile ? loan.createdBy : null) : null;
+    const currentUser = currentUserInput || loanCreator || loan.currentUser || loan.officer || null;
     const officerProfile = currentUser?.profile || currentUser?.user?.profile || currentUser || {};
 
     const canBoHoTen = (

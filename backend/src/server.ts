@@ -3,6 +3,7 @@ import { env, logger, connectDatabase, disconnectDatabase } from './config';
 import { authService } from './modules/auth/auth.service';
 import { areaService } from './modules/area/area.service';
 import { globalWordKeywordService } from './modules/word-template/global-word-keyword.service';
+import { wordTemplateService } from './modules/word-template/word-template.service';
 
 async function bootstrap() {
   try {
@@ -15,6 +16,9 @@ async function bootstrap() {
     // 1.2 Tự động khởi tạo Địa bàn mặc định & Thư viện từ khóa chuẩn (nếu DB rỗng)
     await areaService.ensureDefaultAreas();
     await globalWordKeywordService.seedDefaultCatalog(false);
+
+    // 1.3 Tự động đồng bộ các file biểu mẫu đã chỉnh sửa trong thư mục template/ (nếu có)
+    await wordTemplateService.syncAllTemplatesFromLocal();
 
     // 2. Khởi động Web Server
     const server = app.listen(env.port, () => {
