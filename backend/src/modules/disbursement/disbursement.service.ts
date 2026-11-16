@@ -3,9 +3,8 @@ import { CreateDisbursementDto, UpdateDisbursementDto } from './disbursement.typ
 import { prisma } from '../../config/database';
 import { AppError } from '../../shared/errors/app-error';
 import { ErrorCode } from '../../shared/errors/error-codes';
-import { LoanStatus, LoanTermType, LoanType } from '@prisma/client';
-import { addMonthsToDate } from '../../shared/utils/date.util';
-import dayjs from 'dayjs';
+import { LoanStatus } from '@prisma/client';
+import { loanService } from '../loan/loan.service';
 
 export class DisbursementService {
   constructor(private readonly repo: DisbursementRepository = disbursementRepository) {}
@@ -56,36 +55,39 @@ export class DisbursementService {
       note: dto.note,
     });
 
-    // 4. Nếu đây là lần giải ngân hiệu lực đầu tiên, thiết lập ngày đáo hạn và đổi trạng thái
-    if (activeDisbursements.length === 0 || !loan.maturityDate) {
-      const expectedMaturityDate = addMonthsToDate(disbursementDate, loan.termMonths);
-      let actualMaturityDate = expectedMaturityDate;
+    // 4. Tính lại ngày đáo hạn từ đợt giải ngân hiệu lực sớm nhất và cập nhật trạng thái
+    const allActiveDisbursements = [...activeDisbursements, disbursement].sort(
+      (a, b) => new Date(a.disbursementDate).getTime() - new Date(b.disbursementDate).getTime()
+    );
+    const earliestDate = new Date(allActiveDisbursements[0].disbursementDate);
+    const timeline = loanService.calculateMaturityTimeline(
+      earliestDate,
+      loan.termMonths,
+      loan.termType,
+      loan.loanType,
+      loan.mortgageContract?.contractExpiryDate
+    );
 
-      // Xử lý rút ngắn theo Hợp đồng thế chấp nếu có (Mục 3.4)
-      if (loan.loanType === LoanType.THE_CHAP && loan.mortgageContract?.contractExpiryDate) {
-        const expiryDate = new Date(loan.mortgageContract.contractExpiryDate);
-        if (!Number.isNaN(expiryDate.getTime()) && dayjs(expiryDate).isBefore(dayjs(expectedMaturityDate), 'day')) {
-          actualMaturityDate = expiryDate;
-        }
-      }
-
-      // Xử lý mốc trả phân nửa cho khoản vay trung hạn (Mục 3.5)
-      let halfTermPaymentDate: Date | null = null;
-      if (loan.termType === LoanTermType.TRUNG_HAN) {
-        const nominalHalfTerm = addMonthsToDate(disbursementDate, 12);
-        halfTermPaymentDate = dayjs(actualMaturityDate).isBefore(dayjs(nominalHalfTerm), 'day')
-          ? actualMaturityDate
-          : nominalHalfTerm;
-      }
-
+    if (
+      activeDisbursements.length === 0 ||
+      !loan.maturityDate ||
+      new Date(timeline.maturityDate).getTime() !== new Date(loan.maturityDate).getTime() ||
+      !loan.expectedMaturityDate ||
+      new Date(timeline.expectedMaturityDate).getTime() !== new Date(loan.expectedMaturityDate).getTime()
+    ) {
       await prisma.loan.update({
         where: { id: loanId },
         data: {
-          expectedMaturityDate,
-          maturityDate: actualMaturityDate,
-          halfTermPaymentDate,
-          status: LoanStatus.DA_GIAI_NGAN,
+          expectedMaturityDate: timeline.expectedMaturityDate,
+          maturityDate: timeline.maturityDate,
+          halfTermPaymentDate: timeline.halfTermPaymentDate,
+          status: loan.status === LoanStatus.DA_HOAN_THANH_HO_SO ? LoanStatus.DA_GIAI_NGAN : loan.status,
         },
+      });
+    } else if (loan.status === LoanStatus.DA_HOAN_THANH_HO_SO) {
+      await prisma.loan.update({
+        where: { id: loanId },
+        data: { status: LoanStatus.DA_GIAI_NGAN },
       });
     }
 
@@ -162,7 +164,13 @@ export class DisbursementService {
 
     if (updatedActiveDisbursements.length > 0) {
       const earliestDate = new Date(updatedActiveDisbursements[0].disbursementDate);
-      const newMaturityDate = addMonthsToDate(earliestDate, loan.termMonths);
+      const timeline = loanService.calculateMaturityTimeline(
+        earliestDate,
+        loan.termMonths,
+        loan.termType,
+        loan.loanType,
+        loan.mortgageContract?.contractExpiryDate
+      );
       const remainingPrincipal = newTotalDisbursed - totalPrincipalPaid;
 
       let nextStatus = loan.status;
@@ -178,7 +186,9 @@ export class DisbursementService {
       await prisma.loan.update({
         where: { id: loan.id },
         data: {
-          maturityDate: newMaturityDate,
+          expectedMaturityDate: timeline.expectedMaturityDate,
+          maturityDate: timeline.maturityDate,
+          halfTermPaymentDate: timeline.halfTermPaymentDate,
           status: nextStatus,
           settlementDate: nextSettlementDate,
         },
@@ -272,7 +282,9 @@ export class DisbursementService {
         where: { id: loan.id },
         data: {
           status: LoanStatus.DA_HOAN_THANH_HO_SO,
+          expectedMaturityDate: null,
           maturityDate: null,
+          halfTermPaymentDate: null,
           settlementDate: null,
         },
       });
@@ -281,7 +293,13 @@ export class DisbursementService {
         (a, b) => new Date(a.disbursementDate).getTime() - new Date(b.disbursementDate).getTime()
       );
       const earliestDate = new Date(sorted[0].disbursementDate);
-      const newMaturityDate = addMonthsToDate(earliestDate, loan.termMonths);
+      const timeline = loanService.calculateMaturityTimeline(
+        earliestDate,
+        loan.termMonths,
+        loan.termType,
+        loan.loanType,
+        loan.mortgageContract?.contractExpiryDate
+      );
       const remainingPrincipal = remainingTotalDisbursed - totalPrincipalPaid;
 
       let nextStatus = loan.status;
@@ -297,7 +315,9 @@ export class DisbursementService {
       await prisma.loan.update({
         where: { id: loan.id },
         data: {
-          maturityDate: newMaturityDate,
+          expectedMaturityDate: timeline.expectedMaturityDate,
+          maturityDate: timeline.maturityDate,
+          halfTermPaymentDate: timeline.halfTermPaymentDate,
           status: nextStatus,
           settlementDate: nextSettlementDate,
         },

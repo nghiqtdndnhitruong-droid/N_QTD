@@ -1,4 +1,4 @@
-import { apiDelete, apiGet, apiGetPaginated, apiPost, apiPut } from '@/lib/http';
+import { apiDelete, apiGet, apiGetPaginated, apiPost, apiPut, httpClient } from '@/lib/http';
 import type { Paginated } from '@/shared/types';
 import type {
   CreateMemberPayload,
@@ -7,6 +7,17 @@ import type {
   MemberListQuery,
   UpdateMemberPayload,
 } from '../types/member.types';
+
+function downloadBlob(blob: Blob, filename: string) {
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  window.URL.revokeObjectURL(url);
+}
 
 export const membersApi = {
   list(query: MemberListQuery): Promise<Paginated<Member>> {
@@ -29,5 +40,86 @@ export const membersApi = {
     return apiDelete<DeleteMemberResult>(`/members/${id}`, {
       data: reason ? { reason } : undefined,
     });
+  },
+
+  saveCreditRating(id: string, selections: Record<string, string>): Promise<Member> {
+    return apiPut<Member, { selections: Record<string, string> }>(`/members/${id}/credit-rating`, {
+      selections,
+    });
+  },
+
+  deleteCreditRating(id: string): Promise<Member> {
+    return apiDelete<Member>(`/members/${id}/credit-rating`);
+  },
+
+  async exportCreditRatingDocx(
+    id: string,
+    selections: Record<string, string>,
+    defaultFileName = 'Bang_cham_diem.docx',
+  ): Promise<void> {
+    const res = await httpClient.post(
+      `/members/${id}/credit-rating/export-docx`,
+      { selections },
+      { responseType: 'blob' },
+    );
+
+    const disposition = res.headers['content-disposition'];
+    let filename = defaultFileName;
+    if (disposition) {
+      const utf8Match = /filename\*=UTF-8''([^;\n]+)/i.exec(disposition);
+      if (utf8Match?.[1]) {
+        filename = decodeURIComponent(utf8Match[1].trim());
+      } else {
+        const asciiMatch = /filename=['"]?([^;"\n]+)['"]?/i.exec(disposition);
+        if (asciiMatch?.[1]) {
+          filename = decodeURIComponent(asciiMatch[1].trim());
+        }
+      }
+    }
+
+    downloadBlob(
+      new Blob([res.data], {
+        type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      }),
+      filename,
+    );
+  },
+
+  batchSaveCreditRating(
+    memberIds: string[],
+    selections: Record<string, string>,
+  ): Promise<Member[]> {
+    return apiPut<Member[], { memberIds: string[]; selections: Record<string, string> }>(
+      '/members/batch/credit-rating',
+      { memberIds, selections },
+    );
+  },
+
+  async batchExportCreditRatingZip(
+    memberIds: string[],
+    selections: Record<string, string>,
+    defaultFileName = 'Bang_cham_diem_nhom.zip',
+  ): Promise<void> {
+    const res = await httpClient.post(
+      '/members/batch/credit-rating/export-zip',
+      { memberIds, selections },
+      { responseType: 'blob' },
+    );
+
+    const disposition = res.headers['content-disposition'];
+    let filename = defaultFileName;
+    if (disposition) {
+      const utf8Match = /filename\*=UTF-8''([^;\n]+)/i.exec(disposition);
+      if (utf8Match?.[1]) {
+        filename = decodeURIComponent(utf8Match[1].trim());
+      } else {
+        const asciiMatch = /filename=['"]?([^;"\n]+)['"]?/i.exec(disposition);
+        if (asciiMatch?.[1]) {
+          filename = decodeURIComponent(asciiMatch[1].trim());
+        }
+      }
+    }
+
+    downloadBlob(new Blob([res.data], { type: 'application/zip' }), filename);
   },
 };

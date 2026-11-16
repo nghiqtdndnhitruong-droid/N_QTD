@@ -21,6 +21,7 @@ import {
 } from '@/components/feedback';
 import { Can } from '@/features/auth/components/can';
 import { checkIdExpiryStatus, checkMortgageExpiryStatus } from '../utils/loan-warnings';
+import { LoanInspectionSquares } from '../components/loan-inspection-section';
 import { useDeleteLoan, useLoansList } from '../hooks/use-loans';
 import type { Loan } from '../types/loan.types';
 
@@ -195,6 +196,19 @@ export function LoanListPage() {
         accessorKey: 'status',
         header: 'Trạng thái',
         cell: ({ row }) => <LoanStatusBadge status={row.original.status} />,
+      },
+      {
+        id: 'inspectionChecks',
+        header: 'Biên bản KT',
+        cell: ({ row }) => (
+          <LoanInspectionSquares
+            loan={row.original}
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`/loans/${row.original.id}?tab=inspections`);
+            }}
+          />
+        ),
       },
       {
         id: 'actions',

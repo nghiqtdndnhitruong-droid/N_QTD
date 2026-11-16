@@ -180,6 +180,17 @@ model AuditLog {
 // MEMBER (Thành viên)
 // ============================================================
 
+type MemberCreditRating {
+  selections   Json      // Lựa chọn của 14 tiêu chí (c1..c14)
+  group1Score  Float     // Điểm Nhóm I (tối đa 100)
+  group2Score  Float     // Điểm Nhóm II (tối đa 100)
+  totalScore   Float     // Tổng điểm quy đổi (Nhóm I * 0.4 + Nhóm II * 0.6)
+  rank         String    // AAA, AA, A, BBB, BB, B, CCC, CC, C, D
+  riskLevel    String    // Rủi ro thấp | Rủi ro trung bình | Rủi ro cao
+  ratedAt      DateTime  @default(now())
+  ratedById    String?   @db.ObjectId
+}
+
 model Member {
   id            String         @id @default(auto()) @map("_id") @db.ObjectId
   memberCode    String?
@@ -210,8 +221,11 @@ model Member {
   deletedReason String?
 
   // Cán bộ tín dụng tạo / quản lý hồ sơ thành viên
-  createdById   String?        @db.ObjectId
-  createdBy     User?          @relation("UserMembers", fields: [createdById], references: [id])
+  createdById   String?              @db.ObjectId
+  createdBy     User?                @relation("UserMembers", fields: [createdById], references: [id])
+
+  // Kết quả chấm điểm xếp hạng tín dụng gần nhất
+  creditRating  MemberCreditRating?
 
   loans         Loan[]
 
@@ -298,6 +312,7 @@ model Loan {
   maturityDate         DateTime?        // Ngày đáo hạn thực tế (rút ngắn theo HĐ thế chấp nếu có)
   halfTermPaymentDate  DateTime?        // Ngày phải trả phân nửa (cho vay trung hạn)
   settlementDate       DateTime?        // Ngày tất toán
+  inspectionChecks     Boolean[]        @default([]) // Tiến độ 4 đợt biên bản kiểm tra sau giải ngân (Tháng 3, 6, 9, 11)
 
   // Xóa mềm (Soft Delete)
   isDeleted        Boolean?         @default(false)

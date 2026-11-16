@@ -657,9 +657,16 @@ export class LoanService {
       termType === LoanTermType.NGAN_HAN
         ? LOAN_CONSTANTS.SHORT_TERM_MONTHS
         : LOAN_CONSTANTS.MEDIUM_TERM_MONTHS;
-    const startDate = dto.loanStartDate
-      ? new Date(dto.loanStartDate)
-      : existing.loanStartDate || existing.createdAt;
+    const activeDisbursements = (existing.disbursements || [])
+      .filter((d) => !d.isDeleted)
+      .sort((a, b) => new Date(a.disbursementDate).getTime() - new Date(b.disbursementDate).getTime());
+
+    const startDate =
+      activeDisbursements.length > 0
+        ? new Date(activeDisbursements[0].disbursementDate)
+        : dto.loanStartDate
+          ? new Date(dto.loanStartDate)
+          : existing.loanStartDate || existing.createdAt;
 
     // Đối với hồ sơ đang tạo (DANG_TAO), tự động cập nhật lại mức lãi suất tương ứng từ bảng lãi suất hiệu lực
     if (existing.status === LoanStatus.DANG_TAO && dto.interestRate === undefined) {

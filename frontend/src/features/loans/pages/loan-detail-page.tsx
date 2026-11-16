@@ -53,6 +53,11 @@ import { DisbursementsSection } from '../components/disbursements-section';
 import { LoanSummaryStrip } from '../components/loan-summary-strip';
 import { RelatedPersonsSection } from '../components/related-persons-section';
 import { RepaymentsSection } from '../components/repayments-section';
+import { LoanInspectionSection } from '../components/loan-inspection-section';
+import {
+  isLoanDisbursedForInspection,
+  normalizeInspectionChecks,
+} from '../utils/loan-inspection';
 import { TemplateExportDialog } from '@/features/word-templates/components/template-export-dialog';
 import { CollateralOwnerType } from '../types/loan.types';
 import { LoanContractModal } from '../components/loan-contract-modal';
@@ -135,6 +140,10 @@ export function LoanDetailPage() {
   const valuationsCount = loan.valuations?.length ?? valuations.length;
   const activeDisbursements = (loan.disbursements ?? []).filter((d) => !d.isDeleted);
   const activeRepayments = (loan.repayments ?? []).filter((r) => !r.isDeleted);
+  const isDisbursedForInspection = isLoanDisbursedForInspection(loan);
+  const completedInspectionsCount = normalizeInspectionChecks(loan.inspectionChecks).filter(
+    Boolean,
+  ).length;
   const hasFinancialTransactions =
     activeDisbursements.length > 0 ||
     activeRepayments.length > 0 ||
@@ -307,7 +316,12 @@ export function LoanDetailPage() {
 
       {/* Các Tab chi tiết hồ sơ */}
       <Tabs
-        value={currentTab}
+        value={
+          (currentTab === 'valuations' && loan.loanType !== LoanType.THE_CHAP) ||
+          (currentTab === 'inspections' && !isDisbursedForInspection)
+            ? 'overview'
+            : currentTab
+        }
         onValueChange={(val) => {
           setSearchParams(
             (prev) => {
@@ -340,15 +354,22 @@ export function LoanDetailPage() {
               <span>Thành viên hộ ({loan.householdMembers?.length ?? 0})</span>
             </TabsTrigger>
           )}
-          <TabsTrigger value="valuations">
-            Định giá ({valuationsCount})
-          </TabsTrigger>
+          {loan.loanType === LoanType.THE_CHAP && (
+            <TabsTrigger value="valuations">
+              Định giá ({valuationsCount})
+            </TabsTrigger>
+          )}
           <TabsTrigger value="disbursements">
             Giải ngân ({activeDisbursements.length})
           </TabsTrigger>
           <TabsTrigger value="repayments">
             Thu nợ gốc & lãi ({activeRepayments.length})
           </TabsTrigger>
+          {isDisbursedForInspection && (
+            <TabsTrigger value="inspections">
+              Biên bản kiểm tra ({completedInspectionsCount}/4)
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
@@ -718,13 +739,15 @@ export function LoanDetailPage() {
           </TabsContent>
         )}
 
-        <TabsContent value="valuations">
-          <LoanValuationSection
-            loanId={loan.id}
-            collaterals={loan.collaterals ?? []}
-            readOnly={!isEditable}
-          />
-        </TabsContent>
+        {loan.loanType === LoanType.THE_CHAP && (
+          <TabsContent value="valuations">
+            <LoanValuationSection
+              loanId={loan.id}
+              collaterals={loan.collaterals ?? []}
+              readOnly={!isEditable}
+            />
+          </TabsContent>
+        )}
 
         <TabsContent value="disbursements">
           <DisbursementsSection
@@ -747,6 +770,12 @@ export function LoanDetailPage() {
             repayments={loan.repayments ?? []}
           />
         </TabsContent>
+
+        {isDisbursedForInspection && (
+          <TabsContent value="inspections">
+            <LoanInspectionSection loan={loan} />
+          </TabsContent>
+        )}
 
         {isRelatedPersonEligible && (
           <TabsContent value="related-persons">

@@ -8,6 +8,8 @@ import {
   updateMemberSchema,
   memberFilterQuerySchema,
   deleteMemberBodySchema,
+  saveCreditRatingSchema,
+  batchCreditRatingSchema,
 } from './member.validator';
 
 const router = Router();
@@ -27,6 +29,18 @@ router.get(
   asyncHandler(memberController.findMany)
 );
 
+router.put(
+  '/batch/credit-rating',
+  validate({ body: batchCreditRatingSchema }),
+  asyncHandler(memberController.batchSaveCreditRating)
+);
+
+router.post(
+  '/batch/credit-rating/export-zip',
+  validate({ body: batchCreditRatingSchema }),
+  asyncHandler(memberController.batchExportCreditRatingZip)
+);
+
 router.get('/:id', asyncHandler(memberController.getById));
 
 router.put(
@@ -39,6 +53,23 @@ router.delete(
   '/:id',
   validate({ body: deleteMemberBodySchema }),
   asyncHandler(memberController.delete)
+);
+
+router.put(
+  '/:id/credit-rating',
+  validate({ body: saveCreditRatingSchema }),
+  asyncHandler(memberController.saveCreditRating)
+);
+
+router.post(
+  '/:id/credit-rating/export-docx',
+  validate({ body: saveCreditRatingSchema.optional() }),
+  asyncHandler(memberController.exportCreditRatingDocx)
+);
+
+router.delete(
+  '/:id/credit-rating',
+  asyncHandler(memberController.deleteCreditRating)
 );
 
 export const memberRoutes = router;

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import dayjs from 'dayjs';
 import { FilePenLine, Info } from 'lucide-react';
 import { DateInput } from '@/components/form';
 import {
@@ -40,17 +41,21 @@ export function LoanContractModal({
   useEffect(() => {
     if (open) {
       setContractNumber(loan.contractNumber || '');
-      setContractDate(loan.contractDate ? loan.contractDate.slice(0, 10) : '');
+      setContractDate(
+        loan.contractDate
+          ? dayjs(loan.contractDate).format('YYYY-MM-DD')
+          : dayjs().format('YYYY-MM-DD'),
+      );
       setApplicationDate(
         loan.applicationDate
-          ? loan.applicationDate.slice(0, 10)
+          ? dayjs(loan.applicationDate).format('YYYY-MM-DD')
           : loan.createdAt
-            ? loan.createdAt.slice(0, 10)
-            : '',
+            ? dayjs(loan.createdAt).format('YYYY-MM-DD')
+            : dayjs().format('YYYY-MM-DD'),
       );
       setCommitteeAuthDate(
         loan.mortgageContract?.committeeAuthDate
-          ? loan.mortgageContract.committeeAuthDate.slice(0, 10)
+          ? dayjs(loan.mortgageContract.committeeAuthDate).format('YYYY-MM-DD')
           : '',
       );
     }

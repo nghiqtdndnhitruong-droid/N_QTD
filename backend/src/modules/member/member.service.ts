@@ -14,8 +14,14 @@ import {
   parseCitizenIdInfo,
   requireValidCitizenIdInfo,
 } from '../../shared/utils/identity-document.util';
+import PizZip from 'pizzip';
 import { areaService } from '../area/area.service';
 import { prisma } from '../../config/database';
+import {
+  calculateMemberCreditScore,
+  generateMemberCreditRatingDocx,
+  resolveAgeCriterionKey,
+} from './member-credit-rating.service';
 
 import { AuthUserResponse } from '../auth/auth.types';
 import { UserRole } from '@prisma/client';
@@ -264,6 +270,158 @@ export class MemberService {
       fullName: member.fullName,
       deleteMode: 'HARD_DELETE',
     };
+  }
+
+  async saveCreditRating(
+    id: string,
+    selections: Record<string, string>,
+    currentUser?: AuthUserResponse,
+  ) {
+    const member = await this.getById(id, currentUser);
+    const score = calculateMemberCreditScore(member.yearOfBirth, selections);
+
+    return prisma.member.update({
+      where: { id },
+      data: {
+        creditRating: {
+          selections: score.selections,
+          group1Score: score.group1Score,
+          group2Score: score.group2Score,
+          totalScore: score.totalScore,
+          rank: score.rank,
+          riskLevel: score.riskLevel,
+          ratedAt: new Date(),
+          ratedById: currentUser?.id ?? null,
+        },
+      },
+    });
+  }
+
+  async exportCreditRatingDocx(
+    id: string,
+    selections?: Record<string, string>,
+    currentUser?: AuthUserResponse,
+  ): Promise<{ buffer: Buffer; fileName: string }> {
+    const member = await this.getById(id, currentUser);
+    const existingSelections =
+      (member.creditRating?.selections as Record<string, string> | undefined) ?? {};
+    const effectiveSelections =
+      selections && Object.keys(selections).length > 0 ? selections : existingSelections;
+
+    const score = calculateMemberCreditScore(member.yearOfBirth, effectiveSelections);
+
+    await prisma.member.update({
+      where: { id },
+      data: {
+        creditRating: {
+          selections: score.selections,
+          group1Score: score.group1Score,
+          group2Score: score.group2Score,
+          totalScore: score.totalScore,
+          rank: score.rank,
+          riskLevel: score.riskLevel,
+          ratedAt: new Date(),
+          ratedById: currentUser?.id ?? null,
+        },
+      },
+    });
+
+    const buffer = generateMemberCreditRatingDocx(member, score);
+    const safeName = member.fullName.trim().replace(/[\\/:*?"<>|]/g, '_');
+    const fileName = `Bang_cham_diem_${safeName}_${score.rank}.docx`;
+    return { buffer, fileName };
+  }
+
+  async deleteCreditRating(id: string, currentUser?: AuthUserResponse) {
+    await this.getById(id, currentUser);
+    return prisma.member.update({
+      where: { id },
+      data: {
+        creditRating: null,
+      },
+    });
+  }
+
+  async batchSaveCreditRating(
+    memberIds: string[],
+    selections: Record<string, string>,
+    currentUser?: AuthUserResponse,
+  ) {
+    const uniqueIds = Array.from(new Set(memberIds));
+    const updatedMembers = [];
+
+    for (const id of uniqueIds) {
+      const member = await this.getById(id, currentUser);
+      const autoAgeKey = resolveAgeCriterionKey(member.yearOfBirth);
+      const score = calculateMemberCreditScore(member.yearOfBirth, {
+        ...selections,
+        c1: autoAgeKey,
+      });
+
+      const updated = await prisma.member.update({
+        where: { id },
+        data: {
+          creditRating: {
+            selections: score.selections,
+            group1Score: score.group1Score,
+            group2Score: score.group2Score,
+            totalScore: score.totalScore,
+            rank: score.rank,
+            riskLevel: score.riskLevel,
+            ratedAt: new Date(),
+            ratedById: currentUser?.id ?? null,
+          },
+        },
+      });
+      updatedMembers.push(updated);
+    }
+
+    return updatedMembers;
+  }
+
+  async batchExportCreditRatingZip(
+    memberIds: string[],
+    selections: Record<string, string>,
+    currentUser?: AuthUserResponse,
+  ): Promise<{ buffer: Buffer; fileName: string }> {
+    const uniqueIds = Array.from(new Set(memberIds));
+    const archive = new PizZip();
+
+    for (let idx = 0; idx < uniqueIds.length; idx++) {
+      const id = uniqueIds[idx]!;
+      const member = await this.getById(id, currentUser);
+      const autoAgeKey = resolveAgeCriterionKey(member.yearOfBirth);
+      const score = calculateMemberCreditScore(member.yearOfBirth, {
+        ...selections,
+        c1: autoAgeKey,
+      });
+
+      await prisma.member.update({
+        where: { id },
+        data: {
+          creditRating: {
+            selections: score.selections,
+            group1Score: score.group1Score,
+            group2Score: score.group2Score,
+            totalScore: score.totalScore,
+            rank: score.rank,
+            riskLevel: score.riskLevel,
+            ratedAt: new Date(),
+            ratedById: currentUser?.id ?? null,
+          },
+        },
+      });
+
+      const docxBuffer = generateMemberCreditRatingDocx(member, score);
+      const safeName = member.fullName.trim().replace(/[\\/:*?"<>|]/g, '_');
+      const prefix = String(idx + 1).padStart(2, '0');
+      const entryName = `${prefix}. Bang_cham_diem_${safeName}_${score.rank}.docx`;
+      archive.file(entryName, docxBuffer);
+    }
+
+    const buffer = archive.generate({ type: 'nodebuffer', compression: 'DEFLATE' });
+    const fileName = `Bang_cham_diem_nhom_${uniqueIds.length}_khach_hang.zip`;
+    return { buffer, fileName };
   }
 }
 

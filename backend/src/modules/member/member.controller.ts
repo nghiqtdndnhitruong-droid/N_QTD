@@ -74,6 +74,87 @@ export class MemberController {
     };
     res.status(200).json(response);
   };
+
+  saveCreditRating = async (req: Request, res: Response): Promise<void> => {
+    const id = String(req.params.id);
+    const selections = (req.body?.selections ?? {}) as Record<string, string>;
+    const updated = await this.service.saveCreditRating(id, selections, req.user);
+    const response: ApiResponse<MemberEntity> = {
+      success: true,
+      message: 'Đã lưu kết quả chấm điểm xếp hạng tín dụng thành công',
+      data: updated,
+      timestamp: new Date().toISOString(),
+    };
+    res.status(200).json(response);
+  };
+
+  exportCreditRatingDocx = async (req: Request, res: Response): Promise<void> => {
+    const id = String(req.params.id);
+    const selections = req.body?.selections as Record<string, string> | undefined;
+    const { buffer, fileName } = await this.service.exportCreditRatingDocx(
+      id,
+      selections,
+      req.user,
+    );
+
+    const encodedFileName = encodeURIComponent(fileName);
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    );
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="Bang_cham_diem.docx"; filename*=UTF-8''${encodedFileName}`,
+    );
+    res.send(buffer);
+  };
+
+  deleteCreditRating = async (req: Request, res: Response): Promise<void> => {
+    const id = String(req.params.id);
+    const updated = await this.service.deleteCreditRating(id, req.user);
+    const response: ApiResponse<MemberEntity> = {
+      success: true,
+      message: 'Đã xóa kết quả chấm điểm xếp hạng tín dụng thành công',
+      data: updated,
+      timestamp: new Date().toISOString(),
+    };
+    res.status(200).json(response);
+  };
+
+  batchSaveCreditRating = async (req: Request, res: Response): Promise<void> => {
+    const memberIds = (req.body?.memberIds ?? []) as string[];
+    const selections = (req.body?.selections ?? {}) as Record<string, string>;
+    const updated = await this.service.batchSaveCreditRating(
+      memberIds,
+      selections,
+      req.user,
+    );
+    const response: ApiResponse<MemberEntity[]> = {
+      success: true,
+      message: `Đã chấm điểm và lưu kết quả cho ${updated.length} khách hàng thành công`,
+      data: updated,
+      timestamp: new Date().toISOString(),
+    };
+    res.status(200).json(response);
+  };
+
+  batchExportCreditRatingZip = async (req: Request, res: Response): Promise<void> => {
+    const memberIds = (req.body?.memberIds ?? []) as string[];
+    const selections = (req.body?.selections ?? {}) as Record<string, string>;
+    const { buffer, fileName } = await this.service.batchExportCreditRatingZip(
+      memberIds,
+      selections,
+      req.user,
+    );
+
+    const encodedFileName = encodeURIComponent(fileName);
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="Bang_cham_diem_nhom.zip"; filename*=UTF-8''${encodedFileName}`,
+    );
+    res.send(buffer);
+  };
 }
 
 export const memberController = new MemberController();

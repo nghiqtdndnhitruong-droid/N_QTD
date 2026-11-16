@@ -361,6 +361,9 @@ export class LoanRepository {
     if (data.contractDate !== undefined) {
       updateData.contractDate = data.contractDate ? new Date(data.contractDate) : null;
     }
+    if (data.inspectionChecks !== undefined) {
+      updateData.inspectionChecks = data.inspectionChecks.slice(0, 4).map(Boolean);
+    }
 
     if (data.heir !== undefined) {
       updateData.heir = data.heir

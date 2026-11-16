@@ -68,6 +68,7 @@ export interface CreateLoanDto {
 
 export interface UpdateLoanDto extends Partial<Omit<CreateLoanDto, 'memberId'>> {
   interestRate?: number;
+  inspectionChecks?: boolean[];
 }
 
 export interface LoanFilterQuery extends PaginationQuery {

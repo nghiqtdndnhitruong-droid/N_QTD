@@ -1,5 +1,16 @@
 import type { Gender, IdDocumentType, ListQueryParams } from '@/shared/types';
 
+export interface MemberCreditRating {
+  selections: Record<string, string>;
+  group1Score: number;
+  group2Score: number;
+  totalScore: number;
+  rank: string;
+  riskLevel: string;
+  ratedAt: string;
+  ratedById?: string | null;
+}
+
 export interface Member {
   id: string;
   memberCode?: string | null;
@@ -21,6 +32,7 @@ export interface Member {
   hamletName?: string | null;
   addressDetail?: string | null;
   address: string;
+  creditRating?: MemberCreditRating | null;
   isDeleted?: boolean;
   createdAt: string;
   updatedAt: string;

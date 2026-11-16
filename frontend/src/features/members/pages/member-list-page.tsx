@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import type { ColumnDef } from '@tanstack/react-table';
-import { Download, Eye, MapPin, Pencil, Plus, Trash2 } from 'lucide-react';
+import { Award, Download, Eye, MapPin, Pencil, Plus, Trash2 } from 'lucide-react';
 import { Gender, IdDocumentType } from '@/shared/types';
 import { GENDER_LABELS, ID_DOCUMENT_TYPE_LABELS } from '@/shared/constants';
 import { formatDateVN } from '@/shared/format';
@@ -18,6 +18,8 @@ import {
 import { Can } from '@/features/auth/components/can';
 import { useAreaTree } from '@/features/areas/hooks/use-areas';
 import { checkIdExpiryStatus } from '@/features/loans/utils/loan-warnings';
+import { BatchMemberCreditScoringModal } from '../components/batch-member-credit-scoring-modal';
+import { MemberCreditRatingBadge } from '../components/member-credit-scoring-tab';
 import { useDeleteMember, useMembersList } from '../hooks/use-members';
 import type { Member } from '../types/member.types';
 
@@ -26,6 +28,8 @@ const FILTER_KEYS = ['gender', 'idType', 'communeId', 'hamletId'] as const;
 export function MemberListPage() {
   const navigate = useNavigate();
   const [deletingMember, setDeletingMember] = useState<Member | null>(null);
+  const [selectedMembersMap, setSelectedMembersMap] = useState<Record<string, Member>>({});
+  const [batchScoringOpen, setBatchScoringOpen] = useState(false);
   const deleteMemberMutation = useDeleteMember();
   const { data: areaTree = [] } = useAreaTree();
 
@@ -63,8 +67,67 @@ export function MemberListPage() {
     hamletId: tableState.filters.hamletId,
   });
 
+  const pageItems = data?.items ?? [];
+  const selectedMembersList = useMemo(
+    () => Object.values(selectedMembersMap),
+    [selectedMembersMap],
+  );
+  const isAllPageSelected =
+    pageItems.length > 0 && pageItems.every((m) => Boolean(selectedMembersMap[m.id]));
+
+  const toggleSelectMember = (member: Member) => {
+    setSelectedMembersMap((prev) => {
+      const next = { ...prev };
+      if (next[member.id]) {
+        delete next[member.id];
+      } else {
+        next[member.id] = member;
+      }
+      return next;
+    });
+  };
+
+  const toggleSelectAllPage = () => {
+    setSelectedMembersMap((prev) => {
+      const next = { ...prev };
+      if (isAllPageSelected) {
+        for (const m of pageItems) {
+          delete next[m.id];
+        }
+      } else {
+        for (const m of pageItems) {
+          next[m.id] = m;
+        }
+      }
+      return next;
+    });
+  };
+
   const columns = useMemo<ColumnDef<Member>[]>(
     () => [
+      {
+        id: 'select',
+        header: () => (
+          <input
+            type="checkbox"
+            aria-label="Chọn tất cả thành viên trên trang"
+            checked={isAllPageSelected}
+            onChange={toggleSelectAllPage}
+            onClick={(e) => e.stopPropagation()}
+            className="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
+          />
+        ),
+        cell: ({ row }) => (
+          <input
+            type="checkbox"
+            aria-label={`Chọn ${row.original.fullName}`}
+            checked={Boolean(selectedMembersMap[row.original.id])}
+            onChange={() => toggleSelectMember(row.original)}
+            onClick={(e) => e.stopPropagation()}
+            className="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
+          />
+        ),
+      },
       {
         accessorKey: 'memberCode',
         header: 'Mã TV',
@@ -175,11 +238,27 @@ export function MemberListPage() {
         ),
       },
       {
+        id: 'creditRating',
+        header: 'Xếp hạng TD',
+        cell: ({ row }) => <MemberCreditRatingBadge member={row.original} />,
+      },
+      {
         id: 'actions',
         header: 'Thao tác',
         meta: { align: 'right', sticky: 'right' },
         cell: ({ row }) => (
           <div className="inline-flex items-center justify-end gap-1">
+            <Button
+              variant="secondary"
+              size="sm"
+              leftIcon={<Award className="h-3.5 w-3.5" />}
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate(`/members/${row.original.id}?tab=scoring`);
+              }}
+            >
+              Chấm điểm
+            </Button>
             <Button
               variant="ghost"
               size="sm"
@@ -222,7 +301,7 @@ export function MemberListPage() {
         ),
       },
     ],
-    [navigate],
+    [navigate, isAllPageSelected, selectedMembersMap, pageItems],
   );
 
   const handleConfirmDelete = async () => {
@@ -255,6 +334,23 @@ export function MemberListPage() {
         description="Danh sách thành viên Quỹ tín dụng nhân dân theo địa bàn Ấp → Xã → Tỉnh, thông tin căn cước và lịch sử vay vốn."
         actions={
           <>
+            <Button
+              variant="secondary"
+              size="sm"
+              leftIcon={<Award className="h-4 w-4" />}
+              onClick={() => {
+                if (selectedMembersList.length === 0) {
+                  notifyInfo(
+                    'Vui lòng tích chọn khách hàng ở cột đầu bảng',
+                    'Bạn có thể tích chọn nhiều khách hàng trong danh sách để chấm điểm nhóm cùng lúc.',
+                  );
+                  return;
+                }
+                setBatchScoringOpen(true);
+              }}
+            >
+              Chấm điểm nhóm{selectedMembersList.length > 0 ? ` (${selectedMembersList.length})` : ''}
+            </Button>
             <Can perm="report:export">
               <Button
                 variant="outline"
@@ -360,6 +456,35 @@ export function MemberListPage() {
         }
       />
 
+      {selectedMembersList.length > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary-300 bg-primary-50/80 px-4 py-3 shadow-xs">
+          <div className="flex items-center gap-2 text-xs font-medium text-primary-950">
+            <Award className="h-4 w-4 text-primary-600" />
+            <span>
+              Đã chọn <strong>{selectedMembersList.length}</strong> khách hàng để chấm điểm nhóm (Tuổi tự động tính riêng từng người)
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setSelectedMembersMap({})}
+            >
+              Bỏ chọn tất cả
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              leftIcon={<Award className="h-4 w-4" />}
+              onClick={() => setBatchScoringOpen(true)}
+            >
+              Mở bảng chấm điểm nhóm ({selectedMembersList.length} người)
+            </Button>
+          </div>
+        </div>
+      )}
+
       <DataTable
         columns={columns}
         data={data?.items ?? []}
@@ -425,6 +550,20 @@ export function MemberListPage() {
         tone="danger"
         isLoading={deleteMemberMutation.isPending}
         onConfirm={handleConfirmDelete}
+      />
+
+      <BatchMemberCreditScoringModal
+        open={batchScoringOpen}
+        onOpenChange={setBatchScoringOpen}
+        selectedMembers={selectedMembersList}
+        onRemoveMember={(memberId) => {
+          setSelectedMembersMap((prev) => {
+            const next = { ...prev };
+            delete next[memberId];
+            return next;
+          });
+        }}
+        onSuccess={() => void refetch()}
       />
     </div>
   );

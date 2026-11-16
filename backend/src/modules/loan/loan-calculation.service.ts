@@ -243,8 +243,12 @@ export class LoanCalculationService {
       }
     }
 
-    // Xác định ngày đáo hạn dự kiến (theo 12 hoặc 24 tháng)
-    const effectiveStartDate = loan.loanStartDate ?? loan.createdAt;
+    // Xác định ngày đáo hạn dự kiến (theo 12 hoặc 24 tháng), ưu tiên ngày giải ngân đầu tiên nếu đã giải ngân
+    const sortedDisbursements = [...activeDisbursements].sort(
+      (a, b) => new Date(a.disbursementDate).getTime() - new Date(b.disbursementDate).getTime()
+    );
+    const effectiveStartDate =
+      sortedDisbursements[0]?.disbursementDate ?? loan.loanStartDate ?? loan.createdAt;
     const expectedMaturityDate =
       loan.expectedMaturityDate ??
       (effectiveStartDate ? addMonthsToDate(effectiveStartDate, loan.termMonths) : loan.maturityDate);

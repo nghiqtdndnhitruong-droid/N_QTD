@@ -214,6 +214,7 @@ export interface Loan {
   maturityDate: string | null;
   halfTermPaymentDate?: string | null;
   settlementDate: string | null;
+  inspectionChecks?: boolean[];
   heir: Heir | null;
   relatedPersons?: RelatedPerson[];
   isRelatedPersonEligible?: boolean;
@@ -327,6 +328,7 @@ export interface CreateLoanPayload {
 
 export type UpdateLoanPayload = Partial<Omit<CreateLoanPayload, 'memberId' | 'mortgageContract'>> & {
   mortgageContract?: Partial<MortgageContract>;
+  inspectionChecks?: boolean[];
 };
 
 export interface CreateCollateralPayload {

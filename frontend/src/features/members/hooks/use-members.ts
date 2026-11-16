@@ -57,3 +57,77 @@ export function useDeleteMember() {
     },
   });
 }
+
+export function useSaveMemberCreditRating(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (selections: Record<string, string>) =>
+      membersApi.saveCreditRating(id, selections),
+    onSuccess: (updated) => {
+      qc.setQueryData(queryKeys.members.detail(id), updated);
+      void qc.invalidateQueries({ queryKey: queryKeys.members.lists() });
+    },
+  });
+}
+
+export function useDeleteMemberCreditRating(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => membersApi.deleteCreditRating(id),
+    onSuccess: (updated) => {
+      qc.setQueryData(queryKeys.members.detail(id), updated);
+      void qc.invalidateQueries({ queryKey: queryKeys.members.lists() });
+    },
+  });
+}
+
+export function useExportMemberCreditRatingDocx(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      selections,
+      defaultFileName,
+    }: {
+      selections: Record<string, string>;
+      defaultFileName?: string;
+    }) => membersApi.exportCreditRatingDocx(id, selections, defaultFileName),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: queryKeys.members.detail(id) });
+      void qc.invalidateQueries({ queryKey: queryKeys.members.lists() });
+    },
+  });
+}
+
+export function useBatchSaveMemberCreditRating() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      memberIds,
+      selections,
+    }: {
+      memberIds: string[];
+      selections: Record<string, string>;
+    }) => membersApi.batchSaveCreditRating(memberIds, selections),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: queryKeys.members.all });
+    },
+  });
+}
+
+export function useBatchExportMemberCreditRatingZip() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      memberIds,
+      selections,
+      defaultFileName,
+    }: {
+      memberIds: string[];
+      selections: Record<string, string>;
+      defaultFileName?: string;
+    }) => membersApi.batchExportCreditRatingZip(memberIds, selections, defaultFileName),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: queryKeys.members.all });
+    },
+  });
+}

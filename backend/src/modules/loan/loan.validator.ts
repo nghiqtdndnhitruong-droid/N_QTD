@@ -111,6 +111,7 @@ export const updateLoanSchema = createLoanSchema
   .extend({
     mortgageContract: updateMortgageContractSchema.optional().nullable(),
     interestRate: z.number().positive().optional(),
+    inspectionChecks: z.array(z.boolean()).max(4).optional(),
   });
 
 export const updateLoanStatusSchema = z.object({

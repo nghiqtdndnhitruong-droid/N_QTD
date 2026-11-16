@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router';
-import { ArrowLeft, CreditCard, MapPin, Pencil, Plus, Trash2 } from 'lucide-react';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
+import { Award, ArrowLeft, CreditCard, MapPin, Pencil, Plus, Trash2 } from 'lucide-react';
 import { LoanStatus } from '@/shared/types';
 import {
   GENDER_LABELS,
@@ -20,6 +20,10 @@ import {
   DescriptionItem,
   DescriptionList,
   LoanStatusBadge,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
 } from '@/components/ui';
 import {
   Alert,
@@ -34,11 +38,14 @@ import { PageHeader } from '@/components/layout';
 import { Can } from '@/features/auth/components/can';
 import { useLoansList } from '@/features/loans/hooks/use-loans';
 import { checkIdExpiryStatus } from '@/features/loans/utils/loan-warnings';
+import { MemberCreditScoringTab } from '../components/member-credit-scoring-tab';
 import { useDeleteMember, useMemberDetail } from '../hooks/use-members';
 
 export function MemberDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const currentTab = searchParams.get('tab') === 'scoring' ? 'scoring' : 'info';
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
   const { data: member, isLoading, error, refetch } = useMemberDetail(id);
@@ -124,6 +131,23 @@ export function MemberDetailPage() {
                 Chỉnh sửa
               </Button>
             </Can>
+            <Button
+              variant={currentTab === 'scoring' ? 'primary' : 'secondary'}
+              size="sm"
+              leftIcon={<Award className="h-4 w-4" />}
+              onClick={() =>
+                setSearchParams(
+                  (prev) => {
+                    const next = new URLSearchParams(prev);
+                    next.set('tab', 'scoring');
+                    return next;
+                  },
+                  { replace: true },
+                )
+              }
+            >
+              Chấm điểm khách hàng
+            </Button>
             <Can perm="loan:create">
               <Button
                 size="sm"
@@ -157,8 +181,35 @@ export function MemberDetailPage() {
         </Alert>
       )}
 
-      <Card>
-        <CardHeader>
+      <Tabs
+        value={currentTab}
+        onValueChange={(val) => {
+          setSearchParams(
+            (prev) => {
+              const next = new URLSearchParams(prev);
+              next.set('tab', val);
+              return next;
+            },
+            { replace: true },
+          );
+        }}
+      >
+        <TabsList>
+          <TabsTrigger value="info">Thông tin & Lịch sử khoản vay ({loans.length})</TabsTrigger>
+          <TabsTrigger value="scoring" className="gap-2">
+            <Award className="h-3.5 w-3.5 text-primary-600" />
+            <span>Chấm điểm khách hàng</span>
+            {member.creditRating && (
+              <Badge tone="primary" className="text-[10px]">
+                Hạng {member.creditRating.rank} ({member.creditRating.totalScore}đ)
+              </Badge>
+            )}
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="info" className="space-y-6">
+          <Card>
+            <CardHeader>
           <div>
             <CardTitle>Thông tin định danh & Địa bàn quản lý</CardTitle>
             <CardDescription>Thông tin pháp lý và địa bàn Tỉnh → Xã → Ấp của người vay</CardDescription>
@@ -306,6 +357,12 @@ export function MemberDetailPage() {
           )}
         </CardContent>
       </Card>
+        </TabsContent>
+
+        <TabsContent value="scoring">
+          <MemberCreditScoringTab member={member} />
+        </TabsContent>
+      </Tabs>
 
       <ConfirmDialog
         open={confirmDeleteOpen}

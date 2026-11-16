@@ -143,3 +143,16 @@ export const memberFilterQuerySchema = z.object({
   communeId: objectIdSchema.optional(),
   hamletId: objectIdSchema.optional(),
 });
+
+export const saveCreditRatingSchema = z.object({
+  selections: z.record(z.string(), z.string()).default({}),
+});
+
+export const batchCreditRatingSchema = z.object({
+  memberIds: z
+    .array(objectIdSchema)
+    .min(1, 'Vui lòng chọn ít nhất 1 khách hàng để chấm điểm nhóm'),
+  selections: z.record(z.string(), z.string()).default({}),
+});
+
+
