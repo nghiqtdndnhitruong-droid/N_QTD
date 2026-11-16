@@ -107,25 +107,46 @@ export function MemberListPage() {
     () => [
       {
         id: 'select',
+        meta: { className: '!p-0 w-12', align: 'center' },
         header: () => (
-          <input
-            type="checkbox"
-            aria-label="Chọn tất cả thành viên trên trang"
-            checked={isAllPageSelected}
-            onChange={toggleSelectAllPage}
-            onClick={(e) => e.stopPropagation()}
-            className="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
-          />
+          <div
+            onClick={(e) => {
+              e.stopPropagation();
+              if (e.target === e.currentTarget) {
+                toggleSelectAllPage();
+              }
+            }}
+            className="flex w-full items-center justify-center px-4 py-3 cursor-pointer"
+          >
+            <input
+              type="checkbox"
+              aria-label="Chọn tất cả thành viên trên trang"
+              checked={isAllPageSelected}
+              onChange={toggleSelectAllPage}
+              onClick={(e) => e.stopPropagation()}
+              className="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
+            />
+          </div>
         ),
         cell: ({ row }) => (
-          <input
-            type="checkbox"
-            aria-label={`Chọn ${row.original.fullName}`}
-            checked={Boolean(selectedMembersMap[row.original.id])}
-            onChange={() => toggleSelectMember(row.original)}
-            onClick={(e) => e.stopPropagation()}
-            className="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
-          />
+          <div
+            onClick={(e) => {
+              e.stopPropagation();
+              if (e.target === e.currentTarget) {
+                toggleSelectMember(row.original);
+              }
+            }}
+            className="flex min-h-[48px] w-full items-center justify-center px-4 py-3 cursor-pointer"
+          >
+            <input
+              type="checkbox"
+              aria-label={`Chọn ${row.original.fullName}`}
+              checked={Boolean(selectedMembersMap[row.original.id])}
+              onChange={() => toggleSelectMember(row.original)}
+              onClick={(e) => e.stopPropagation()}
+              className="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
+            />
+          </div>
         ),
       },
       {
@@ -455,35 +476,6 @@ export function MemberListPage() {
           </>
         }
       />
-
-      {selectedMembersList.length > 0 && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary-300 bg-primary-50/80 px-4 py-3 shadow-xs">
-          <div className="flex items-center gap-2 text-xs font-medium text-primary-950">
-            <Award className="h-4 w-4 text-primary-600" />
-            <span>
-              Đã chọn <strong>{selectedMembersList.length}</strong> khách hàng để chấm điểm nhóm (Tuổi tự động tính riêng từng người)
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => setSelectedMembersMap({})}
-            >
-              Bỏ chọn tất cả
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              leftIcon={<Award className="h-4 w-4" />}
-              onClick={() => setBatchScoringOpen(true)}
-            >
-              Mở bảng chấm điểm nhóm ({selectedMembersList.length} người)
-            </Button>
-          </div>
-        </div>
-      )}
 
       <DataTable
         columns={columns}
