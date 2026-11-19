@@ -12,10 +12,10 @@ describe('computeLoanInspectionSchedule', () => {
       'Tháng 11/2026',
     ]);
     expect(schedule.map((s) => s.quarterEndDate)).toEqual([
-      '31/03/2026',
-      '30/06/2026',
-      '30/09/2026',
-      '30/11/2026',
+      '26/03/2026',
+      '26/06/2026',
+      '26/09/2026',
+      '26/11/2026',
     ]);
     expect(schedule.map((s) => s.completed)).toEqual([true, false, true, false]);
   });
@@ -54,6 +54,13 @@ describe('computeLoanInspectionSchedule', () => {
     expect(normalizeInspectionChecks(undefined)).toEqual([false, false, false, false]);
     expect(normalizeInspectionChecks([true])).toEqual([true, false, false, false]);
     expect(normalizeInspectionChecks([true, true, false, true])).toEqual([true, true, false, true]);
+  });
+
+  it('6. Đánh dấu isDueOrPast đúng mốc ngày 26 của quý (trễ bao nhiêu đợt thì bấy nhiêu đợt isDueOrPast=true)', () => {
+    // Giải ngân 15/02/2026 -> các mốc là 26/03/2026, 26/06/2026, 26/09/2026, 26/11/2026
+    // Giả sử ngày hiện tại là 26/09/2026 -> Đợt 1, 2, 3 đã tới hạn (3 ô), Đợt 4 chưa tới hạn
+    const schedule = computeLoanInspectionSchedule('2026-02-15', [false, false, false, false], '2026-09-26');
+    expect(schedule.map((s) => s.isDueOrPast)).toEqual([true, true, true, false]);
   });
 });
 

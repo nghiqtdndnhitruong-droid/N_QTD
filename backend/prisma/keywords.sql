@@ -351,6 +351,9 @@ INSERT INTO global_word_keywords (id, keyword, displayName, category, dataPath, 
   '6af26aa5472796774964522b', 'CO_CHU_SO_HUU_2', 'Khoản vay có 2 người cùng sở hữu tài sản (True/False)', 'TAI_SAN', 'CO_CHU_SO_HUU_2', 'BOOLEAN', NULL, '...................', FALSE, NULL, NULL, TRUE, '2026-11-10T00:51:49.487Z', '2026-11-10T00:51:49.487Z'
 );
 INSERT INTO global_word_keywords (id, keyword, displayName, category, dataPath, dataType, formatPattern, defaultValue, isList, itemProperties, description, isSystem, createdAt, updatedAt) VALUES (
+  '6af800000000000000000001', 'TAI_SAN.CO_TAI_SAN_HO', 'Kiểm tra có ít nhất 1 tài sản đứng tên Hộ (True/False)', 'TAI_SAN', 'TAI_SAN.CO_TAI_SAN_HO', 'BOOLEAN', NULL, '...................', FALSE, NULL, NULL, TRUE, '2026-11-17T00:32:00.000Z', '2026-11-17T00:32:00.000Z'
+);
+INSERT INTO global_word_keywords (id, keyword, displayName, category, dataPath, dataType, formatPattern, defaultValue, isList, itemProperties, description, isSystem, createdAt, updatedAt) VALUES (
   '6af13bc1f7cebc95ed1e0530', 'CO_TRONG_NHOM_1', 'Địa chỉ/Tài sản thuộc Nhóm 1 (CO_TRONG_NHOM_1)', 'TAI_SAN', 'flatVariables.CO_TRONG_NHOM_1', 'BOOLEAN', NULL, '...................', FALSE, NULL, NULL, TRUE, '2026-11-09T03:19:29.570Z', '2026-11-09T03:19:29.570Z'
 );
 INSERT INTO global_word_keywords (id, keyword, displayName, category, dataPath, dataType, formatPattern, defaultValue, isList, itemProperties, description, isSystem, createdAt, updatedAt) VALUES (

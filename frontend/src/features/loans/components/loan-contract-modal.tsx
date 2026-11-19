@@ -44,7 +44,7 @@ export function LoanContractModal({
       setContractDate(
         loan.contractDate
           ? dayjs(loan.contractDate).format('YYYY-MM-DD')
-          : dayjs().format('YYYY-MM-DD'),
+          : '',
       );
       setApplicationDate(
         loan.applicationDate

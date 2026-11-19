@@ -824,6 +824,8 @@ export class WordTemplateService {
       return { path: 'collaterals_summary.totalValuationAmountRounded', dataType: 'CURRENCY' };
     if (k.includes('TONG_DIEN_TICH'))
       return { path: 'collaterals_summary.totalArea', dataType: 'NUMBER' };
+    if (k === 'TAI_SAN.CO_TAI_SAN_HO' || k === 'CO_TAI_SAN_HO')
+      return { path: 'TAI_SAN.CO_TAI_SAN_HO', dataType: 'BOOLEAN' };
 
     // Ngày tháng
     if (k === 'NGAY' || k === 'DAY') return { path: 'loan.applicationDateDay', dataType: 'TEXT' };

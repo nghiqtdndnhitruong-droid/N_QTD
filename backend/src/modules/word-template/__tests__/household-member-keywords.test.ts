@@ -214,5 +214,40 @@ describe('Household Members (Thành viên hộ gia đình) Keywords & Service Te
     expect(compiled.enrichedData.DANH_SACH_THANH_VIEN_HO[1]._number).toBe(4);
     expect(compiled.enrichedData.DANH_SACH_THANH_VIEN_HO[2]._number).toBe(5);
   });
+
+  it('TAI_SAN.CO_TAI_SAN_HO trả về true nếu có ít nhất 1 tài sản đứng tên Hộ và false nếu chỉ có cá nhân', () => {
+    const loanWithHouseholdAsset = {
+      id: 'loan-ho-1',
+      loanType: LoanType.THE_CHAP,
+      termType: 'NGAN_HAN',
+      loanAmount: 100_000_000,
+      member: { fullName: 'Nguyễn Văn A' },
+      collaterals: [
+        { id: 'c1', ownerType: CollateralOwnerType.NGUOI_VAY_CA_NHAN },
+        { id: 'c2', ownerType: CollateralOwnerType.NGUOI_THUA_KE_HO },
+      ],
+    };
+    const loanWithoutHouseholdAsset = {
+      id: 'loan-ho-2',
+      loanType: LoanType.THE_CHAP,
+      termType: 'NGAN_HAN',
+      loanAmount: 100_000_000,
+      member: { fullName: 'Nguyễn Văn B' },
+      collaterals: [
+        { id: 'c1', ownerType: CollateralOwnerType.NGUOI_VAY_CA_NHAN },
+        { id: 'c2', ownerType: CollateralOwnerType.NGUOI_THUA_KE_CA_NHAN },
+      ],
+    };
+
+    const resTrue = dictionaryService.resolveLoanData(loanWithHouseholdAsset, []);
+    expect(resTrue.resolvedContext['TAI_SAN.CO_TAI_SAN_HO']).toBe(true);
+    expect(resTrue.resolvedContext.TAI_SAN?.CO_TAI_SAN_HO).toBe(true);
+    expect(resTrue.resolvedContext.CO_TAI_SAN_HO).toBe(true);
+
+    const resFalse = dictionaryService.resolveLoanData(loanWithoutHouseholdAsset, []);
+    expect(resFalse.resolvedContext['TAI_SAN.CO_TAI_SAN_HO']).toBe(false);
+    expect(resFalse.resolvedContext.TAI_SAN?.CO_TAI_SAN_HO).toBe(false);
+    expect(resFalse.resolvedContext.CO_TAI_SAN_HO).toBe(false);
+  });
 });
 

@@ -39,6 +39,7 @@ export function LoanInspectionSection({ loan }: LoanInspectionSectionProps) {
 
   const schedule = computeLoanInspectionSchedule(disbursementDate, currentChecks);
   const completedCount = schedule.filter((item) => item.completed).length;
+  const overdueCount = schedule.filter((item) => !item.completed && item.isDueOrPast).length;
 
   const handleToggleRound = async (index: number) => {
     if (updateLoanMutation.isPending) return;
@@ -83,12 +84,17 @@ export function LoanInspectionSection({ loan }: LoanInspectionSectionProps) {
         <div>
           <CardTitle>Theo dõi Biên bản kiểm tra sử dụng vốn sau giải ngân (4 đợt)</CardTitle>
           <CardDescription>
-            Ngày giải ngân đầu tiên: <strong>{formatDateVN(disbursementDate)}</strong> · Định kỳ kiểm
-            tra vào cuối các quý Tháng 3, Tháng 6, Tháng 9, Tháng 11
+            Ngày giải ngân đầu tiên: <strong>{formatDateVN(disbursementDate)}</strong> · Định kỳ bổ
+            sung biên bản vào ngày 26 của các quý Tháng 3, Tháng 6, Tháng 9, Tháng 11
           </CardDescription>
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
+          {overdueCount > 0 && (
+            <Badge tone="danger">
+              Cần bổ sung: {overdueCount} biên bản tới hạn
+            </Badge>
+          )}
           <Badge tone={completedCount === 4 ? 'success' : completedCount > 0 ? 'primary' : 'neutral'}>
             Tiến độ: {completedCount}/4 biên bản
           </Badge>
@@ -136,7 +142,7 @@ export function LoanInspectionSection({ loan }: LoanInspectionSectionProps) {
                   item.completed
                     ? 'bg-emerald-500 shadow-xs'
                     : item.isDueOrPast
-                      ? 'bg-amber-300'
+                      ? 'bg-rose-500 shadow-xs'
                       : 'bg-slate-200'
                 }`}
               />
@@ -163,7 +169,7 @@ export function LoanInspectionSection({ loan }: LoanInspectionSectionProps) {
                   item.completed
                     ? 'border-emerald-300 bg-emerald-50/50 hover:border-emerald-400 hover:bg-emerald-50'
                     : item.isDueOrPast
-                      ? 'border-amber-200 bg-amber-50/30 hover:border-amber-300 hover:bg-amber-50/60'
+                      ? 'border-rose-300 bg-rose-50/50 hover:border-rose-400 hover:bg-rose-50/80'
                       : 'border-slate-200 bg-white hover:border-primary-300 hover:bg-slate-50'
                 } ${updateLoanMutation.isPending ? 'opacity-60 pointer-events-none' : ''}`}
               >
@@ -173,7 +179,9 @@ export function LoanInspectionSection({ loan }: LoanInspectionSectionProps) {
                     className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md border-2 transition-all ${
                       item.completed
                         ? 'border-emerald-600 bg-emerald-600 text-white shadow-xs'
-                        : 'border-slate-300 bg-white group-hover:border-primary-500'
+                        : item.isDueOrPast
+                          ? 'border-rose-500 bg-white group-hover:border-rose-600'
+                          : 'border-slate-300 bg-white group-hover:border-primary-500'
                     }`}
                   >
                     {item.completed && <Check className="h-4 w-4 stroke-[3]" />}
@@ -188,7 +196,7 @@ export function LoanInspectionSection({ loan }: LoanInspectionSectionProps) {
                     <div className="flex items-center gap-1.5 text-xs text-slate-600">
                       <CalendarClock className="h-3.5 w-3.5 text-slate-400" />
                       <span>
-                        Mốc cuối quý:{' '}
+                        Ngày bổ sung biên bản:{' '}
                         <strong className="font-mono text-slate-800">{item.quarterEndDate}</strong>
                       </span>
                     </div>
@@ -202,13 +210,13 @@ export function LoanInspectionSection({ loan }: LoanInspectionSectionProps) {
                       Đã bổ sung
                     </span>
                   ) : item.isDueOrPast ? (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800 border border-amber-200">
-                      <Clock className="h-3.5 w-3.5 text-amber-600" />
-                      Cần bổ sung
+                    <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 px-2.5 py-1 text-xs font-semibold text-rose-800 border border-rose-200">
+                      <Clock className="h-3.5 w-3.5 text-rose-600" />
+                      Cần bổ sung (tới hạn)
                     </span>
                   ) : (
                     <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600 border border-slate-200">
-                      Chưa bổ sung
+                      Chưa tới hạn
                     </span>
                   )}
                 </div>
@@ -239,31 +247,44 @@ export function LoanInspectionSquares({
 
   const schedule = computeLoanInspectionSchedule(disbursementDate, loan.inspectionChecks);
   const completedCount = schedule.filter((s) => s.completed).length;
+  const overdueCount = schedule.filter((s) => !s.completed && s.isDueOrPast).length;
 
   return (
     <div
       onClick={onClick}
       className="inline-flex items-center gap-1.5 cursor-pointer rounded-md px-1.5 py-1 hover:bg-slate-100 transition-colors"
-      title={`Biên bản kiểm tra định kỳ: Đã bổ sung ${completedCount}/4 đợt (Nhấn để mở tab Kiểm tra)`}
+      title={
+        overdueCount > 0
+          ? `Cảnh báo: Có ${overdueCount} đợt tới hạn ngày 26 chưa bổ sung biên bản kiểm tra! (Đã bổ sung ${completedCount}/4 đợt)`
+          : `Biên bản kiểm tra định kỳ: Đã bổ sung ${completedCount}/4 đợt (Nhấn để mở tab Kiểm tra)`
+      }
     >
       <div className="flex items-center gap-1">
         {schedule.map((item) => (
           <span
             key={item.index}
-            title={`Đợt ${item.roundNumber} (${item.periodLabel} - hạn ${item.quarterEndDate}): ${
-              item.completed ? 'Đã bổ sung' : 'Chưa bổ sung'
+            title={`Đợt ${item.roundNumber} (${item.periodLabel} - ngày bổ sung ${item.quarterEndDate}): ${
+              item.completed
+                ? 'Đã bổ sung'
+                : item.isDueOrPast
+                  ? 'Tới hạn/Trễ hạn - Cần bổ sung biên bản!'
+                  : 'Chưa tới hạn'
             }`}
             className={`inline-block h-3.5 w-3.5 rounded-[3px] border transition-all ${
               item.completed
                 ? 'bg-emerald-500 border-emerald-600 shadow-2xs'
                 : item.isDueOrPast
-                  ? 'bg-amber-100 border-amber-400'
+                  ? 'bg-rose-500 border-rose-600 shadow-2xs'
                   : 'bg-slate-200 border-slate-300'
             }`}
           />
         ))}
       </div>
-      <span className="text-[11px] font-semibold tabular-nums text-slate-600">
+      <span
+        className={`text-[11px] font-semibold tabular-nums ${
+          overdueCount > 0 ? 'text-rose-600 font-bold' : 'text-slate-600'
+        }`}
+      >
         {completedCount}/4
       </span>
     </div>

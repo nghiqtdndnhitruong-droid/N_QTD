@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import type { ColumnDef } from '@tanstack/react-table';
-import { Download, Eye, FilePenLine, Plus, Trash2 } from 'lucide-react';
+import { Coins, Download, Eye, FilePenLine, Plus, Trash2 } from 'lucide-react';
 import { LoanStatus, LoanTermType, LoanType } from '@/shared/types';
 import {
   LOAN_STATUS_META,
@@ -195,7 +195,57 @@ export function LoanListPage() {
       {
         accessorKey: 'status',
         header: 'Trạng thái',
-        cell: ({ row }) => <LoanStatusBadge status={row.original.status} />,
+        cell: ({ row }) => {
+          const loan = row.original;
+          const isDisbursed =
+            loan.status === LoanStatus.DA_GIAI_NGAN ||
+            loan.status === LoanStatus.QUA_HAN ||
+            loan.status === LoanStatus.DA_TAT_TOAN ||
+            (loan.disbursements ?? []).some((d) => !d.isDeleted);
+
+          const interestRepayments = (loan.repayments ?? []).filter(
+            (r) => !r.isDeleted && r.interestAmount > 0,
+          );
+          const interestCount = interestRepayments.length;
+          const totalInterestPaid = interestRepayments.reduce(
+            (sum, r) => sum + r.interestAmount,
+            0,
+          );
+          const latestInterestDate =
+            interestCount > 0
+              ? interestRepayments[interestCount - 1]?.repaymentDate
+              : null;
+
+          return (
+            <div className="flex flex-col items-start gap-1">
+              <LoanStatusBadge status={loan.status} />
+              {isDisbursed && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(`/loans/${loan.id}?tab=repayments`);
+                  }}
+                  title={
+                    interestCount > 0
+                      ? `Đã thu lãi ${interestCount} kỳ · Tổng lãi: ${formatVND(totalInterestPaid)} · Gần nhất: ${formatDateVN(latestInterestDate)} (Nhấn để xem/cập nhật lịch sử thu lãi)`
+                      : 'Chưa có lịch sử thu lãi (Nhấn để mở tab Thu nợ gốc & lãi)'
+                  }
+                  className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-semibold border transition-colors cursor-pointer ${
+                    interestCount > 0
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                      : 'bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100'
+                  }`}
+                >
+                  <Coins className="h-2.5 w-2.5 shrink-0" />
+                  <span>
+                    {interestCount > 0 ? `Đã thu lãi (${interestCount} kỳ)` : 'Chưa thu lãi'}
+                  </span>
+                </button>
+              )}
+            </div>
+          );
+        },
       },
       {
         id: 'inspectionChecks',

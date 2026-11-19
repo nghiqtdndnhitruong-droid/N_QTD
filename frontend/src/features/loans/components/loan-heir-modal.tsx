@@ -22,6 +22,7 @@ import { GENDER_LABELS } from '@/shared/constants';
 import { notifySuccess, notifyApiError } from '@/components/feedback';
 import {
   getCanonicalIdIssuePlace,
+  isValidVietnamesePhone,
   parseCitizenIdInfo,
 } from '@/shared/utils/identity-document';
 import { useUpdateLoan } from '../hooks/use-loans';
@@ -33,6 +34,14 @@ const ID_TYPE_OPTIONS = [
 ];
 
 const heirDocumentSchema = z.object({
+  phoneNumber: z
+    .string()
+    .trim()
+    .optional()
+    .refine(
+      (val) => !val || isValidVietnamesePhone(val),
+      'Số điện thoại không hợp lệ (VD: 0912345678)',
+    ),
   idType: z.nativeEnum(IdDocumentType),
   idNumber: z
     .string()
@@ -74,6 +83,7 @@ export function LoanHeirModal({
     resolver: zodResolver(heirDocumentSchema),
     mode: 'onTouched',
     defaultValues: {
+      phoneNumber: heir?.phoneNumber ?? '',
       idType: heir?.idType ?? IdDocumentType.CAN_CUOC_CONG_DAN,
       idNumber: heir?.idNumber ?? '',
       idIssueDate: heir?.idIssueDate ? heir.idIssueDate.slice(0, 10) : '',
@@ -92,6 +102,7 @@ export function LoanHeirModal({
     if (!open) return;
     if (heir) {
       reset({
+        phoneNumber: heir.phoneNumber ?? '',
         idType: heir.idType ?? IdDocumentType.CAN_CUOC_CONG_DAN,
         idNumber: heir.idNumber ?? '',
         idIssueDate: heir.idIssueDate ? heir.idIssueDate.slice(0, 10) : '',
@@ -121,7 +132,7 @@ export function LoanHeirModal({
         heir: {
           fullName: heir.fullName,
           relationship: heir.relationship,
-          phoneNumber: heir.phoneNumber || null,
+          phoneNumber: values.phoneNumber?.trim() ? values.phoneNumber.trim() : null,
           address: heir.address,
           idType: values.idType,
           idNumber: values.idNumber.trim(),
@@ -134,11 +145,11 @@ export function LoanHeirModal({
       };
 
       await updateMutation.mutateAsync(payload);
-      notifySuccess('Đã cập nhật giấy tờ người thừa kế thành công');
+      notifySuccess('Đã cập nhật thông tin người thừa kế thành công');
       onSuccess?.();
       onOpenChange(false);
     } catch (err) {
-      notifyApiError(err, 'Không thể cập nhật giấy tờ người thừa kế');
+      notifyApiError(err, 'Không thể cập nhật thông tin người thừa kế');
     }
   };
 
@@ -147,9 +158,9 @@ export function LoanHeirModal({
       <DialogContent size="lg" className="max-h-[90vh] overflow-y-auto">
         <form onSubmit={handleSubmit(onSubmit)} noValidate>
           <DialogHeader>
-            <DialogTitle>Cập nhật giấy tờ Người thừa kế</DialogTitle>
+            <DialogTitle>Cập nhật thông tin & giấy tờ Người thừa kế</DialogTitle>
             <DialogDescription>
-              Cập nhật loại giấy tờ, số định danh, ngày cấp, nơi cấp và thời hạn giấy tờ của người thừa kế.
+              Cập nhật số điện thoại, loại giấy tờ, số định danh, ngày cấp, nơi cấp và thời hạn giấy tờ của người thừa kế.
             </DialogDescription>
           </DialogHeader>
 
@@ -168,19 +179,27 @@ export function LoanHeirModal({
                   <span className="text-slate-500">Quan hệ với người vay: </span>
                   <span className="font-semibold text-slate-900">{heir.relationship}</span>
                 </div>
-                <div>
-                  <span className="text-slate-500">Số điện thoại: </span>
-                  <span className="font-mono text-slate-700">{heir.phoneNumber || '—'}</span>
-                </div>
-                <div>
+                <div className="sm:col-span-2">
                   <span className="text-slate-500">Địa chỉ: </span>
                   <span className="text-slate-700">{heir.address}</span>
                 </div>
               </div>
             </div>
 
-            {/* Các trường giấy tờ được phép cập nhật */}
+            {/* Các trường được phép cập nhật */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="sm:col-span-2">
+                <FormTextField
+                  control={control}
+                  name="phoneNumber"
+                  label="Số điện thoại"
+                  placeholder="VD: 0912345678 (để trống nếu không có)"
+                  digitsOnly
+                  maxLength={11}
+                  hint="Số điện thoại liên hệ của người thừa kế (10 chữ số, bắt đầu bằng 0)"
+                />
+              </div>
+
               <FormSelectField
                 control={control}
                 name="idType"

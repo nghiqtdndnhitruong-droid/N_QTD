@@ -72,6 +72,7 @@ export function normalizeInspectionChecks(checks?: boolean[] | null): [boolean, 
 export function computeLoanInspectionSchedule(
   disbursementDateRaw: string | Date,
   checks?: boolean[] | null,
+  referenceDate: string | Date = new Date(),
 ): LoanInspectionMilestone[] {
   const disb = dayjs(disbursementDateRaw);
   const baseDate = disb.isValid() ? disb : dayjs();
@@ -89,7 +90,7 @@ export function computeLoanInspectionSchedule(
   }
 
   const normalizedChecks = normalizeInspectionChecks(checks);
-  const now = dayjs();
+  const now = dayjs(referenceDate).startOf('day');
 
   return [0, 1, 2, 3].map((i) => {
     const monthIdx = (startIdx + i) % INSPECTION_MONTHS.length;
@@ -98,10 +99,9 @@ export function computeLoanInspectionSchedule(
     const targetYear = startYear + yearOffset;
 
     const monthPadded = String(targetMonth).padStart(2, '0');
-    const endOfMonth = dayjs(`${targetYear}-${monthPadded}-01`).endOf('month');
+    const dueDate = dayjs(`${targetYear}-${monthPadded}-26`).startOf('day');
 
-    const isDueOrPast =
-      now.year() > targetYear || (now.year() === targetYear && now.month() + 1 >= targetMonth);
+    const isDueOrPast = !now.isBefore(dueDate, 'day');
 
     return {
       index: i,
@@ -109,7 +109,7 @@ export function computeLoanInspectionSchedule(
       month: targetMonth,
       year: targetYear,
       periodLabel: `Tháng ${monthPadded}/${targetYear}`,
-      quarterEndDate: endOfMonth.format('DD/MM/YYYY'),
+      quarterEndDate: dueDate.format('DD/MM/YYYY'),
       completed: Boolean(normalizedChecks[i]),
       isDueOrPast,
     };

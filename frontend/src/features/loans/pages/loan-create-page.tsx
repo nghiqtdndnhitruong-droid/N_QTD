@@ -202,7 +202,7 @@ export function LoanCreatePage() {
       termType: LoanTermType.NGAN_HAN,
       loanAmount: 100_000_000,
       contractNumber: '',
-      contractDate: dayjs().format('YYYY-MM-DD'),
+      contractDate: '',
       applicationDate: dayjs().format('YYYY-MM-DD'),
     },
   });
@@ -380,7 +380,7 @@ export function LoanCreatePage() {
       contractNumber: draftLoan.contractNumber ?? '',
       contractDate: draftLoan.contractDate
         ? dayjs(draftLoan.contractDate).format('YYYY-MM-DD')
-        : dayjs().format('YYYY-MM-DD'),
+        : '',
       applicationDate: draftLoan.applicationDate
         ? dayjs(draftLoan.applicationDate).format('YYYY-MM-DD')
         : draftLoan.createdAt

@@ -246,6 +246,7 @@ export class WordTemplateDataDictionaryService {
           { path: 'CHU_SO_HUU_2.DIA_CHI', label: 'Địa chỉ thường trú chủ sở hữu thứ hai', dataType: 'TEXT', sampleValue: 'Ấp Nô Lựa, Xã Nhị Trường' },
           { path: 'CHU_SO_HUU_2.QUAN_HE', label: 'Quan hệ của chủ sở hữu thứ hai', dataType: 'TEXT', sampleValue: 'Người thừa kế' },
           { path: 'CO_CHU_SO_HUU_2', label: 'Khoản vay có 2 chủ sở hữu cùng đứng tên tài sản (True/False)', dataType: 'BOOLEAN', sampleValue: true },
+          { path: 'TAI_SAN.CO_TAI_SAN_HO', label: 'Khoản vay có ít nhất 1 tài sản đứng tên Hộ gia đình (True/False)', dataType: 'BOOLEAN', sampleValue: true },
         ],
       },
       {
@@ -1691,6 +1692,9 @@ export class WordTemplateDataDictionaryService {
     const isOwnerGuarantor = assetOwners.some((o: any) => o.ownerType === 'BAO_LANH');
     const isBothBorrowerAndHeirOwner =
       hasCollateralJointBorrowerHeir || (isOwnerBorrower && isOwnerHeir);
+    const hasHouseholdAsset = collaterals.some(
+      (c: any) => c.ownerType === 'NGUOI_VAY_HO' || c.ownerType === 'NGUOI_THUA_KE_HO'
+    );
 
     // Xác định cờ có người thừa kế linh hoạt:
     // 1. Hồ sơ có khai báo người thừa kế (bước 3)
@@ -2880,6 +2884,7 @@ export class WordTemplateDataDictionaryService {
         CHU_SO_HUU_QUAN_HE: firstOwner.relationship,
         CHU_SO_HUU_DAU_TIEN: firstOwnerObj,
         CO_CHU_SO_HUU_2: hasSecondOwner,
+        CO_TAI_SAN_HO: hasHouseholdAsset,
         NGAY_CAP: firstCollateral?.issueDate ? dayjs(firstCollateral.issueDate).format('DD/MM/YYYY') : '',
         NOI_CAP: firstCollateral?.issuePlace || '',
         LOAI_GIAY_CHUNG_NHAN: firstCertificateType,
@@ -3549,6 +3554,8 @@ export class WordTemplateDataDictionaryService {
       CO_CHU_SO_HUU_THU_HAI: hasSecondOwner,
       'CHU_SO_HUU.CO_CHU_SO_HUU_2': hasSecondOwner,
       'CHU_SO_HUU.CO_CHU_SO_HUU_THU_HAI': hasSecondOwner,
+      CO_TAI_SAN_HO: hasHouseholdAsset,
+      'TAI_SAN.CO_TAI_SAN_HO': hasHouseholdAsset,
 
       // Cờ điều kiện chủ sở hữu tài sản
       CO_MOT_CHU_SO_HUU: hasSingleOwner,
@@ -4040,6 +4047,7 @@ export class WordTemplateDataDictionaryService {
       CHU_SO_HUU_THU_2: secondOwnerObj,
       CO_CHU_SO_HUU_2: hasSecondOwner,
       CO_CHU_SO_HUU_THU_HAI: hasSecondOwner,
+      CO_TAI_SAN_HO: hasHouseholdAsset,
       CO_NGUOI_THUA_KE: coNguoiThuaKe,
       CO_NGUO_THUA_KE: coNguoiThuaKe,
       hasHeir: coNguoiThuaKe,
