@@ -20,6 +20,7 @@ import { useAreaTree } from '@/features/areas/hooks/use-areas';
 import { checkIdExpiryStatus } from '@/features/loans/utils/loan-warnings';
 import { BatchMemberCreditScoringModal } from '../components/batch-member-credit-scoring-modal';
 import { MemberCreditRatingBadge } from '../components/member-credit-scoring-tab';
+import { membersApi } from '../api/members.api';
 import { useDeleteMember, useMembersList } from '../hooks/use-members';
 import type { Member } from '../types/member.types';
 
@@ -30,6 +31,7 @@ export function MemberListPage() {
   const [deletingMember, setDeletingMember] = useState<Member | null>(null);
   const [selectedMembersMap, setSelectedMembersMap] = useState<Record<string, Member>>({});
   const [batchScoringOpen, setBatchScoringOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const deleteMemberMutation = useDeleteMember();
   const { data: areaTree = [] } = useAreaTree();
 
@@ -348,6 +350,26 @@ export function MemberListPage() {
     }
   };
 
+  const handleExportExcel = async () => {
+    setIsExporting(true);
+    try {
+      await membersApi.exportExcel({
+        search: tableState.search || undefined,
+        sortBy: tableState.sortBy,
+        sortOrder: tableState.sortOrder,
+        gender: tableState.filters.gender,
+        idType: tableState.filters.idType,
+        communeId: tableState.filters.communeId,
+        hamletId: tableState.filters.hamletId,
+      });
+      notifySuccess('Xuất Excel danh sách thành viên thành công!');
+    } catch (err) {
+      notifyApiError(err, 'Không thể xuất file Excel danh sách thành viên');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div className="space-y-5">
       <PageHeader
@@ -377,12 +399,8 @@ export function MemberListPage() {
                 variant="outline"
                 size="sm"
                 leftIcon={<Download className="h-4 w-4" />}
-                onClick={() =>
-                  notifyInfo(
-                    'Đang chuẩn bị tệp Excel danh sách thành viên',
-                    'Chức năng kết nối endpoint GET /api/v1/members/export theo bộ lọc hiện tại.',
-                  )
-                }
+                isLoading={isExporting}
+                onClick={() => void handleExportExcel()}
               >
                 Xuất Excel
               </Button>

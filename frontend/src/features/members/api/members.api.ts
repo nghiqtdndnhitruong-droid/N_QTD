@@ -24,6 +24,34 @@ export const membersApi = {
     return apiGetPaginated<Member>('/members', query as Record<string, unknown>);
   },
 
+  async exportExcel(query: MemberListQuery): Promise<void> {
+    const res = await httpClient.get('/members/export', {
+      params: query,
+      responseType: 'blob',
+    });
+
+    const disposition = res.headers['content-disposition'];
+    let filename = 'Danh_sach_thanh_vien.xlsx';
+    if (disposition) {
+      const utf8Match = /filename\*=UTF-8''([^;\n]+)/i.exec(disposition);
+      if (utf8Match?.[1]) {
+        filename = decodeURIComponent(utf8Match[1].trim());
+      } else {
+        const asciiMatch = /filename=['"]?([^;"\n]+)['"]?/i.exec(disposition);
+        if (asciiMatch?.[1]) {
+          filename = decodeURIComponent(asciiMatch[1].trim());
+        }
+      }
+    }
+
+    downloadBlob(
+      new Blob([res.data], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      }),
+      filename,
+    );
+  },
+
   getById(id: string): Promise<Member> {
     return apiGet<Member>(`/members/${id}`);
   },

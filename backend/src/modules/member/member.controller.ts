@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { MemberService, memberService } from './member.service';
+import { exportMembersExcel } from './member-export.service';
 import { ApiResponse, PaginatedResponse } from '../../shared/types';
 import { DeleteMemberResult, MemberEntity, MemberFilterQuery } from './member.types';
 
@@ -44,6 +45,21 @@ export class MemberController {
       timestamp: new Date().toISOString(),
     };
     res.status(200).json(response);
+  };
+
+  exportExcel = async (req: Request, res: Response): Promise<void> => {
+    const query = req.query as unknown as MemberFilterQuery;
+    const { buffer, fileName } = await exportMembersExcel(query, req.user);
+    const encodedFileName = encodeURIComponent(fileName);
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    );
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="Danh_sach_thanh_vien.xlsx"; filename*=UTF-8''${encodedFileName}`,
+    );
+    res.send(buffer);
   };
 
   update = async (req: Request, res: Response): Promise<void> => {

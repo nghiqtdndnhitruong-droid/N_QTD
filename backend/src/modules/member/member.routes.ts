@@ -29,6 +29,12 @@ router.get(
   asyncHandler(memberController.findMany)
 );
 
+router.get(
+  '/export',
+  validate({ query: memberFilterQuerySchema }),
+  asyncHandler(memberController.exportExcel)
+);
+
 router.put(
   '/batch/credit-rating',
   validate({ body: batchCreditRatingSchema }),

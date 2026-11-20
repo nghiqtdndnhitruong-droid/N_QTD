@@ -42,6 +42,12 @@ router.get(
 
 router.get('/plan-templates/calculate', asyncHandler(loanController.calculatePlanTemplate));
 
+router.get(
+  '/export',
+  validate({ query: loanFilterQuerySchema }),
+  asyncHandler(loanController.exportExcel)
+);
+
 router.get('/:id', asyncHandler(loanController.getById));
 
 router.post('/:id/clone', asyncHandler(loanController.clone));

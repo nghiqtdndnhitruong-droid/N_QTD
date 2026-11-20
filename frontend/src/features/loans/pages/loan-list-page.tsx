@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import type { ColumnDef } from '@tanstack/react-table';
-import { Coins, Download, Eye, FilePenLine, Plus, Trash2 } from 'lucide-react';
+import { Coins, Download, Eye, FilePenLine, MapPin, Plus, Trash2 } from 'lucide-react';
 import { LoanStatus, LoanTermType, LoanType } from '@/shared/types';
 import {
   LOAN_STATUS_META,
@@ -16,12 +16,12 @@ import { PageHeader } from '@/components/layout';
 import {
   ConfirmDialog,
   notifyApiError,
-  notifyInfo,
   notifySuccess,
 } from '@/components/feedback';
 import { Can } from '@/features/auth/components/can';
 import { checkIdExpiryStatus, checkMortgageExpiryStatus } from '../utils/loan-warnings';
 import { LoanInspectionSquares } from '../components/loan-inspection-section';
+import { loansApi } from '../api/loans.api';
 import { useDeleteLoan, useLoansList } from '../hooks/use-loans';
 import type { Loan } from '../types/loan.types';
 
@@ -30,6 +30,7 @@ const FILTER_KEYS = ['status', 'loanType', 'termType'] as const;
 export function LoanListPage() {
   const navigate = useNavigate();
   const [deletingLoan, setDeletingLoan] = useState<Loan | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
   const deleteLoanMutation = useDeleteLoan();
 
   const tableState = useTableUrlState<{
@@ -78,15 +79,32 @@ export function LoanListPage() {
         id: 'member',
         header: 'Thành viên vay vốn',
         cell: ({ row }) => {
-          const idExpiryStatus = checkIdExpiryStatus(row.original.member?.idExpiry);
+          const member = row.original.member;
+          const idExpiryStatus = checkIdExpiryStatus(member?.idExpiry);
+          const areaLabel =
+            member?.hamletName && member?.communeName
+              ? `${member.hamletName}, ${member.communeName}`
+              : member?.communeName || member?.hamletName || member?.address || null;
+
           return (
-            <div>
-              <div className="font-medium text-slate-900">
-                {row.original.member?.fullName ?? '—'}
+            <div className="min-w-[160px]">
+              <div className="flex items-center gap-1.5">
+                <span className="font-medium text-slate-900">
+                  {member?.fullName ?? '—'}
+                </span>
+                {member?.memberCode && (
+                  <span className="font-mono text-[11px] text-slate-500">
+                    ({member.memberCode})
+                  </span>
+                )}
               </div>
-              {row.original.member?.memberCode && (
-                <div className="font-mono text-xs text-slate-500">
-                  {row.original.member.memberCode}
+              {areaLabel && (
+                <div
+                  title={member?.address || areaLabel}
+                  className="mt-1 inline-flex max-w-[220px] items-center gap-1 rounded-md border border-slate-200/80 bg-slate-50 px-1.5 py-0.5 text-[10.5px] font-medium text-slate-600"
+                >
+                  <MapPin className="h-2.5 w-2.5 shrink-0 text-primary-600" />
+                  <span className="truncate">{areaLabel}</span>
                 </div>
               )}
               {idExpiryStatus?.isExpired && (
@@ -342,6 +360,28 @@ export function LoanListPage() {
     }
   };
 
+  const handleExportExcel = async () => {
+    setIsExporting(true);
+    try {
+      await loansApi.exportExcel({
+        search: tableState.search || undefined,
+        sortBy: tableState.sortBy,
+        sortOrder: tableState.sortOrder,
+        status: tableState.filters.status,
+        loanType: tableState.filters.loanType,
+        termType: tableState.filters.termType,
+      });
+      notifySuccess(
+        'Xuất Excel danh sách khoản vay thành công!',
+        'File chỉ bao gồm các khoản vay đã giải ngân kèm ngày giải ngân và ngày tới hạn.',
+      );
+    } catch (err) {
+      notifyApiError(err, 'Không thể xuất file Excel danh sách khoản vay');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div className="space-y-5">
       <PageHeader
@@ -354,12 +394,8 @@ export function LoanListPage() {
                 variant="outline"
                 size="sm"
                 leftIcon={<Download className="h-4 w-4" />}
-                onClick={() =>
-                  notifyInfo(
-                    'Đang chuẩn bị tệp Excel danh sách khoản vay',
-                    'Xuất toàn bộ bản ghi khớp với bộ lọc hiện tại qua GET /api/v1/loans/export.',
-                  )
-                }
+                isLoading={isExporting}
+                onClick={() => void handleExportExcel()}
               >
                 Xuất Excel
               </Button>
@@ -489,6 +525,16 @@ export function LoanListPage() {
                 {row.member?.memberCode ? `(${row.member.memberCode})` : ''}
               </span>
             </div>
+            {(row.member?.hamletName || row.member?.communeName || row.member?.address) && (
+              <div className="inline-flex max-w-full items-center gap-1 rounded-md border border-slate-200/80 bg-slate-50 px-1.5 py-0.5 text-[11px] text-slate-600">
+                <MapPin className="h-3 w-3 shrink-0 text-primary-600" />
+                <span className="truncate">
+                  {row.member?.hamletName && row.member?.communeName
+                    ? `${row.member.hamletName}, ${row.member.communeName}`
+                    : row.member?.communeName || row.member?.hamletName || row.member?.address}
+                </span>
+              </div>
+            )}
             <div className="flex items-center justify-between text-xs text-slate-600">
               <span>{LOAN_TYPE_LABELS[row.loanType]}</span>
               <span className="font-bold text-slate-900 tabular-nums">

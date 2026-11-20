@@ -5,6 +5,7 @@ import {
   apiPatch,
   apiPost,
   apiPut,
+  httpClient,
 } from '@/lib/http';
 import type { LoanStatus, Paginated } from '@/shared/types';
 import type {
@@ -38,6 +39,39 @@ import type {
 export const loansApi = {
   list(query: LoanListQuery): Promise<Paginated<Loan>> {
     return apiGetPaginated<Loan>('/loans', query as Record<string, unknown>);
+  },
+
+  async exportExcel(query: LoanListQuery): Promise<void> {
+    const res = await httpClient.get('/loans/export', {
+      params: query,
+      responseType: 'blob',
+    });
+
+    const disposition = res.headers['content-disposition'];
+    let filename = 'Danh_sach_khoan_vay.xlsx';
+    if (disposition) {
+      const utf8Match = /filename\*=UTF-8''([^;\n]+)/i.exec(disposition);
+      if (utf8Match?.[1]) {
+        filename = decodeURIComponent(utf8Match[1].trim());
+      } else {
+        const asciiMatch = /filename=['"]?([^;"\n]+)['"]?/i.exec(disposition);
+        if (asciiMatch?.[1]) {
+          filename = decodeURIComponent(asciiMatch[1].trim());
+        }
+      }
+    }
+
+    const blob = new Blob([res.data], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
   },
 
   getById(id: string): Promise<Loan> {

@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { LoanService, loanService } from './loan.service';
+import { exportDisbursedLoansExcel } from './loan-export.service';
 import { ApiResponse, PaginatedResponse } from '../../shared/types';
 import { Loan } from '@prisma/client';
 import { DeleteLoanResult, LoanSummary } from './loan.types';
@@ -44,6 +45,20 @@ export class LoanController {
       timestamp: new Date().toISOString(),
     };
     res.status(200).json(response);
+  };
+
+  exportExcel = async (req: Request, res: Response): Promise<void> => {
+    const { buffer, fileName } = await exportDisbursedLoansExcel(req.query as any, req.user);
+    const encodedFileName = encodeURIComponent(fileName);
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    );
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="Danh_sach_khoan_vay.xlsx"; filename*=UTF-8''${encodedFileName}`,
+    );
+    res.send(buffer);
   };
 
   update = async (req: Request, res: Response): Promise<void> => {
