@@ -351,6 +351,9 @@ INSERT INTO global_word_keywords (id, keyword, displayName, category, dataPath, 
   '6af26aa5472796774964522b', 'CO_CHU_SO_HUU_2', 'Khoản vay có 2 người cùng sở hữu tài sản (True/False)', 'TAI_SAN', 'CO_CHU_SO_HUU_2', 'BOOLEAN', NULL, '...................', FALSE, NULL, NULL, TRUE, '2026-11-10T00:51:49.487Z', '2026-11-10T00:51:49.487Z'
 );
 INSERT INTO global_word_keywords (id, keyword, displayName, category, dataPath, dataType, formatPattern, defaultValue, isList, itemProperties, description, isSystem, createdAt, updatedAt) VALUES (
+  '6af900000000000000000001', 'CHU_SO_HUU_CON_LAI', 'Chủ sở hữu còn lại (Người vay nếu tài sản của Người thừa kế; Người thừa kế nếu tài sản của Người vay; chỉ tồn tại khi có Người thừa kế)', 'TAI_SAN', 'CHU_SO_HUU_CON_LAI', 'TEXT', NULL, '', FALSE, NULL, 'Tự động trả về họ tên Người vay khi tài sản đứng tên Người thừa kế (cá nhân/hộ), hoặc trả về họ tên Người thừa kế khi tài sản đứng tên Người vay (cá nhân/hộ). Chỉ tồn tại khi CO_NGUOI_THUA_KE = true.', TRUE, '2026-11-25T08:45:00.000Z', '2026-11-25T08:45:00.000Z'
+);
+INSERT INTO global_word_keywords (id, keyword, displayName, category, dataPath, dataType, formatPattern, defaultValue, isList, itemProperties, description, isSystem, createdAt, updatedAt) VALUES (
   '6af800000000000000000001', 'TAI_SAN.CO_TAI_SAN_HO', 'Kiểm tra có ít nhất 1 tài sản đứng tên Hộ (True/False)', 'TAI_SAN', 'TAI_SAN.CO_TAI_SAN_HO', 'BOOLEAN', NULL, '...................', FALSE, NULL, NULL, TRUE, '2026-11-17T00:32:00.000Z', '2026-11-17T00:32:00.000Z'
 );
 INSERT INTO global_word_keywords (id, keyword, displayName, category, dataPath, dataType, formatPattern, defaultValue, isList, itemProperties, description, isSystem, createdAt, updatedAt) VALUES (

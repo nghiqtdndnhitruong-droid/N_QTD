@@ -246,6 +246,11 @@ export class WordTemplateDataDictionaryService {
           { path: 'CHU_SO_HUU_2.DIA_CHI', label: 'Địa chỉ thường trú chủ sở hữu thứ hai', dataType: 'TEXT', sampleValue: 'Ấp Nô Lựa, Xã Nhị Trường' },
           { path: 'CHU_SO_HUU_2.QUAN_HE', label: 'Quan hệ của chủ sở hữu thứ hai', dataType: 'TEXT', sampleValue: 'Người thừa kế' },
           { path: 'CO_CHU_SO_HUU_2', label: 'Khoản vay có 2 chủ sở hữu cùng đứng tên tài sản (True/False)', dataType: 'BOOLEAN', sampleValue: true },
+          { path: 'CHU_SO_HUU_CON_LAI', label: 'Chủ sở hữu còn lại (Người vay nếu tài sản của Người thừa kế; Người thừa kế nếu tài sản của Người vay; chỉ có khi có Người thừa kế)', dataType: 'TEXT', sampleValue: 'Trần Thị Bích' },
+          { path: 'CHU_SO_HUU_CON_LAI.HO_TEN', label: 'Họ tên chủ sở hữu còn lại', dataType: 'TEXT', sampleValue: 'Trần Thị Bích' },
+          { path: 'CHU_SO_HUU_CON_LAI.HO_TEN_IN_HOA', label: 'Họ tên chủ sở hữu còn lại viết hoa', dataType: 'TEXT', sampleValue: 'TRẦN THỊ BÍCH' },
+          { path: 'CHU_SO_HUU_CON_LAI.DANH_XUNG', label: 'Danh xưng chủ sở hữu còn lại (Ông/Bà)', dataType: 'TEXT', sampleValue: 'Bà' },
+          { path: 'CO_CHU_SO_HUU_CON_LAI', label: 'Có chủ sở hữu còn lại hay không (True/False)', dataType: 'BOOLEAN', sampleValue: true },
           { path: 'TAI_SAN.CO_TAI_SAN_HO', label: 'Khoản vay có ít nhất 1 tài sản đứng tên Hộ gia đình (True/False)', dataType: 'BOOLEAN', sampleValue: true },
         ],
       },
@@ -1707,6 +1712,97 @@ export class WordTemplateDataDictionaryService {
     const hasHeirOwnerInCollaterals = Boolean(isOwnerHeir || isBothBorrowerAndHeirOwner);
     const coNguoiThuaKe = Boolean(hasValidDeclaredHeir || hasHeirOwnerInCollaterals);
 
+    // Chủ sở hữu còn lại (CHU_SO_HUU_CON_LAI):
+    // - Chỉ tồn tại khi CO_NGUOI_THUA_KE = true
+    // - Nếu tài sản đứng tên Người thừa kế (cá nhân hoặc hộ) -> trả về Người vay
+    // - Nếu tài sản đứng tên Người vay (cá nhân hoặc hộ) -> trả về Người thừa kế
+    const resolveRemainingOwnerForType = (ownerType?: string | null) => {
+      if (!coNguoiThuaKe || !ownerType) return null;
+      if (ownerType === 'NGUOI_THUA_KE_CA_NHAN' || ownerType === 'NGUOI_THUA_KE_HO') {
+        const borrowerInfo = this.extractOwnerInfo({ ownerType: 'NGUOI_VAY_CA_NHAN' }, member, heir);
+        return borrowerInfo.fullName && borrowerInfo.fullName.trim() !== '' ? borrowerInfo : null;
+      }
+      if (ownerType === 'NGUOI_VAY_CA_NHAN' || ownerType === 'NGUOI_VAY_HO') {
+        const heirInfo = this.extractOwnerInfo({ ownerType: 'NGUOI_THUA_KE_CA_NHAN' }, member, heir);
+        return heirInfo.fullName && heirInfo.fullName.trim() !== '' ? heirInfo : null;
+      }
+      return null;
+    };
+
+    const remainingOwner = resolveRemainingOwnerForType(firstCollateral?.ownerType);
+    const hasRemainingOwner = Boolean(
+      remainingOwner && remainingOwner.fullName && remainingOwner.fullName.trim() !== ''
+    );
+    const remainingOwnerUpper = (remainingOwner?.fullName || '').toUpperCase();
+    const remainingOwnerObj = remainingOwner
+      ? {
+          ...remainingOwner,
+          fullName: remainingOwner.fullName || '',
+          ho_ten: remainingOwner.fullName || '',
+          HO_TEN: remainingOwner.fullName || '',
+          HO_TEN_IN_HOA: remainingOwnerUpper,
+          HO_TEN_VIET_HOA: remainingOwnerUpper,
+          HO_TEN_HOA: remainingOwnerUpper,
+          ho_ten_in_hoa: remainingOwnerUpper,
+          ho_ten_viet_hoa: remainingOwnerUpper,
+          IN_HOA: remainingOwnerUpper,
+          VIET_HOA: remainingOwnerUpper,
+          gender: remainingOwner.gender || '',
+          genderTitle: remainingOwner.genderTitle || '',
+          XUNG_HO: remainingOwner.genderTitle || '',
+          DANH_XUNG: remainingOwner.genderTitle || '',
+          danh_xung: remainingOwner.genderTitle || '',
+          LOAI_GIAY_TO: remainingOwner.idType || '',
+          loai_giay_to: remainingOwner.idType || '',
+          SO_GIAY_TO: remainingOwner.idNumber || '',
+          so_giay_to: remainingOwner.idNumber || '',
+          SO_CCCD: remainingOwner.idNumber || '',
+          so_cccd: remainingOwner.idNumber || '',
+          NGAY_CAP: remainingOwner.idIssueDate || '',
+          ngay_cap: remainingOwner.idIssueDate || '',
+          NOI_CAP: remainingOwner.idIssuePlace || '',
+          noi_cap: remainingOwner.idIssuePlace || '',
+          DIA_CHI: remainingOwner.address || '',
+          dia_chi: remainingOwner.address || '',
+          NAM_SINH: remainingOwner.yearOfBirth ? String(remainingOwner.yearOfBirth) : '',
+          nam_sinh: remainingOwner.yearOfBirth ? String(remainingOwner.yearOfBirth) : '',
+          QUAN_HE: remainingOwner.relationship || '',
+          quan_he: remainingOwner.relationship || '',
+        }
+      : {
+          fullName: '',
+          ho_ten: '',
+          HO_TEN: '',
+          HO_TEN_IN_HOA: '',
+          HO_TEN_VIET_HOA: '',
+          HO_TEN_HOA: '',
+          ho_ten_in_hoa: '',
+          ho_ten_viet_hoa: '',
+          IN_HOA: '',
+          VIET_HOA: '',
+          gender: '',
+          genderTitle: '',
+          XUNG_HO: '',
+          DANH_XUNG: '',
+          danh_xung: '',
+          LOAI_GIAY_TO: '',
+          loai_giay_to: '',
+          SO_GIAY_TO: '',
+          so_giay_to: '',
+          SO_CCCD: '',
+          so_cccd: '',
+          NGAY_CAP: '',
+          ngay_cap: '',
+          NOI_CAP: '',
+          noi_cap: '',
+          DIA_CHI: '',
+          dia_chi: '',
+          NAM_SINH: '',
+          nam_sinh: '',
+          QUAN_HE: '',
+          quan_he: '',
+        };
+
     
     const mergedIssueDates = mergeAssetValues(collaterals, (c: any) =>
       c.issueDate ? dayjs(c.issueDate).format('DD/MM/YYYY') : ''
@@ -2133,6 +2229,13 @@ export class WordTemplateDataDictionaryService {
         chu_so_huu_2: secondOwnerObj,
         CO_CHU_SO_HUU_2: hasSecondOwner,
         CO_CHU_SO_HUU_THU_HAI: hasSecondOwner,
+        CHU_SO_HUU_CON_LAI: resolveRemainingOwnerForType(groupCollaterals[0]?.ownerType)?.fullName || '',
+        chu_so_huu_con_lai: resolveRemainingOwnerForType(groupCollaterals[0]?.ownerType)?.fullName || '',
+        CHU_SO_HUU_CON_LAI_HO_TEN: resolveRemainingOwnerForType(groupCollaterals[0]?.ownerType)?.fullName || '',
+        CHU_SO_HUU_CON_LAI_HO_TEN_IN_HOA: (
+          resolveRemainingOwnerForType(groupCollaterals[0]?.ownerType)?.fullName || ''
+        ).toUpperCase(),
+        CO_CHU_SO_HUU_CON_LAI: Boolean(resolveRemainingOwnerForType(groupCollaterals[0]?.ownerType)?.fullName),
 
         // Thành viên hộ
         householdMembers: cHouseholdMembers,
@@ -2883,6 +2986,10 @@ export class WordTemplateDataDictionaryService {
         CHU_SO_HUU_NAM_SINH: firstOwner.yearOfBirth,
         CHU_SO_HUU_QUAN_HE: firstOwner.relationship,
         CHU_SO_HUU_DAU_TIEN: firstOwnerObj,
+        CHU_SO_HUU_CON_LAI: remainingOwnerObj.HO_TEN,
+        CHU_SO_HUU_CON_LAI_HO_TEN: remainingOwnerObj.HO_TEN,
+        CHU_SO_HUU_CON_LAI_HO_TEN_IN_HOA: remainingOwnerUpper,
+        CO_CHU_SO_HUU_CON_LAI: hasRemainingOwner,
         CO_CHU_SO_HUU_2: hasSecondOwner,
         CO_TAI_SAN_HO: hasHouseholdAsset,
         NGAY_CAP: firstCollateral?.issueDate ? dayjs(firstCollateral.issueDate).format('DD/MM/YYYY') : '',
@@ -3554,6 +3661,42 @@ export class WordTemplateDataDictionaryService {
       CO_CHU_SO_HUU_THU_HAI: hasSecondOwner,
       'CHU_SO_HUU.CO_CHU_SO_HUU_2': hasSecondOwner,
       'CHU_SO_HUU.CO_CHU_SO_HUU_THU_HAI': hasSecondOwner,
+
+      // Chủ sở hữu còn lại (chỉ tồn tại khi CO_NGUOI_THUA_KE = true)
+      CHU_SO_HUU_CON_LAI: remainingOwnerObj.HO_TEN,
+      CHU_SO_HUU_CON_LAI_HO_TEN: remainingOwnerObj.HO_TEN,
+      CHU_SO_HUU_CON_LAI_HO_TEN_IN_HOA: remainingOwnerUpper,
+      CHU_SO_HUU_CON_LAI_HO_TEN_VIET_HOA: remainingOwnerUpper,
+      CHU_SO_HUU_CON_LAI_IN_HOA: remainingOwnerUpper,
+      CHU_SO_HUU_CON_LAI_VIET_HOA: remainingOwnerUpper,
+      CHU_SO_HUU_CON_LAI_DANH_XUNG: remainingOwnerObj.DANH_XUNG,
+      CHU_SO_HUU_CON_LAI_XUNG_HO: remainingOwnerObj.XUNG_HO,
+      CHU_SO_HUU_CON_LAI_NAM_SINH: remainingOwnerObj.NAM_SINH,
+      CHU_SO_HUU_CON_LAI_SO_CCCD: remainingOwnerObj.SO_CCCD,
+      CHU_SO_HUU_CON_LAI_SO_GIAY_TO: remainingOwnerObj.SO_GIAY_TO,
+      CHU_SO_HUU_CON_LAI_NGAY_CAP: remainingOwnerObj.NGAY_CAP,
+      CHU_SO_HUU_CON_LAI_NOI_CAP: remainingOwnerObj.NOI_CAP,
+      CHU_SO_HUU_CON_LAI_DIA_CHI: remainingOwnerObj.DIA_CHI,
+      'CHU_SO_HUU_CON_LAI.HO_TEN': remainingOwnerObj.HO_TEN,
+      'CHU_SO_HUU_CON_LAI.HO_TEN_IN_HOA': remainingOwnerUpper,
+      'CHU_SO_HUU_CON_LAI.HO_TEN_VIET_HOA': remainingOwnerUpper,
+      'CHU_SO_HUU_CON_LAI.IN_HOA': remainingOwnerUpper,
+      'CHU_SO_HUU_CON_LAI.VIET_HOA': remainingOwnerUpper,
+      'CHU_SO_HUU_CON_LAI.DANH_XUNG': remainingOwnerObj.DANH_XUNG,
+      'CHU_SO_HUU_CON_LAI.XUNG_HO': remainingOwnerObj.XUNG_HO,
+      'CHU_SO_HUU_CON_LAI.NAM_SINH': remainingOwnerObj.NAM_SINH,
+      'CHU_SO_HUU_CON_LAI.LOAI_GIAY_TO': remainingOwnerObj.LOAI_GIAY_TO,
+      'CHU_SO_HUU_CON_LAI.SO_CCCD': remainingOwnerObj.SO_CCCD,
+      'CHU_SO_HUU_CON_LAI.SO_GIAY_TO': remainingOwnerObj.SO_GIAY_TO,
+      'CHU_SO_HUU_CON_LAI.NGAY_CAP': remainingOwnerObj.NGAY_CAP,
+      'CHU_SO_HUU_CON_LAI.NOI_CAP': remainingOwnerObj.NOI_CAP,
+      'CHU_SO_HUU_CON_LAI.DIA_CHI': remainingOwnerObj.DIA_CHI,
+      'CHU_SO_HUU_CON_LAI.QUAN_HE': remainingOwnerObj.QUAN_HE,
+      'TAI_SAN.CHU_SO_HUU_CON_LAI': remainingOwnerObj.HO_TEN,
+      'TAI_SAN.CHU_SO_HUU_CON_LAI.HO_TEN': remainingOwnerObj.HO_TEN,
+      'TAI_SAN.CHU_SO_HUU_CON_LAI.HO_TEN_IN_HOA': remainingOwnerUpper,
+      CO_CHU_SO_HUU_CON_LAI: hasRemainingOwner,
+      'TAI_SAN.CO_CHU_SO_HUU_CON_LAI': hasRemainingOwner,
       CO_TAI_SAN_HO: hasHouseholdAsset,
       'TAI_SAN.CO_TAI_SAN_HO': hasHouseholdAsset,
 
@@ -4045,6 +4188,8 @@ export class WordTemplateDataDictionaryService {
       CHU_SO_HUU_THU_1: firstOwnerObj,
       CHU_SO_HUU_THU_HAI: secondOwnerObj,
       CHU_SO_HUU_THU_2: secondOwnerObj,
+      CHU_SO_HUU_CON_LAI: remainingOwnerObj,
+      CO_CHU_SO_HUU_CON_LAI: hasRemainingOwner,
       CO_CHU_SO_HUU_2: hasSecondOwner,
       CO_CHU_SO_HUU_THU_HAI: hasSecondOwner,
       CO_TAI_SAN_HO: hasHouseholdAsset,
