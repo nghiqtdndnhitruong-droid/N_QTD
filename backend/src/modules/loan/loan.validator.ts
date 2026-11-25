@@ -130,7 +130,7 @@ export const loanFilterQuerySchema = z.object({
   page: z.coerce.number().int().positive().optional().default(1),
   limit: z.coerce.number().int().positive().max(100).optional().default(10),
   search: z.string().trim().optional(),
-  sortBy: z.string().optional().default('createdAt'),
+  sortBy: z.string().optional().default('maturityDate'),
   sortOrder: z.enum(['asc', 'desc']).optional().default('desc'),
   createdById: z.string().optional(),
   memberId: z.string().optional(),
@@ -142,4 +142,11 @@ export const loanFilterQuerySchema = z.object({
   provinceId: z.string().optional(),
   communeId: z.string().optional(),
   hamletId: z.string().optional(),
+});
+
+export const transferLoanSchema = z.object({
+  targetOfficerId: z
+    .string({ required_error: 'Vui lòng chọn cán bộ nhận bàn giao khoản vay' })
+    .regex(/^[a-fA-F0-9]{24}$/, 'ID cán bộ nhận bàn giao không hợp lệ'),
+  reason: z.string().trim().max(500).optional(),
 });

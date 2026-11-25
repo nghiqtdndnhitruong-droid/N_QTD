@@ -6,7 +6,18 @@ import {
   parseCitizenIdInfo,
 } from '../../shared/utils/identity-document.util';
 
-export const VALID_BORROWER_RELATIONSHIPS = ['Chồng', 'Vợ', 'Con', 'Mẹ', 'Cha'] as const;
+export const VALID_BORROWER_RELATIONSHIPS = [
+  'Chồng',
+  'Vợ',
+  'Con',
+  'Mẹ',
+  'Cha',
+  'Chị',
+  'Anh',
+  'Em',
+  'Cháu',
+  'Cô',
+] as const;
 export const VALID_RELATED_PERSON_RELATIONSHIPS = [
   'Cha',
   'Mẹ',

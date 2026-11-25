@@ -39,7 +39,7 @@ export function LoanListPage() {
     termType?: LoanTermType;
   }>({
     defaultLimit: 10,
-    defaultSortBy: 'createdAt',
+    defaultSortBy: 'maturityDate',
     defaultSortOrder: 'desc',
     filterKeys: FILTER_KEYS,
   });
@@ -175,19 +175,38 @@ export function LoanListPage() {
         header: 'Ngày đáo hạn',
         meta: { sortableId: 'maturityDate' },
         cell: ({ row }) => {
+          const loan = row.original;
+          const isMediumTerm = loan.termType === LoanTermType.TRUNG_HAN;
+          const displayPrimaryDate =
+            isMediumTerm && loan.halfTermPaymentDate
+              ? loan.halfTermPaymentDate
+              : loan.maturityDate;
+
           const mortgageStatus =
-            row.original.loanType === LoanType.THE_CHAP
-              ? checkMortgageExpiryStatus(row.original.mortgageContract?.contractExpiryDate)
+            loan.loanType === LoanType.THE_CHAP
+              ? checkMortgageExpiryStatus(loan.mortgageContract?.contractExpiryDate)
               : null;
           return (
             <div>
-              <span className="tabular-nums text-xs">
-                {formatDateVN(row.original.maturityDate, 'Chưa giải ngân')}
-              </span>
-              {row.original.expectedMaturityDate &&
-                row.original.maturityDate &&
-                row.original.expectedMaturityDate.slice(0, 10) !==
-                  row.original.maturityDate.slice(0, 10) && (
+              <div className="flex items-center gap-1.5">
+                <span className="tabular-nums text-xs font-medium text-slate-900">
+                  {formatDateVN(displayPrimaryDate, 'Chưa giải ngân')}
+                </span>
+                {isMediumTerm && loan.halfTermPaymentDate && (
+                  <span className="rounded bg-primary-50 px-1 py-0.5 text-[10px] font-semibold text-primary-700 border border-primary-200">
+                    1 năm
+                  </span>
+                )}
+              </div>
+              {isMediumTerm && loan.maturityDate && (
+                <div className="mt-0.5 text-[10px] text-slate-500 tabular-nums">
+                  Tới hạn 2 năm: {formatDateVN(loan.maturityDate)}
+                </div>
+              )}
+              {loan.expectedMaturityDate &&
+                loan.maturityDate &&
+                loan.expectedMaturityDate.slice(0, 10) !==
+                  loan.maturityDate.slice(0, 10) && (
                   <div className="text-[10px] font-medium text-amber-700">
                     Rút ngắn theo HĐTC
                   </div>

@@ -85,31 +85,108 @@ export class LoanRepository {
       if (query.toDate) where.createdAt.lte = new Date(query.toDate);
     }
 
+    const loanInclude = {
+      member: true,
+      disbursements: {
+        orderBy: { disbursementDate: 'asc' as const },
+      },
+      repayments: {
+        orderBy: { repaymentDate: 'asc' as const },
+      },
+      valuations: {
+        orderBy: { createdAt: 'asc' as const },
+      },
+      _count: {
+        select: {
+          collaterals: true,
+          disbursements: true,
+          repayments: true,
+        },
+      },
+    };
+
+    if (sortBy === 'maturityDate') {
+      const whereWithDate: Prisma.LoanWhereInput = { ...where, maturityDate: { not: null } };
+      const whereWithoutDate: Prisma.LoanWhereInput = { ...where, maturityDate: null };
+
+      const [withDateTotal, withoutDateTotal] = await Promise.all([
+        prisma.loan.count({ where: whereWithDate }),
+        prisma.loan.count({ where: whereWithoutDate }),
+      ]);
+      const total = withDateTotal + withoutDateTotal;
+
+      let loans: any[] = [];
+      if (skip < withDateTotal) {
+        const candidates = await prisma.loan.findMany({
+          where: whereWithDate,
+          select: {
+            id: true,
+            termType: true,
+            maturityDate: true,
+            halfTermPaymentDate: true,
+            createdAt: true,
+          },
+        });
+
+        candidates.sort((a, b) => {
+          const dateA =
+            a.termType === LoanTermType.TRUNG_HAN && a.halfTermPaymentDate
+              ? a.halfTermPaymentDate.getTime()
+              : (a.maturityDate?.getTime() ?? 0);
+          const dateB =
+            b.termType === LoanTermType.TRUNG_HAN && b.halfTermPaymentDate
+              ? b.halfTermPaymentDate.getTime()
+              : (b.maturityDate?.getTime() ?? 0);
+
+          if (dateA !== dateB) {
+            return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
+          }
+          return b.createdAt.getTime() - a.createdAt.getTime();
+        });
+
+        const pageIds = candidates.slice(skip, skip + limit).map((c) => c.id);
+        const fetched =
+          pageIds.length > 0
+            ? await prisma.loan.findMany({
+                where: { id: { in: pageIds } },
+                include: loanInclude,
+              })
+            : [];
+        const byId = new Map(fetched.map((item) => [item.id, item]));
+        const firstPart = pageIds.map((id) => byId.get(id)).filter(Boolean);
+        loans = firstPart;
+
+        const remainingTake = limit - firstPart.length;
+        if (remainingTake > 0) {
+          const secondPart = await prisma.loan.findMany({
+            where: whereWithoutDate,
+            skip: 0,
+            take: remainingTake,
+            orderBy: { createdAt: 'desc' },
+            include: loanInclude,
+          });
+          loans = [...firstPart, ...secondPart];
+        }
+      } else {
+        loans = await prisma.loan.findMany({
+          where: whereWithoutDate,
+          skip: skip - withDateTotal,
+          take: limit,
+          orderBy: { createdAt: 'desc' },
+          include: loanInclude,
+        });
+      }
+
+      return { loans, total };
+    }
+
     const [loans, total] = await Promise.all([
       prisma.loan.findMany({
         where,
         skip,
         take: limit,
         orderBy: { [sortBy]: sortOrder },
-        include: {
-          member: true,
-          disbursements: {
-            orderBy: { disbursementDate: 'asc' },
-          },
-          repayments: {
-            orderBy: { repaymentDate: 'asc' },
-          },
-          valuations: {
-            orderBy: { createdAt: 'asc' },
-          },
-          _count: {
-            select: {
-              collaterals: true,
-              disbursements: true,
-              repayments: true,
-            },
-          },
-        },
+        include: loanInclude,
       }),
       prisma.loan.count({ where }),
     ]);

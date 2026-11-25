@@ -14,7 +14,7 @@ import { MemberRepository, memberRepository } from '../member/member.repository'
 import { AppError } from '../../shared/errors/app-error';
 import { ErrorCode } from '../../shared/errors/error-codes';
 import { LOAN_CONSTANTS } from '../../shared/constants';
-import { LoanStatus, LoanTermType, LoanType, Prisma, UserRole } from '@prisma/client';
+import { AccountStatus, LoanStatus, LoanTermType, LoanType, Prisma, UserRole } from '@prisma/client';
 import { AuthUserResponse } from '../auth/auth.types';
 import { createPaginationMeta, parsePagination } from '../../shared/utils/pagination.util';
 import { addMonthsToDate, formatDate } from '../../shared/utils/date.util';
@@ -1119,6 +1119,129 @@ export class LoanService {
     }
 
     return (await this.repo.findById(clonedLoan.id))!;
+  }
+
+  /**
+   * Lấy danh sách cán bộ đang hoạt động trong hệ thống để chọn khi chuyển dời khoản vay
+   */
+  async getTransferTargets() {
+    const users = await prisma.user.findMany({
+      where: { status: AccountStatus.ACTIVE },
+      include: { profile: true },
+      orderBy: [{ role: 'asc' }, { username: 'asc' }],
+    });
+
+    return users.map((u) => ({
+      id: u.id,
+      username: u.username,
+      role: u.role,
+      fullName: u.profile?.fullName || u.username,
+      position: u.role === UserRole.ADMIN ? 'Quản trị viên' : 'Cán bộ tín dụng',
+    }));
+  }
+
+  /**
+   * Chuyển dời khoản vay sang một cán bộ khác trong hệ thống.
+   * Cán bộ cũ sẽ mất quyền quản lý khoản vay này và cán bộ mới sẽ tiếp nhận.
+   */
+  async transferLoan(
+    id: string,
+    targetOfficerId: string,
+    reason?: string,
+    currentUser?: AuthUserResponse,
+  ) {
+    const loan = await this.getById(id, currentUser);
+
+    const targetOfficer = await prisma.user.findUnique({
+      where: { id: targetOfficerId },
+      include: { profile: true },
+    });
+
+    if (!targetOfficer || targetOfficer.status !== AccountStatus.ACTIVE) {
+      throw AppError.notFound('Không tìm thấy cán bộ nhận bàn giao hoặc tài khoản đã bị khóa');
+    }
+
+    if (loan.createdById === targetOfficer.id) {
+      throw AppError.badRequest(
+        'Khoản vay này hiện đang thuộc quyền quản lý của cán bộ được chọn.',
+      );
+    }
+
+    const previousOfficerId = loan.createdById ?? null;
+    let previousOfficerName = 'Chưa phân công';
+    if (previousOfficerId) {
+      const prevUser = await prisma.user.findUnique({
+        where: { id: previousOfficerId },
+        include: { profile: true },
+      });
+      previousOfficerName = prevUser?.profile?.fullName || prevUser?.username || previousOfficerId;
+    }
+
+    const targetOfficerName = targetOfficer.profile?.fullName || targetOfficer.username;
+
+    // 1. Chuyển quyền sở hữu khoản vay sang cán bộ mới
+    await prisma.loan.update({
+      where: { id: loan.id },
+      data: {
+        createdById: targetOfficer.id,
+      },
+    });
+
+    // 2. Nếu thành viên chưa có cán bộ hoặc đang thuộc cán bộ cũ và không còn khoản vay nào khác của cán bộ cũ,
+    //    chuyển luôn quản lý hồ sơ thành viên sang cán bộ mới để cán bộ mới quản lý xuyên suốt
+    if (loan.memberId) {
+      const member = await prisma.member.findUnique({
+        where: { id: loan.memberId },
+        select: { id: true, createdById: true },
+      });
+
+      if (member && (!member.createdById || member.createdById === previousOfficerId)) {
+        const remainingLoansOfOldOfficer = previousOfficerId
+          ? await prisma.loan.count({
+              where: {
+                memberId: loan.memberId,
+                createdById: previousOfficerId,
+                isDeleted: { not: true },
+              },
+            })
+          : 0;
+
+        if (remainingLoansOfOldOfficer === 0) {
+          await prisma.member.update({
+            where: { id: member.id },
+            data: { createdById: targetOfficer.id },
+          });
+        }
+      }
+    }
+
+    // 3. Ghi nhận Audit Log
+    await prisma.auditLog.create({
+      data: {
+        entityType: 'LOAN',
+        entityId: loan.id,
+        action: 'TRANSFER',
+        reason: reason?.trim() || `Chuyển dời khoản vay sang cán bộ ${targetOfficerName}`,
+        metadata: {
+          contractNumber: loan.contractNumber,
+          memberId: loan.memberId,
+          fromOfficerId: previousOfficerId,
+          fromOfficerName: previousOfficerName,
+          toOfficerId: targetOfficer.id,
+          toOfficerName: targetOfficerName,
+          transferredById: currentUser?.id ?? null,
+        },
+      },
+    });
+
+    return {
+      id: loan.id,
+      contractNumber: loan.contractNumber,
+      fromOfficerId: previousOfficerId,
+      fromOfficerName: previousOfficerName,
+      toOfficerId: targetOfficer.id,
+      toOfficerName: targetOfficerName,
+    };
   }
 }
 

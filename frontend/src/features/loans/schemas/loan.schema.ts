@@ -53,6 +53,7 @@ export const HEIR_RELATIONSHIP_OPTIONS = [
   { value: 'Con', label: 'Con' },
   { value: 'Cha', label: 'Cha' },
   { value: 'Mẹ', label: 'Mẹ' },
+  { value: 'Dì', label: 'Dì' },
 ] as const;
 
 export const heirFormSchema = z.object({

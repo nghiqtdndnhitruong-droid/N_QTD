@@ -28,6 +28,8 @@ import type {
   NextInterestPeriodInfo,
   RelatedPerson,
   Repayment,
+  TransferLoanResult,
+  TransferOfficerOption,
   UpdateCollateralPayload,
   UpdateDisbursementPayload,
   UpdateLoanPayload,
@@ -76,6 +78,20 @@ export const loansApi = {
 
   getById(id: string): Promise<Loan> {
     return apiGet<Loan>(`/loans/${id}`);
+  },
+
+  getTransferTargets(): Promise<TransferOfficerOption[]> {
+    return apiGet<TransferOfficerOption[]>('/loans/transfer-targets');
+  },
+
+  transferLoan(
+    id: string,
+    payload: { targetOfficerId: string; reason?: string },
+  ): Promise<TransferLoanResult> {
+    return apiPost<TransferLoanResult, { targetOfficerId: string; reason?: string }>(
+      `/loans/${id}/transfer`,
+      payload,
+    );
   },
 
   getSummary(id: string): Promise<LoanSummary> {

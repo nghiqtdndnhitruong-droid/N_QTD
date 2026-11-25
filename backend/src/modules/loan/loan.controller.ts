@@ -134,6 +134,30 @@ export class LoanController {
     };
     res.status(201).json(response);
   };
+
+  getTransferTargets = async (_req: Request, res: Response): Promise<void> => {
+    const targets = await this.service.getTransferTargets();
+    const response: ApiResponse<typeof targets> = {
+      success: true,
+      message: 'Lấy danh sách cán bộ nhận bàn giao thành công',
+      data: targets,
+      timestamp: new Date().toISOString(),
+    };
+    res.status(200).json(response);
+  };
+
+  transfer = async (req: Request, res: Response): Promise<void> => {
+    const id = String(req.params.id);
+    const { targetOfficerId, reason } = req.body;
+    const result = await this.service.transferLoan(id, targetOfficerId, reason, req.user);
+    const response: ApiResponse<typeof result> = {
+      success: true,
+      message: `Đã chuyển dời khoản vay sang cán bộ ${result.toOfficerName} thành công`,
+      data: result,
+      timestamp: new Date().toISOString(),
+    };
+    res.status(200).json(response);
+  };
 }
 
 export const loanController = new LoanController();

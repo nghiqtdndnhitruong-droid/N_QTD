@@ -98,14 +98,31 @@ export class MemberService {
         ErrorCode.MEMBER_NOT_FOUND
       );
     }
-    // Cán bộ tín dụng chỉ được xem thành viên do chính mình tạo (hoặc thành viên chưa gán cán bộ)
+    // Cán bộ tín dụng chỉ được xem thành viên do chính mình tạo (hoặc thành viên chưa gán cán bộ, hoặc đang quản lý khoản vay của thành viên đó)
     if (
       currentUser &&
       currentUser.role === UserRole.CREDIT_OFFICER &&
       member.createdById &&
       member.createdById !== currentUser.id
     ) {
-      throw AppError.forbidden('Bạn không có quyền truy cập hồ sơ thành viên này');
+      let hasAssignedLoan = 0;
+      const isObjectId = (val: string) => /^[a-fA-F0-9]{24}$/.test(val);
+      if (isObjectId(member.id) && isObjectId(currentUser.id)) {
+        try {
+          hasAssignedLoan = await prisma.loan.count({
+            where: {
+              memberId: member.id,
+              createdById: currentUser.id,
+              isDeleted: { not: true },
+            },
+          });
+        } catch {
+          hasAssignedLoan = 0;
+        }
+      }
+      if (hasAssignedLoan === 0) {
+        throw AppError.forbidden('Bạn không có quyền truy cập hồ sơ thành viên này');
+      }
     }
     return member;
   }

@@ -129,6 +129,38 @@ export function useDeleteLoan() {
   });
 }
 
+export function useTransferTargets(enabled = true) {
+  return useQuery({
+    queryKey: ['loans', 'transfer-targets'],
+    queryFn: () => loansApi.getTransferTargets(),
+    enabled,
+    staleTime: 60_000,
+  });
+}
+
+export function useTransferLoan() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      loanId,
+      targetOfficerId,
+      reason,
+    }: {
+      loanId: string;
+      targetOfficerId: string;
+      reason?: string;
+    }) => loansApi.transferLoan(loanId, { targetOfficerId, reason }),
+    onSuccess: (_res, vars) => {
+      qc.removeQueries({ queryKey: queryKeys.loans.detail(vars.loanId) });
+      qc.removeQueries({ queryKey: queryKeys.loans.summary(vars.loanId) });
+      void qc.invalidateQueries({ queryKey: queryKeys.loans.lists() });
+      void qc.invalidateQueries({ queryKey: queryKeys.members.lists() });
+      void qc.invalidateQueries({ queryKey: queryKeys.dashboard.all });
+      void qc.invalidateQueries({ queryKey: queryKeys.reports.all });
+    },
+  });
+}
+
 export function useAddCollateral(loanId: string) {
   const qc = useQueryClient();
   return useMutation({

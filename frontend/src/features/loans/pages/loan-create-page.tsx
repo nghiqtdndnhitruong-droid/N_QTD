@@ -1060,7 +1060,7 @@ export function LoanCreatePage() {
                       ]
                     : (HEIR_RELATIONSHIP_OPTIONS as any)
                 }
-                placeholder="Chọn quan hệ (Chồng, Vợ, Con, Cha, Mẹ)"
+                placeholder="Chọn quan hệ (Chồng, Vợ, Con, Cha, Mẹ, Dì)"
               />
               <FormTextField
                 control={heirForm.control}

@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { addDays, addMonths, differenceInCalendarDays } from 'date-fns';
 import { Calculator, Coins, Pencil, Plus, Trash2 } from 'lucide-react';
 import { LoanStatus } from '@/shared/types';
-import { formatDateVN, formatVND, toApiDate, vndToWords } from '@/shared/format';
+import { formatDateVN, formatVND, toApiDate, toDate, vndToWords } from '@/shared/format';
 import {
   calculateInterestEndDate,
   calculateMonthsPeriod,
@@ -85,7 +86,7 @@ export function RepaymentsSection({
 
   const { data: nextPeriod } = useNextInterestPeriod(loanId, drawerOpen);
 
-  const { control, handleSubmit, reset, setValue, setError, register } =
+  const { control, handleSubmit, reset, setValue, getValues, setError, register } =
     useForm<RepaymentFormValues>({
       resolver: zodResolver(repaymentFormSchema),
       mode: 'onTouched',
@@ -101,38 +102,143 @@ export function RepaymentsSection({
       },
     });
 
-  const watchedDays = useWatch({ control, name: 'interestDays' }) || 90;
+  const rawWatchedDays = useWatch({ control, name: 'interestDays' });
+  const watchedDays =
+    typeof rawWatchedDays === 'number' && !Number.isNaN(rawWatchedDays) ? rawWatchedDays : 0;
+  const watchedRepaymentDate = useWatch({ control, name: 'repaymentDate' });
   const watchedStartDate = useWatch({ control, name: 'interestStartDate' });
   const watchedEndDate = useWatch({ control, name: 'interestEndDate' });
+  const watchedPrincipalAmount = useWatch({ control, name: 'principalAmount' }) || 0;
   const watchedInterestAmount = useWatch({ control, name: 'interestAmount' }) || 0;
 
   const { data: estimate } = useInterestEstimate(
-    drawerOpen ? loanId : undefined,
-    watchedDays,
+    drawerOpen && watchedDays > 0 ? loanId : undefined,
+    watchedDays > 0 ? watchedDays : 1,
   );
+
+  // Xác định có phải lần thu lãi đầu tiên của khoản vay (tính từ ngày giải ngân) hay không
+  const isFirstInterestPeriod = editingItem
+    ? !activeRepayments.some(
+        (r) =>
+          r.id !== editingItem.id &&
+          r.interestAmount > 0 &&
+          new Date(r.repaymentDate) < new Date(editingItem.repaymentDate),
+      )
+    : !nextPeriod?.lastInterestEndDate;
+
+  // Ngày bắt đầu hiển thị trong ghi chú:
+  // - Lần thu đầu tiên: từ ngày giải ngân + 1 ngày (VD: giải ngân 10/02 -> ghi chú từ ngày 11/02)
+  // - Các đợt sau: giữ nguyên ngày bắt đầu kỳ (VD: 21/02)
+  const getNoteStartDate = (startDate?: Date | string | null) => {
+    if (!startDate || !isFirstInterestPeriod) return startDate;
+    const parsed = toDate(startDate);
+    return parsed ? addDays(parsed, 1) : startDate;
+  };
+
+  // Tính ngày kết thúc theo số ngày:
+  // - Lần đầu tiên tính từ ngày giải ngân (10/02 + 10 ngày = 20/02)
+  // - Các kỳ sau tính nối tiếp (21/02 + 10 - 1 ngày = 02/03)
+  const computeEndDateFromDays = (startDate: Date | string, days: number): Date => {
+    const safeDays = Math.max(1, Math.round(days));
+    if (isFirstInterestPeriod) {
+      const start = toDate(startDate) ?? new Date();
+      return addDays(start, safeDays);
+    }
+    return calculateInterestEndDate(startDate, safeDays);
+  };
 
   // Tự động tính lại Ngày thu lãi đến khi số ngày hoặc ngày bắt đầu thay đổi
   useEffect(() => {
     if (watchedStartDate && watchedDays > 0) {
-      const calculatedEnd = calculateInterestEndDate(watchedStartDate, watchedDays);
+      const calculatedEnd = computeEndDateFromDays(watchedStartDate, watchedDays);
       setValue('interestEndDate', toApiDate(calculatedEnd), { shouldValidate: true });
     }
-  }, [watchedStartDate, watchedDays, setValue]);
+  }, [watchedStartDate, watchedDays, isFirstInterestPeriod, setValue]);
 
   // Cập nhật ngày bắt đầu gợi ý từ backend khi mở drawer tạo mới
   useEffect(() => {
     if (drawerOpen && !editingItem && nextPeriod?.suggestedStartDate) {
+      if ((getValues('principalAmount') || 0) > 0) return;
       const startStr = nextPeriod.suggestedStartDate.slice(0, 10);
       setValue('interestStartDate', startStr, { shouldValidate: true });
       const initialDays = unpaidInterestDays > 0 ? unpaidInterestDays : 90;
-      const end = calculateInterestEndDate(startStr, initialDays);
+      const end = computeEndDateFromDays(startStr, initialDays);
       setValue('interestEndDate', toApiDate(end), { shouldValidate: true });
+      setValue(
+        'note',
+        generateInterestRepaymentNote({
+          contractNumber,
+          startDate: getNoteStartDate(startStr),
+          endDate: end,
+          interestAmount: 0,
+        }),
+      );
     }
-  }, [drawerOpen, editingItem, nextPeriod, unpaidInterestDays, setValue]);
+  }, [drawerOpen, editingItem, nextPeriod, unpaidInterestDays, contractNumber, isFirstInterestPeriod, setValue, getValues]);
+
+  // Khi có nhập số tiền thu gốc (> 0): bắt buộc thu lãi đến đúng ngày trả gốc (repaymentDate)
+  // Tự động tính lại số ngày tính lãi, đến ngày, số tiền lãi và cập nhật ghi chú đầy đủ gốc + lãi
+  useEffect(() => {
+    if (!drawerOpen || editingItem) return;
+    if (watchedPrincipalAmount <= 0) return;
+    if (!watchedStartDate || !watchedRepaymentDate) return;
+
+    const start = toDate(watchedStartDate);
+    const end = toDate(watchedRepaymentDate);
+    if (!start || !end) return;
+
+    // Lần đầu tiên: số ngày = end - start (VD: giải ngân 10/02 -> trả gốc 20/02 = 10 ngày; ghi chú từ 11/02 đến 20/02)
+    // Các đợt sau: số ngày = end - start + 1 (VD: kỳ trước đến 20/02 -> start 21/02 -> trả gốc 30/03 = 38 ngày)
+    const diff = differenceInCalendarDays(end, start);
+    const days = isFirstInterestPeriod ? Math.max(0, diff) : Math.max(0, diff + 1);
+    const principalBalance = nextPeriod?.currentPrincipalBalance ?? currentPrincipalBalance;
+    const annualRate = nextPeriod?.annualInterestRate ?? 0;
+    const calcInterest =
+      days > 0 && principalBalance > 0 && annualRate > 0
+        ? Math.round((principalBalance * (annualRate / 100) * days) / 365)
+        : 0;
+
+    setValue('interestDays', days, { shouldValidate: true });
+    setValue('interestEndDate', days > 0 ? watchedRepaymentDate : '', { shouldValidate: true });
+    setValue('interestAmount', calcInterest, { shouldValidate: true });
+    setValue(
+      'note',
+      generateInterestRepaymentNote({
+        contractNumber,
+        startDate: getNoteStartDate(watchedStartDate),
+        endDate: watchedRepaymentDate,
+        principalAmount: watchedPrincipalAmount,
+        interestAmount: calcInterest,
+      }),
+    );
+  }, [
+    drawerOpen,
+    editingItem,
+    watchedPrincipalAmount,
+    watchedRepaymentDate,
+    watchedStartDate,
+    nextPeriod,
+    currentPrincipalBalance,
+    contractNumber,
+    isFirstInterestPeriod,
+    setValue,
+  ]);
 
   const handleQuickMonths = (months: number) => {
     const startStr = watchedStartDate || toApiDate(new Date());
-    const { days, endDate } = calculateMonthsPeriod(startStr, months);
+    let days: number;
+    let endDate: Date;
+
+    if (isFirstInterestPeriod) {
+      const start = toDate(startStr) ?? new Date();
+      endDate = addMonths(start, months);
+      days = Math.max(1, differenceInCalendarDays(endDate, start));
+    } else {
+      const res = calculateMonthsPeriod(startStr, months);
+      days = res.days;
+      endDate = res.endDate;
+    }
+
     setValue('interestDays', days, { shouldValidate: true, shouldDirty: true });
     setValue('interestEndDate', toApiDate(endDate), { shouldValidate: true, shouldDirty: true });
 
@@ -143,8 +249,9 @@ export function RepaymentsSection({
       setValue('interestAmount', calcInterest, { shouldValidate: true, shouldDirty: true });
       const autoNote = generateInterestRepaymentNote({
         contractNumber,
-        startDate: startStr,
+        startDate: getNoteStartDate(startStr),
         endDate,
+        principalAmount: watchedPrincipalAmount,
         interestAmount: calcInterest,
       });
       setValue('note', autoNote, { shouldDirty: true });
@@ -154,8 +261,9 @@ export function RepaymentsSection({
   const handleAutoGenerateNote = () => {
     const note = generateInterestRepaymentNote({
       contractNumber,
-      startDate: watchedStartDate,
+      startDate: getNoteStartDate(watchedStartDate),
       endDate: watchedEndDate,
+      principalAmount: watchedPrincipalAmount,
       interestAmount: watchedInterestAmount,
     });
     setValue('note', note, { shouldDirty: true, shouldValidate: true });
@@ -168,7 +276,10 @@ export function RepaymentsSection({
       ? nextPeriod.suggestedStartDate.slice(0, 10)
       : toApiDate(new Date());
     const days = unpaidInterestDays > 0 ? unpaidInterestDays : 90;
-    const end = calculateInterestEndDate(start, days);
+    const isFirst = !nextPeriod?.lastInterestEndDate;
+    const startDateObj = toDate(start) ?? new Date();
+    const end = isFirst ? addDays(startDateObj, Math.max(1, Math.round(days))) : calculateInterestEndDate(start, days);
+    const noteStart = isFirst ? addDays(startDateObj, 1) : start;
     reset({
       repaymentDate: toApiDate(new Date()),
       principalAmount: 0,
@@ -179,7 +290,7 @@ export function RepaymentsSection({
       autoSettleIfPaidInFull: true,
       note: generateInterestRepaymentNote({
         contractNumber,
-        startDate: start,
+        startDate: noteStart,
         endDate: end,
         interestAmount: 0,
       }),
@@ -564,8 +675,9 @@ export function RepaymentsSection({
                       });
                       const autoNote = generateInterestRepaymentNote({
                         contractNumber,
-                        startDate: watchedStartDate,
+                        startDate: getNoteStartDate(watchedStartDate),
                         endDate: watchedEndDate,
+                        principalAmount: watchedPrincipalAmount,
                         interestAmount: amount,
                       });
                       setValue('note', autoNote, { shouldDirty: true });
@@ -605,6 +717,14 @@ export function RepaymentsSection({
                   }
                 />
               </div>
+
+              {!editingItem && watchedPrincipalAmount > 0 && watchedRepaymentDate && (
+                <div className="rounded-md border border-sky-200 bg-sky-50/70 px-3 py-2 text-xs text-sky-900">
+                  Khi thu gốc, hệ thống tự động tính tiền lãi đến ngày trả gốc{' '}
+                  <strong>{formatDateVN(watchedRepaymentDate)}</strong> ({watchedDays} ngày) và cập
+                  nhật nội dung ghi chú kèm số tiền gốc + kỳ thu lãi.
+                </div>
+              )}
 
               {!editingItem && (
                 <label className="flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs font-medium text-slate-700 cursor-pointer">

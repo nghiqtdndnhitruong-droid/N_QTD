@@ -219,23 +219,34 @@ export function calculateInterestEndDate(
 }
 
 /**
- * Tự động tạo nội dung giao dịch thu lãi theo quy định của Quỹ:
- * "Thu lãi HĐTC [Số khế ước] từ ngày [Ngày bắt đầu] đến ngày [Ngày kết thúc] số tiền là: [Số tiền] đồng"
+ * Tự động tạo nội dung giao dịch thu nợ/thu lãi theo quy định của Quỹ:
+ * - Chỉ thu lãi: "Thu lãi HĐTC [Số khế ước] từ ngày [Ngày bắt đầu] đến ngày [Ngày kết thúc] số tiền là: [Tiền lãi] đồng"
+ * - Có thu gốc & thu lãi: "Thu gốc HĐTC [Số khế ước] số tiền là: [Tiền gốc] đồng và thu lãi từ ngày [Ngày bắt đầu] đến ngày [Ngày kết thúc] số tiền là: [Tiền lãi] đồng"
+ * - Chỉ thu gốc (lãi = 0): "Thu gốc HĐTC [Số khế ước] số tiền là: [Tiền gốc] đồng"
  */
 export function generateInterestRepaymentNote(params: {
   contractNumber?: string | null;
   startDate?: Date | string | null;
   endDate?: Date | string | null;
   interestAmount?: number | null;
+  principalAmount?: number | null;
 }): string {
   const contractNumber = params.contractNumber?.trim() || '......';
   const startStr = params.startDate ? formatDateVN(params.startDate) : '...';
   const endStr = params.endDate ? formatDateVN(params.endDate) : '...';
-  const amountStr = params.interestAmount
-    ? `${Math.round(params.interestAmount).toLocaleString('vi-VN')} đồng`
-    : '0 đồng';
+  const principal = params.principalAmount ? Math.round(params.principalAmount) : 0;
+  const interest = params.interestAmount ? Math.round(params.interestAmount) : 0;
+  const interestStr = `${interest.toLocaleString('vi-VN')} đồng`;
 
-  return `Thu lãi HĐTC ${contractNumber} từ ngày ${startStr} đến ngày ${endStr} số tiền là: ${amountStr}`;
+  if (principal > 0) {
+    const principalStr = `${principal.toLocaleString('vi-VN')} đồng`;
+    if (interest > 0) {
+      return `Thu gốc HĐTC ${contractNumber} số tiền là: ${principalStr} và thu lãi từ ngày ${startStr} đến ngày ${endStr} số tiền là: ${interestStr}`;
+    }
+    return `Thu gốc HĐTC ${contractNumber} số tiền là: ${principalStr}`;
+  }
+
+  return `Thu lãi HĐTC ${contractNumber} từ ngày ${startStr} đến ngày ${endStr} số tiền là: ${interestStr}`;
 }
 
 

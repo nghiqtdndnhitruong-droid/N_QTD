@@ -9,6 +9,7 @@ import {
   updateLoanStatusSchema,
   loanFilterQuerySchema,
   deleteLoanBodySchema,
+  transferLoanSchema,
 } from './loan.validator';
 import { collateralRoutes } from '../collateral/collateral.routes';
 import { disbursementRoutes } from '../disbursement/disbursement.routes';
@@ -48,9 +49,17 @@ router.get(
   asyncHandler(loanController.exportExcel)
 );
 
+router.get('/transfer-targets', asyncHandler(loanController.getTransferTargets));
+
 router.get('/:id', asyncHandler(loanController.getById));
 
 router.post('/:id/clone', asyncHandler(loanController.clone));
+
+router.post(
+  '/:id/transfer',
+  validate({ body: transferLoanSchema }),
+  asyncHandler(loanController.transfer)
+);
 
 router.get('/:id/summary', asyncHandler(loanController.getSummary));
 

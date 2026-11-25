@@ -224,5 +224,29 @@ describe('identity-document utilities', () => {
       });
       expect(note).toContain('từ ngày 01/01/2026 đến ngày 01/04/2026 số tiền là: 0 đồng');
     });
+
+    it('sinh ghi chú đầy đủ khi vừa thu gốc vừa thu lãi đến ngày trả gốc', () => {
+      const note = generateInterestRepaymentNote({
+        contractNumber: 'KU-2026-001',
+        startDate: '2026-02-11',
+        endDate: '2026-02-20',
+        principalAmount: 50_000_000,
+        interestAmount: 136_986,
+      });
+      expect(note).toBe(
+        'Thu gốc HĐTC KU-2026-001 số tiền là: 50.000.000 đồng và thu lãi từ ngày 11/02/2026 đến ngày 20/02/2026 số tiền là: 136.986 đồng',
+      );
+    });
+
+    it('sinh ghi chú khi chỉ thu gốc (tiền lãi bằng 0)', () => {
+      const note = generateInterestRepaymentNote({
+        contractNumber: 'KU-2026-001',
+        startDate: '2026-02-11',
+        endDate: '2026-02-10',
+        principalAmount: 50_000_000,
+        interestAmount: 0,
+      });
+      expect(note).toBe('Thu gốc HĐTC KU-2026-001 số tiền là: 50.000.000 đồng');
+    });
   });
 });

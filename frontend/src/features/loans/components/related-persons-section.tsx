@@ -49,13 +49,18 @@ import {
 } from '../schemas/loan.schema';
 import type { RelatedPerson } from '../types/loan.types';
 
-// Danh sách lựa chọn cố định: Quan hệ với người vay (5 lựa chọn)
+// Danh sách lựa chọn cố định: Quan hệ với người vay
 export const BORROWER_RELATIONSHIP_OPTIONS = [
   { value: 'Chồng', label: 'Chồng' },
   { value: 'Vợ', label: 'Vợ' },
   { value: 'Con', label: 'Con' },
   { value: 'Mẹ', label: 'Mẹ' },
   { value: 'Cha', label: 'Cha' },
+  { value: 'Chị', label: 'Chị' },
+  { value: 'Anh', label: 'Anh' },
+  { value: 'Em', label: 'Em' },
+  { value: 'Cháu', label: 'Cháu' },
+  { value: 'Cô', label: 'Cô' },
 ];
 
 export interface RelatedPersonsSectionProps {

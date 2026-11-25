@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
 import {
   ArrowLeft,
+  ArrowRightLeft,
   CheckCircle2,
   FilePenLine,
   FileText,
@@ -63,6 +64,7 @@ import { CollateralOwnerType } from '../types/loan.types';
 import { LoanContractModal } from '../components/loan-contract-modal';
 import { LoanPlanModal } from '../components/loan-plan-modal';
 import { LoanHeirModal } from '../components/loan-heir-modal';
+import { LoanTransferModal } from '../components/loan-transfer-modal';
 import {
   useDeleteLoan,
   useLoanDetail,
@@ -82,6 +84,7 @@ export function LoanDetailPage() {
   const [contractModalOpen, setContractModalOpen] = useState(false);
   const [planModalOpen, setPlanModalOpen] = useState(false);
   const [heirModalOpen, setHeirModalOpen] = useState(false);
+  const [transferModalOpen, setTransferModalOpen] = useState(false);
   const [relatedPersonCreateSignal, setRelatedPersonCreateSignal] = useState(0);
 
   const handleAddRelatedPerson = () => {
@@ -230,6 +233,17 @@ export function LoanDetailPage() {
                 </Button>
               </Can>
             )}
+
+            <Can perm="loan:update">
+              <Button
+                variant="outline"
+                size="sm"
+                leftIcon={<ArrowRightLeft className="h-4 w-4" />}
+                onClick={() => setTransferModalOpen(true)}
+              >
+                Chuyển dời
+              </Button>
+            </Can>
 
             <Can perm="loan:delete">
               <Button
@@ -851,6 +865,13 @@ export function LoanDetailPage() {
         onOpenChange={setHeirModalOpen}
         loan={loan}
         onSuccess={() => void refetch()}
+      />
+
+      <LoanTransferModal
+        open={transferModalOpen}
+        onOpenChange={setTransferModalOpen}
+        loan={loan}
+        onSuccess={() => navigate('/loans')}
       />
     </div>
   );

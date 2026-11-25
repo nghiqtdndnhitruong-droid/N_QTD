@@ -215,6 +215,7 @@ export interface Loan {
   halfTermPaymentDate?: string | null;
   settlementDate: string | null;
   inspectionChecks?: boolean[];
+  createdById?: string | null;
   heir: Heir | null;
   relatedPersons?: RelatedPerson[];
   isRelatedPersonEligible?: boolean;
@@ -256,6 +257,23 @@ export interface DeleteLoanResult {
   status: LoanStatus;
   deleteMode: 'SOFT_DELETE';
   releasedCollateralsCount: number;
+}
+
+export interface TransferOfficerOption {
+  id: string;
+  username: string;
+  role: string;
+  fullName: string;
+  position: string;
+}
+
+export interface TransferLoanResult {
+  id: string;
+  contractNumber: string | null;
+  fromOfficerId: string | null;
+  fromOfficerName: string;
+  toOfficerId: string;
+  toOfficerName: string;
 }
 
 export interface LoanSummary {
